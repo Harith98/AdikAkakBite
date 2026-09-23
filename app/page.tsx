@@ -1,0 +1,26 @@
+ "use client";
+import {useState} from "react";
+import {CalendarDays,ClipboardList,ShoppingBag,BarChart3,CheckCircle2,AlertTriangle,TrendingUp} from "lucide-react";
+
+const schedule=[["11:00–11:30","Opening & Planning"],["11:30–13:00","Production"],["13:00–14:00","Content Creation"],["14:00–14:30","Break"],["14:30–15:30","Marketing"],["15:30–17:00","Production / Product Development"],["17:00–17:30","Inventory & Operations"],["17:30–18:30","Sales & Customer Growth"],["18:30–19:15","Business Improvement"],["19:15–20:00","Closing"]];
+const initial=[["Check today's orders",true,"Orders"],["Prepare ingredients and packaging",false,"Production"],["Record one short product video",false,"Content"],["Check low-stock ingredients",false,"Inventory"],["Follow up with 5 previous customers",false,"Sales"]];
+
+export default function Home(){
+ const [tab,setTab]=useState("Today"); const [tasks,setTasks]=useState(initial); const [modal,setModal]=useState(false); const [newTask,setNewTask]=useState("");
+ const done=tasks.filter(x=>x[1]).length, progress=Math.round(done/tasks.length*100);
+ const add=()=>{if(!newTask.trim())return;setTasks(t=>[...t,[newTask,false,"Business"]]);setNewTask("");setModal(false)};
+ return <main>
+ <header className="top"><div><small>DESSERT BUSINESS OS</small><h1>Good morning 👋</h1><p>23 September · Business day 11:00–20:00</p></div><button onClick={()=>setModal(true)}>+ Add task</button></header>
+ {tab==="Today"&&<><section className="grid hero"><div className="card now"><small>RIGHT NOW</small><h2>Production</h2><b>11:30–13:00</b><p>Prepare today's ingredients, fillings, packaging and scheduled orders.</p><button>Start</button> <button className="alt">Pause</button></div><div className="card"><Stat n="RM 280" l="Today's sales"/><Stat n="6" l="Orders"/><Stat n="3" l="Low-stock items"/></div></section>
+ <section className="grid two"><div className="card"><div className="row"><h3>Today's priorities</h3><b>{progress}%</b></div><div className="bar"><i style={{width:`${progress}%`}}/></div>{tasks.map((t,i)=><div className="task" key={i} onClick={()=>setTasks(x=>x.map((a,j)=>j===i?[a[0],!a[1],a[2]]:a))}><span className={t[1]?"check done":"check"}>{t[1]&&<CheckCircle2 size={15}/>}</span><div><strong className={t[1]?"strike":""}>{String(t[0])}</strong><small>{String(t[2])}</small></div></div>)}</div>
+ <div className="card"><h3>Business snapshot</h3><Metric a="Weekly sales" b="RM 1,850"/><Metric a="Previous week" b="RM 1,620"/><Metric a="Change" b="+14.2%" green/><Metric a="Average order value" b="RM 44.05"/><div className="forecast"><TrendingUp/><div><b>Next 7-day estimate</b><strong>RM 1,900–RM 2,200</strong><small>Mathematical estimate from historical data.</small></div></div></div></section>
+ <section className="card schedule"><h3>Upcoming schedule</h3>{schedule.slice(2,7).map((s,i)=><div className="sched" key={i}><span>{s[0]}</span><b>{s[1]}</b></div>)}</section></>}
+ {tab==="Business"&&<section className="grid three"><div className="card"><h3>Sales</h3><strong className="big">RM 1,850</strong><p className="green">+14.2% vs previous week</p></div><div className="card"><h3>Orders</h3><strong className="big">42</strong><p>Average order RM44.05</p></div><div className="card"><h3>Inventory</h3><strong className="big">3</strong><p>Items at reorder level</p></div><div className="card wide"><h3>Forecast</h3><p>Saturday historical average: RM420</p><p>Recent trend: +8%</p><strong>Estimated Saturday: ~RM454</strong><small>Forecasts are estimates and improve with more history.</small></div></section>}
+ {tab==="Orders"&&<section className="card"><h3>Today's orders</h3>{["Sarah · 2 Brownie Boxes · RM50 · 4:00 PM","Aina · Cheesecake · RM35 · 5:00 PM","Mira · Dessert Box · RM45 · 6:00 PM"].map((x,i)=><div className="order" key={i}><ShoppingBag size={18}/><span>{x}</span><button className="alt">View</button></div>)}</section>}
+ {tab==="Content"&&<section className="grid two"><div className="card"><h3>Content planner</h3><Metric a="Posts this week" b="5"/><Metric a="Ideas" b="8"/><Metric a="Best platform" b="Instagram"/></div><div className="card"><h3>Next content</h3><p><b>Behind-the-scenes:</b> Record today's brownie preparation.</p><button>Mark as planned</button></div></section>}
+ <nav>{[["Today",CalendarDays],["Orders",ShoppingBag],["Business",BarChart3],["Content",ClipboardList]].map(([n,I])=><button className={tab===n?"active":""} key={String(n)} onClick={()=>setTab(String(n))}><I size={19}/>{String(n)}</button>)}</nav>
+ {modal&&<div className="modal"><div className="modalbox"><h3>Add task</h3><input autoFocus value={newTask} onChange={e=>setNewTask(e.target.value)} placeholder="e.g. Test new brownie topping" onKeyDown={e=>e.key==="Enter"&&add()}/><button onClick={add}>Add</button> <button className="alt" onClick={()=>setModal(false)}>Cancel</button></div></div>}
+ </main>
+}
+function Stat({n,l}:{n:string,l:string}){return <div className="stat"><AlertTriangle size={19}/><div><small>{l}</small><b>{n}</b></div></div>}
+function Metric({a,b,green}:{a:string,b:string,green?:boolean}){return <div className="metric"><span>{a}</span><b className={green?"green":""}>{b}</b></div>}
