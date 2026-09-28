@@ -1,5 +1,5 @@
 import { cookies } from 'next/headers'
-import { createServerClient } from '@supabase/ssr'
+import { createServerClient, type SupabaseClient } from '@supabase/ssr'
 import type { Database } from './database.types'
 
 /**
@@ -8,10 +8,10 @@ import type { Database } from './database.types'
  * every query still goes through Row Level Security as that user — this is
  * NOT a service-role bypass.
  */
-export function createClient() {
+export function createClient(): SupabaseClient<Database, 'public'> {
   const cookieStore = cookies()
 
-  return createServerClient<Database>(
+  return createServerClient<Database, 'public'>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
@@ -46,8 +46,8 @@ export function createClient() {
  * has already re-verified the request), never in response to arbitrary
  * user-triggered requests without your own authorization check first.
  */
-export function createServiceRoleClient() {
-  return createServerClient<Database>(
+export function createServiceRoleClient(): SupabaseClient<Database, 'public'> {
+  return createServerClient<Database, 'public'>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!,
     {
