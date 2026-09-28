@@ -1,7 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { getCurrentBusinessContext } from '@/lib/services/current-business'
 import { getTodayData } from '@/lib/services/today'
-import { getBusinessNow } from '@/lib/time'
+import { formatTime12, getBusinessNow } from '@/lib/time'
 import { getBlockCandidates, getBlockProgress, getCurrentBlock, getNextBlock } from '@/lib/services/schedule'
 import { getNextRecommendedTask, getOrderUrgency } from '@/lib/services/recommendation'
 import { getSuggestedPriorities } from '@/lib/services/priorities'
@@ -12,6 +12,7 @@ import { AlertsCard } from '@/components/today/AlertsCard'
 import { CurrentActivity } from '@/components/today/CurrentActivity'
 import { OrderCard } from '@/components/today/OrderCard'
 import { PrioritiesCard } from '@/components/today/PrioritiesCard'
+import { LiveClock } from '@/components/today/LiveClock'
 
 const MAX_ORDER_CARDS = 3
 
@@ -68,8 +69,12 @@ export default async function TodayPage() {
   return (
     <div className="flex flex-col gap-6">
       <header>
-        <p className="font-display text-3xl text-ink">{greeting(now.time)} 👋</p>
-        <p className="mt-1 text-sm text-ink-muted">{now.dateLabel}</p>
+        <p className="font-display text-3xl text-ink">
+  {greeting(now.time)}, {business.owner_name ?? 'there'}! 👋
+</p>
+        <p className="mt-1 text-sm text-ink-muted">
+          {now.dateLabel} · <LiveClock timezone={settings.timezone} initialTime={formatTime12(now.time)} />
+        </p>
         <div className="mt-3 flex flex-wrap gap-2">
           <Badge tone={isOpen ? 'sage' : 'neutral'}>{isOpen ? '🟢 Open' : '⚪ Closed'}</Badge>
         </div>

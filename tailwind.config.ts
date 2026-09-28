@@ -8,29 +8,29 @@ const config: Config = {
     extend: {
       colors: {
         base: {
-          DEFAULT: '#FFFBF5', // warm base, not the generic AI cream
-          soft: '#FFF4E8',
+          DEFAULT: '#FFF9E9', // warm cream inspired by the brand mark
+          soft: '#FFF3C9',
           card: '#FFFFFF',
         },
         ink: {
-          DEFAULT: '#2E1F16', // espresso-brown, used for text instead of pure black
-          muted: '#7A6A5E',
-          faint: '#B4A79B',
+          DEFAULT: '#252627', // charcoal from the logo
+          muted: '#6E6A60',
+          faint: '#A8A397',
         },
         raspberry: {
-          DEFAULT: '#D64550', // primary accent: CTAs, urgent, selected states
-          dark: '#B23540',
-          soft: '#FBE6E7',
+          DEFAULT: '#AD566B', // dusty pink accent from the logo
+          dark: '#8D4055',
+          soft: '#F7E8EC',
         },
         sage: {
-          DEFAULT: '#8FA377', // status: healthy / OK / positive trend
+          DEFAULT: '#88A17A', // status: healthy / OK / positive trend
           soft: '#EAF0E3',
           dark: '#5F7348',
         },
         amber: {
-          DEFAULT: '#E8A33D', // status: monitor / low stock / early estimate
-          soft: '#FCEFD9',
-          dark: '#8A5A0B',
+          DEFAULT: '#E3C75C', // butter-yellow status accent from the logo
+          soft: '#FFF5CF',
+          dark: '#78611B',
         },
         clay: {
           DEFAULT: '#B4574A', // status: reorder / urgent / negative trend

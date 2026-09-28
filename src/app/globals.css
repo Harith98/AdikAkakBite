@@ -18,8 +18,8 @@ html {
 }
 
 body {
-  background-color: #fffbf5;
-  color: #2e1f16;
+  background-color: #fff9e9;
+  color: #252627;
   -webkit-tap-highlight-color: transparent;
 }
 
@@ -33,6 +33,6 @@ body {
 }
 
 ::selection {
-  background-color: #fbe6e7;
-  color: #2e1f16;
+  background-color: #f7e8ec;
+  color: #252627;
 }
