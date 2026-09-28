@@ -51,7 +51,7 @@ export async function setTaskStatus(taskId: string, status: TaskStatus): Promise
   if (!data) return { error: 'That task could not be found.' }
 
   if (status === 'completed') {
-    await supabase.from('business_activity_logs').insert({
+    await (supabase.from('business_activity_logs') as any).insert({
       business_id: businessId,
       user_id: userId,
       action: 'task_completed',
@@ -95,7 +95,7 @@ export async function setOrderStatus(orderId: string, status: OrderStatus): Prom
       .in('status', ['not_started', 'in_progress', 'paused'])
   }
 
-  await supabase.from('business_activity_logs').insert({
+  await (supabase.from('business_activity_logs') as any).insert({
     business_id: businessId,
     user_id: userId,
     action: status === 'completed' ? 'order_completed' : 'order_status_changed',

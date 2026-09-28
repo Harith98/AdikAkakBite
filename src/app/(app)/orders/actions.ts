@@ -29,8 +29,7 @@ export async function saveOrder(_prev: SaveOrderState, formData: FormData): Prom
   const { supabase, businessId, userId, timezone } = ctx
 
   // ---- find or create the customer (case-insensitive name match) ----
-  const { data: found, error: findError } = await supabase
-    .from('customers')
+  const { data: found, error: findError } = await (supabase.from('customers') as any)
     .select('id, phone')
     .eq('business_id', businessId)
     .ilike('name', escapeLike(order.customerName))
@@ -42,12 +41,11 @@ export async function saveOrder(_prev: SaveOrderState, formData: FormData): Prom
   if (found) {
     customerId = found.id
     if (order.customerPhone && !found.phone) {
-      await supabase.from('customers').update({ phone: order.customerPhone }).eq('id', found.id).eq('business_id', businessId)
+      await (supabase.from('customers') as any).update({ phone: order.customerPhone }).eq('id', found.id).eq('business_id', businessId)
     }
   } else {
     customerId = crypto.randomUUID()
-    const { error } = await supabase
-      .from('customers')
+    const { error } = await (supabase.from('customers') as any)
       .insert({ id: customerId, business_id: businessId, name: order.customerName, phone: order.customerPhone })
     if (error) return { error: error.message, nonce: 0 }
   }
@@ -73,8 +71,7 @@ export async function saveOrder(_prev: SaveOrderState, formData: FormData): Prom
 
   // ---------------------------------------------------------- update
   if (orderIdRaw) {
-    const { data: existing, error: existingError } = await supabase
-      .from('orders')
+    const { data: existing, error: existingError } = await (supabase.from('orders') as any)
       .select('id')
       .eq('id', orderIdRaw)
       .eq('business_id', businessId)
@@ -82,26 +79,26 @@ export async function saveOrder(_prev: SaveOrderState, formData: FormData): Prom
     if (existingError) return { error: existingError.message, nonce: 0 }
     if (!existing) return { error: 'That order could not be found.', nonce: 0 }
 
-    const { data: oldItems } = await supabase.from('order_items').select('id').eq('order_id', orderIdRaw)
+    const { data: oldItems } = await (supabase.from('order_items') as any).select('id').eq('order_id', orderIdRaw)
 
     // Add the new items FIRST, then remove the old ones, so a failure part-way
     // never leaves the order without items.
-    const { data: inserted, error: insertError } = await supabase.from('order_items').insert(itemRows(orderIdRaw)).select('id')
+    const { data: inserted, error: insertError } = await (supabase.from('order_items') as any).insert(itemRows(orderIdRaw)).select('id')
     if (insertError) return { error: insertError.message, nonce: 0 }
 
-    const { error: updateError } = await supabase.from('orders').update(fields).eq('id', orderIdRaw).eq('business_id', businessId)
+    const { error: updateError } = await (supabase.from('orders') as any).update(fields).eq('id', orderIdRaw).eq('business_id', businessId)
     if (updateError) {
-      await supabase.from('order_items').delete().in('id', (inserted ?? []).map((i) => i.id))
+      await (supabase.from('order_items') as any).delete().in('id', (inserted ?? []).map((i: any) => i.id))
       return { error: updateError.message, nonce: 0 }
     }
 
-    const oldIds = (oldItems ?? []).map((i) => i.id)
+    const oldIds = (oldItems ?? []).map((i: any) => i.id)
     if (oldIds.length > 0) {
-      const { error: deleteError } = await supabase.from('order_items').delete().in('id', oldIds)
+      const { error: deleteError } = await (supabase.from('order_items') as any).delete().in('id', oldIds)
       if (deleteError) return { error: deleteError.message, nonce: 0 }
     }
 
-    await supabase.from('business_activity_logs').insert({
+    await (supabase.from('business_activity_logs') as any).insert({
       business_id: businessId,
       user_id: userId,
       action: 'order_updated',
@@ -115,7 +112,7 @@ export async function saveOrder(_prev: SaveOrderState, formData: FormData): Prom
 
   // ---------------------------------------------------------- create
   const newId = crypto.randomUUID()
-  const { error: orderError } = await supabase.from('orders').insert({
+  const { error: orderError } = await (supabase.from('orders') as any).insert({
     id: newId,
     business_id: businessId,
     order_date: getBusinessNow(timezone).isoDate,
@@ -124,13 +121,13 @@ export async function saveOrder(_prev: SaveOrderState, formData: FormData): Prom
   })
   if (orderError) return { error: orderError.message, nonce: 0 }
 
-  const { error: itemsError } = await supabase.from('order_items').insert(itemRows(newId))
+  const { error: itemsError } = await (supabase.from('order_items') as any).insert(itemRows(newId))
   if (itemsError) {
-    await supabase.from('orders').delete().eq('id', newId).eq('business_id', businessId) // no half-created orders
+    await (supabase.from('orders') as any).delete().eq('id', newId).eq('business_id', businessId) // no half-created orders
     return { error: itemsError.message, nonce: 0 }
   }
 
-  await supabase.from('business_activity_logs').insert({
+  await (supabase.from('business_activity_logs') as any).insert({
     business_id: businessId,
     user_id: userId,
     action: 'order_created',

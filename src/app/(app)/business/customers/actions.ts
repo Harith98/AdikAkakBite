@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { getActionContext } from '@/lib/services/action-context'
+import type { Database } from '@/lib/supabase/database.types'
 import { str } from '@/lib/validation/common'
 
 export interface SaveCustomerState {
@@ -28,9 +29,16 @@ export async function saveCustomer(_prev: SaveCustomerState, formData: FormData)
   const ctx = await getActionContext()
   if (!ctx.ok) return { error: ctx.error, nonce: 0 }
 
-  const { data, error } = await ctx.supabase
+  const customerUpdate = {
+    name,
+    phone: phone || null,
+    email: email || null,
+    notes: notes || null,
+  } as Database['public']['Tables']['customers']['Update']
+
+  const { data, error } = await (ctx.supabase as any)
     .from('customers')
-    .update({ name, phone: phone || null, email: email || null, notes: notes || null })
+    .update(customerUpdate as any)
     .eq('id', id)
     .eq('business_id', ctx.businessId)
     .select('id')

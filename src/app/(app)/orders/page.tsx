@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { getCurrentBusinessContext } from '@/lib/services/current-business'
-import { getOrders, type OrderFilter } from '@/lib/services/orders'
+import { getOrders, type OrderFilter, type OrderView } from '@/lib/services/orders'
 import { formatMoney } from '@/lib/constants'
 import { formatDateShort, formatTime12 } from '@/lib/time'
 import clsx from '@/lib/clsx'
@@ -56,25 +56,25 @@ export default async function OrdersPage({ searchParams }: { searchParams: { sta
         </Card>
       ) : (
         <ul className="flex flex-col gap-3">
-          {orders.map((o) => (
-            <li key={o.id}>
-              <Link href={`/orders/${o.id}`} className="block">
+          {orders.map((order: OrderView) => (
+            <li key={order.id}>
+              <Link href={`/orders/${order.id}`} className="block">
                 <Card className="transition-colors hover:bg-base-soft">
                   <div className="flex items-start justify-between gap-3">
-                    <p className="font-display text-xl text-ink">{o.customerName ?? 'Customer'}</p>
-                    <p className="text-sm font-medium text-ink">{formatMoney(o.total, settings.currency)}</p>
+                    <p className="font-display text-xl text-ink">{order.customerName ?? 'Customer'}</p>
+                    <p className="text-sm font-medium text-ink">{formatMoney(order.total, settings.currency)}</p>
                   </div>
                   <p className="mt-1 text-sm text-ink-muted">
-                    {o.items.map((i) => `${i.quantity} × ${i.productName}`).join(', ') || 'No items'}
+                    {order.items.map((item: OrderView['items'][number]) => `${item.quantity} × ${item.productName}`).join(', ') || 'No items'}
                   </p>
                   <p className="mt-1 text-sm text-ink-muted">
-                    {o.requiredDate
-                      ? `Needed ${formatDateShort(o.requiredDate)}${o.requiredTime ? ` at ${formatTime12(o.requiredTime)}` : ''}`
+                    {order.requiredDate
+                      ? `Needed ${formatDateShort(order.requiredDate)}${order.requiredTime ? ` at ${formatTime12(order.requiredTime)}` : ''}`
                       : 'No date set'}
                   </p>
                   <div className="mt-3 flex flex-wrap gap-2">
-                    <OrderStatusBadge status={o.status} />
-                    <PaymentBadge status={o.paymentStatus} />
+                    <OrderStatusBadge status={order.status} />
+                    <PaymentBadge status={order.paymentStatus} />
                   </div>
                 </Card>
               </Link>

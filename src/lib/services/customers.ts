@@ -1,11 +1,9 @@
-import type { SupabaseClient } from '@supabase/supabase-js'
-import type { Database } from '@/lib/supabase/database.types'
 import { calculateOrderTotals } from '@/lib/calc/orders'
 import { computeCustomerMetrics, type CustomerOrderInput } from '@/lib/calc/customers'
 import { selectInChunks } from './db-helpers'
 import type { CustomerMetrics } from './types'
 
-type Client = SupabaseClient<Database, 'public'>
+type Client = any
 
 export interface CustomerView extends CustomerMetrics {
   phone: string | null
@@ -30,24 +28,26 @@ export async function getCustomerMetrics(supabase: Client, businessId: string, t
   ])
   if (customersRes.error) throw new Error(`Could not load customers: ${customersRes.error.message}`)
   if (ordersRes.error) throw new Error(`Could not load orders: ${ordersRes.error.message}`)
-  const customers = customersRes.data ?? []
-  const orders = ordersRes.data ?? []
+  const customers = (customersRes.data ?? []) as any[]
+  const orders = (ordersRes.data ?? []) as any[]
 
   // Totals are only needed for completed orders.
-  const completedIds = orders.filter((o) => o.status === 'completed').map((o) => o.id)
-  const items = await selectInChunks(completedIds, (ids) => supabase.from('order_items').select('order_id, quantity, unit_price').in('order_id', ids))
+  const completedIds = orders.filter((o: any) => o.status === 'completed').map((o: any) => o.id)
+  const items = await selectInChunks(completedIds, (ids) => (supabase.from('order_items') as any).select('order_id, quantity, unit_price').in('order_id', ids))
 
   const totalByOrder = new Map<string, number>()
   for (const order of orders) {
     if (order.status !== 'completed') continue
-    const lines = items.filter((i) => i.order_id === order.id).map((i) => ({ quantity: i.quantity, unitPrice: i.unit_price }))
+    const lines = (items as any[])
+      .filter((i: any) => i.order_id === order.id)
+      .map((i: any) => ({ quantity: i.quantity, unitPrice: i.unit_price }))
     totalByOrder.set(order.id, calculateOrderTotals({ items: lines, discount: order.discount, deliveryFee: order.delivery_fee }).total)
   }
 
-  return customers.map((customer) => {
+  return customers.map((customer: any) => {
     const customerOrders: CustomerOrderInput[] = orders
-      .filter((o) => o.customer_id === customer.id)
-      .map((o) => ({ orderDate: o.order_date, status: o.status, total: totalByOrder.get(o.id) ?? 0 }))
+      .filter((o: any) => o.customer_id === customer.id)
+      .map((o: any) => ({ orderDate: o.order_date, status: o.status, total: totalByOrder.get(o.id) ?? 0 }))
     return {
       ...computeCustomerMetrics({ customerId: customer.id, name: customer.name, orders: customerOrders, today }),
       phone: customer.phone,

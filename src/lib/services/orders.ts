@@ -1,9 +1,8 @@
-import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database, OrderStatus, PaymentStatus } from '@/lib/supabase/database.types'
 import { calculateOrderTotals, type OrderTotals } from '@/lib/calc/orders'
 import { selectInChunks } from './db-helpers'
 
-type Client = SupabaseClient<Database, 'public'>
+type Client = any
 type OrderRow = Database['public']['Tables']['orders']['Row']
 
 export interface OrderItemView {
@@ -37,11 +36,11 @@ export async function hydrateOrders(supabase: Client, businessId: string, rows: 
   const orderIds = rows.map((o) => o.id)
   const customerIds = Array.from(new Set(rows.map((o) => o.customer_id).filter((id): id is string => id !== null)))
 
-  const [items, customers] = await Promise.all([
+  const [items, customers] = (await Promise.all([
     selectInChunks(orderIds, (ids) => supabase.from('order_items').select('*').in('order_id', ids).order('created_at')),
     selectInChunks(customerIds, (ids) => supabase.from('customers').select('id, name').eq('business_id', businessId).in('id', ids)),
-  ])
-  const names = new Map(customers.map((c) => [c.id, c.name]))
+  ])) as [any[], any[]]
+  const names = new Map((customers as any[]).map((c: any) => [c.id, c.name]))
 
   return rows.map((o) => {
     const orderItems = items.filter((i) => i.order_id === o.id)

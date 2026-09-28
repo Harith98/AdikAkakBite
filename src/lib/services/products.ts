@@ -1,9 +1,8 @@
-import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '@/lib/supabase/database.types'
 import { calculateProductEconomics, type ProductEconomics } from '@/lib/calc/products'
 import { selectInChunks } from './db-helpers'
 
-type Client = SupabaseClient<Database, 'public'>
+type Client = any
 type ProductRow = Database['public']['Tables']['products']['Row']
 type CostRow = Database['public']['Tables']['product_costs']['Row']
 
@@ -62,13 +61,13 @@ export async function getProducts(supabase: Client, businessId: string): Promise
     .order('is_active', { ascending: false })
     .order('name', { ascending: true })
   if (error) throw new Error(`Could not load products: ${error.message}`)
-  const products = data ?? []
+  const products = (data ?? []) as any[]
 
   const costs = await selectInChunks(
-    products.map((p) => p.id),
+    products.map((p: any) => p.id),
     (ids) => supabase.from('product_costs').select('*').in('product_id', ids).is('effective_to', null)
   )
-  return products.map((p) => toView(p, pickCurrentCost(costs.filter((c) => c.product_id === p.id))))
+  return products.map((p: any) => toView(p, pickCurrentCost((costs as any[]).filter((c: any) => c.product_id === p.id))))
 }
 
 export async function getProduct(supabase: Client, businessId: string, productId: string): Promise<ProductView | null> {

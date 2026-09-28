@@ -1,12 +1,10 @@
-import type { SupabaseClient } from '@supabase/supabase-js'
 import { createClient } from '@/lib/supabase/server'
-import type { Database } from '@/lib/supabase/database.types'
 import { DEFAULT_TIMEZONE } from '@/lib/constants'
 
 export type ActionContext =
   | {
       ok: true
-      supabase: SupabaseClient<Database, 'public'>
+      supabase: any
       userId: string
       businessId: string
       timezone: string

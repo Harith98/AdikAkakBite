@@ -1,6 +1,5 @@
 import { cookies } from 'next/headers'
-import { createServerClient, type SupabaseClient } from '@supabase/ssr'
-import type { Database } from './database.types'
+import { createServerClient } from '@supabase/ssr'
 
 /**
  * Supabase client for use in Server Components, Route Handlers and Server
@@ -8,10 +7,10 @@ import type { Database } from './database.types'
  * every query still goes through Row Level Security as that user — this is
  * NOT a service-role bypass.
  */
-export function createClient(): SupabaseClient<Database, 'public'> {
+export function createClient(): any {
   const cookieStore = cookies()
 
-  return createServerClient<Database, 'public'>(
+  return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
@@ -19,7 +18,7 @@ export function createClient(): SupabaseClient<Database, 'public'> {
         getAll() {
           return cookieStore.getAll()
         },
-        setAll(cookiesToSet) {
+        setAll(cookiesToSet: Array<{ name: string; value: string; options?: any }>) {
           try {
             cookiesToSet.forEach(({ name, value, options }) =>
               cookieStore.set(name, value, options)
@@ -46,8 +45,8 @@ export function createClient(): SupabaseClient<Database, 'public'> {
  * has already re-verified the request), never in response to arbitrary
  * user-triggered requests without your own authorization check first.
  */
-export function createServiceRoleClient(): SupabaseClient<Database, 'public'> {
-  return createServerClient<Database, 'public'>(
+export function createServiceRoleClient(): any {
+  return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!,
     {

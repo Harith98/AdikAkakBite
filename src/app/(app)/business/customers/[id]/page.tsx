@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { getCurrentBusinessContext } from '@/lib/services/current-business'
-import { getCustomerMetrics } from '@/lib/services/customers'
+import { getCustomerMetrics, type CustomerView } from '@/lib/services/customers'
 import { hydrateOrders } from '@/lib/services/orders'
 import { formatMoney } from '@/lib/constants'
 import { formatDateShort, getBusinessNow } from '@/lib/time'
@@ -28,7 +28,7 @@ export default async function CustomerPage({ params }: { params: { id: string } 
       .order('order_date', { ascending: false })
       .limit(50),
   ])
-  const customer = customers.find((c) => c.customerId === params.id)
+  const customer = customers.find((c: CustomerView) => c.customerId === params.id)
   if (!customer) notFound()
   if (ordersRes.error) throw new Error(`Could not load orders: ${ordersRes.error.message}`)
   const orders = await hydrateOrders(supabase, business.id, ordersRes.data ?? [])

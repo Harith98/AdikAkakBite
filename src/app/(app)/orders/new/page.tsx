@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { getCurrentBusinessContext } from '@/lib/services/current-business'
-import { getProducts } from '@/lib/services/products'
+import { getProducts, type ProductView } from '@/lib/services/products'
 import { Card } from '@/components/ui/Card'
 import { OrderForm } from '@/components/orders/OrderForm'
 
@@ -31,7 +31,9 @@ export default async function NewOrderPage() {
       )}
       <Card>
         <OrderForm
-          products={products.filter((p) => p.isActive).map((p) => ({ id: p.id, name: p.name, price: p.sellingPrice }))}
+          products={products
+            .filter((product: ProductView) => product.isActive)
+            .map((product: ProductView) => ({ id: product.id, name: product.name, price: product.sellingPrice }))}
           customers={customersRes.data ?? []}
           currency={settings.currency}
         />
