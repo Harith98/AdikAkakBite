@@ -6,7 +6,7 @@ import { DEFAULT_TIMEZONE } from '@/lib/constants'
 export type ActionContext =
   | {
       ok: true
-      supabase: SupabaseClient<Database>
+      supabase: SupabaseClient<Database, 'public'>
       userId: string
       businessId: string
       timezone: string

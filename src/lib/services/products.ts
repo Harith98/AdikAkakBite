@@ -3,7 +3,7 @@ import type { Database } from '@/lib/supabase/database.types'
 import { calculateProductEconomics, type ProductEconomics } from '@/lib/calc/products'
 import { selectInChunks } from './db-helpers'
 
-type Client = SupabaseClient<Database>
+type Client = SupabaseClient<Database, 'public'>
 type ProductRow = Database['public']['Tables']['products']['Row']
 type CostRow = Database['public']['Tables']['product_costs']['Row']
 

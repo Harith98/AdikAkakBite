@@ -5,7 +5,7 @@ import { getInventoryStatus, needsReorder } from '@/lib/calc/inventory'
 import type { EngineInventoryAlert, EngineOrder } from './recommendation'
 import type { ScheduleBlockLike, TaskLike } from './schedule'
 
-type Client = SupabaseClient<Database>
+type Client = SupabaseClient<Database, 'public'>
 type TaskRow = Database['public']['Tables']['tasks']['Row']
 type TaskInsert = Database['public']['Tables']['tasks']['Insert']
 

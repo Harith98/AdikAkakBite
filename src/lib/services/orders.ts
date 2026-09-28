@@ -3,7 +3,7 @@ import type { Database, OrderStatus, PaymentStatus } from '@/lib/supabase/databa
 import { calculateOrderTotals, type OrderTotals } from '@/lib/calc/orders'
 import { selectInChunks } from './db-helpers'
 
-type Client = SupabaseClient<Database>
+type Client = SupabaseClient<Database, 'public'>
 type OrderRow = Database['public']['Tables']['orders']['Row']
 
 export interface OrderItemView {

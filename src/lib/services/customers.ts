@@ -5,7 +5,7 @@ import { computeCustomerMetrics, type CustomerOrderInput } from '@/lib/calc/cust
 import { selectInChunks } from './db-helpers'
 import type { CustomerMetrics } from './types'
 
-type Client = SupabaseClient<Database>
+type Client = SupabaseClient<Database, 'public'>
 
 export interface CustomerView extends CustomerMetrics {
   phone: string | null
