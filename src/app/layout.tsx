@@ -24,6 +24,27 @@ export const metadata: Metadata = {
     shortcut: '/icons/iconAdik192x192.png',
     apple: '/icons/apple-touch-icon.png',
   },
+  openGraph: {
+    title: 'AdikAkak Bite — Business Control Centre',
+    description: 'Know what to do right now. Track orders, sales, inventory and content for your dessert business.',
+    url: 'https://adik-akak-bite.vercel.app/today',
+    siteName: 'AdikAkak Bite',
+    images: [
+      {
+        url: '/icons/iconAdik512x512.png',
+        width: 512,
+        height: 512,
+        alt: 'AdikAkak Bite app icon',
+      },
+    ],
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'AdikAkak Bite — Business Control Centre',
+    description: 'Know what to do right now. Track orders, sales, inventory and content for your dessert business.',
+    images: ['/icons/iconAdik512x512.png'],
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
