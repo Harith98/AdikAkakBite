@@ -6,6 +6,7 @@ import { getBusinessNow } from '@/lib/time'
 import { formatMoney } from '@/lib/constants'
 import { Badge } from '@/components/ui/Badge'
 import { Card } from '@/components/ui/Card'
+import { DataLink } from '@/components/ui/DataLink'
 
 export default async function CustomersPage() {
   const { business, settings } = await getCurrentBusinessContext()
@@ -39,7 +40,7 @@ export default async function CustomersPage() {
         <ul className="flex flex-col gap-3">
           {sorted.map((c) => (
             <li key={c.customerId}>
-              <Link href={`/business/customers/${c.customerId}`} className="block">
+              <DataLink href={`/business/customers/${c.customerId}`} className="block">
                 <Card className="transition-colors hover:bg-base-soft">
                   <div className="flex items-start justify-between gap-3">
                     <p className="font-display text-xl text-ink">{c.name}</p>
@@ -52,7 +53,7 @@ export default async function CustomersPage() {
                   </p>
                   {c.isRepeatCustomer && <div className="mt-2"><Badge tone="sage">Repeat customer</Badge></div>}
                 </Card>
-              </Link>
+              </DataLink>
             </li>
           ))}
         </ul>
