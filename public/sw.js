@@ -8,7 +8,13 @@
 // not queued and replayed by this worker.
 
 const CACHE_VERSION = 'dessert-os-v1'
-const APP_SHELL_URLS = ['/manifest.json', '/icons/icon-192.png', '/icons/icon-512.png']
+const APP_SHELL_URLS = [
+  '/manifest.json',
+  '/icons/iconAdik192x192.png',
+  '/icons/iconAdik512x512.png',
+  '/icons/iconAdik-192x192-maskable.png',
+  '/icons/iconAdik-512x512-maskable.png',
+]
 
 self.addEventListener('install', (event) => {
   event.waitUntil(

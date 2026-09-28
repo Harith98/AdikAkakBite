@@ -22,7 +22,7 @@ export const metadata: Metadata = {
   icons: {
     icon: '/icons/iconAdik192x192.png',
     shortcut: '/icons/iconAdik192x192.png',
-    apple: '/icons/apple-touch-icon.png',
+    apple: '/icons/iconAdik-180x180.png',
   },
   openGraph: {
     title: 'AdikAkak Bite — Business Control Centre',
