@@ -4,11 +4,11 @@ import { Sidebar } from './Sidebar'
 import { OfflineBanner } from './OfflineBanner'
 
 interface AppShellProps {
-  businessName: string
+  businessName?: string
   children: ReactNode
 }
 
-export function AppShell({ businessName, children }: AppShellProps) {
+export function AppShell({ businessName = 'Business', children }: AppShellProps) {
   return (
     <div className="flex min-h-dvh bg-base">
       <Sidebar businessName={businessName} />
