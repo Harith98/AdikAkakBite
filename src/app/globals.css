@@ -1,0 +1,38 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+  box-sizing: border-box;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: inherit;
+}
+
+html {
+  scroll-padding-top: env(safe-area-inset-top, 0px);
+}
+
+body {
+  background-color: #fffbf5;
+  color: #2e1f16;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Large touch targets everywhere (spec §44) — never let an interactive
+   element shrink below a comfortable thumb target on touch devices. */
+@media (pointer: coarse) {
+  button,
+  a[role='button'] {
+    min-height: 40px;
+  }
+}
+
+::selection {
+  background-color: #fbe6e7;
+  color: #2e1f16;
+}
