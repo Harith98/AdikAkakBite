@@ -16,13 +16,13 @@ const inter = Inter({
 })
 
 export const metadata: Metadata = {
-  title: 'Dessert OS — Business Control Centre',
+  title: 'AdikAkak Bite — Business Control Centre',
   description: 'Know what to do right now. Track orders, sales, inventory and content for your dessert business.',
   manifest: '/manifest.json',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
-    title: 'Dessert OS',
+    title: 'AdikAkak Bite',
   },
 }
 
