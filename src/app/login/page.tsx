@@ -61,8 +61,8 @@ function LoginForm() {
     <div className="flex min-h-dvh items-center justify-center bg-base px-4 py-10">
       <div className="w-full max-w-sm">
         <div className="mb-8 text-center">
-          <p className="font-display text-3xl text-ink">Welcome back</p>
-          <p className="mt-1 text-sm text-ink-muted">Sign in to your business control centre</p>
+          <p className="font-display text-3xl text-ink">AdikAkak App</p>
+          <p className="mt-1 text-sm text-ink-muted">Your dessert business control centre</p>
         </div>
 
         <Card>

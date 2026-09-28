@@ -29,16 +29,16 @@ export async function saveCustomer(_prev: SaveCustomerState, formData: FormData)
   const ctx = await getActionContext()
   if (!ctx.ok) return { error: ctx.error, nonce: 0 }
 
-  const customerUpdate = {
+  const customerUpdate: Database['public']['Tables']['customers']['Update'] = {
     name,
     phone: phone || null,
     email: email || null,
     notes: notes || null,
-  } as Database['public']['Tables']['customers']['Update']
+  }
 
-  const { data, error } = await (ctx.supabase as any)
+  const { data, error } = await ctx.supabase
     .from('customers')
-    .update(customerUpdate as any)
+    .update(customerUpdate)
     .eq('id', id)
     .eq('business_id', ctx.businessId)
     .select('id')

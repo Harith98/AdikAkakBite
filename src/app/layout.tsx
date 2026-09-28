@@ -19,6 +19,11 @@ export const metadata: Metadata = {
   title: 'AdikAkak Bite — Business Control Centre',
   description: 'Know what to do right now. Track orders, sales, inventory and content for your dessert business.',
   manifest: '/manifest.json',
+  icons: {
+    icon: '/icons/iconAdik192x192.png',
+    shortcut: '/icons/iconAdik192x192.png',
+    apple: '/icons/apple-touch-icon.png',
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
