@@ -4,7 +4,6 @@ import { getCurrentBusinessContext } from '@/lib/services/current-business'
 import { formatTime12 } from '@/lib/time'
 import { Card } from '@/components/ui/Card'
 import { ScheduleBlockForm } from '@/components/settings/ScheduleBlockForm'
-import type { Database } from '@/lib/supabase/database.types'
 
 export default async function SchedulePage() {
   const { business } = await getCurrentBusinessContext()
@@ -31,7 +30,7 @@ export default async function SchedulePage() {
       </header>
 
       <div className="flex flex-col gap-3">
-        {(blocks ?? []).map((block: Database['public']['Tables']['schedule_blocks']['Row']) => (
+        {(blocks ?? []).map((block) => (
           <details key={block.id} className="rounded-card bg-base-card shadow-card open:pb-4">
             <summary className="flex min-h-14 cursor-pointer list-none items-center justify-between gap-3 px-5 py-3">
               <span>

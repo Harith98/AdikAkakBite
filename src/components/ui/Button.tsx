@@ -24,11 +24,9 @@ const sizeStyles: Record<Size, string> = {
 }
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button(
-  { variant = 'primary', size = 'md', className, children, disabled, ...props },
+  { variant = 'primary', size = 'md', className, ...props },
   ref
 ) {
-  const isLoading = !!props['aria-busy'] || disabled
-
   return (
     <button
       ref={ref}
@@ -40,16 +38,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
         sizeStyles[size],
         className
       )}
-      disabled={disabled}
       {...props}
-    >
-      {isLoading && (
-        <span
-          aria-hidden="true"
-          className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent"
-        />
-      )}
-      {children}
-    </button>
+    />
   )
 })

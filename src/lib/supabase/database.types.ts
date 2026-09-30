@@ -560,7 +560,21 @@ export interface Database {
       }
     }
     Views: { [_ in never]: never }
-    Functions: { [_ in never]: never }
+    Functions: {
+      record_inventory_transaction: {
+        Args: {
+          p_business_id: string
+          p_inventory_item_id: string
+          p_quantity: number
+          p_unit: string
+          p_transaction_type: InventoryTransactionType
+          p_transaction_date: string
+          p_reference: string | null
+          p_notes: string | null
+        }
+        Returns: Database['public']['Tables']['inventory_items']['Row']
+      }
+    }
     Enums: { [_ in never]: never }
     CompositeTypes: { [_ in never]: never }
   }

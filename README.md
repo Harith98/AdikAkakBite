@@ -2,7 +2,7 @@
 
 An AI-ready business control centre for a small dessert business — a mobile-first PWA that answers "what should I be working on right now?" using deterministic schedules, orders, and business rules. No AI API is used or required in V1; the architecture is built so an AI layer can be added later without redesigning the database or business logic. See `docs/ai-readiness.md`.
 
-**Status: Phase 3A — Orders, products & customers.** (Phase 2 daily operations and Phase 1 foundation are done too.) Phase 1 (auth, schema, RLS, app shell, onboarding, PWA) plus the Today screen, editable daily schedule, task controls, today's three priorities, order-priority alerts and the deterministic recommendation engine (`docs/today-engine.md`). Inventory, Sales (Phase 3B), Content, Analytics and Forecasting are still honest "coming in Phase N" placeholders — see `docs/architecture.md` for the full phase plan and section 58 of the original product spec.
+**Status: Phase 3B — Sales & inventory.** (Phases 1-3A are done too: foundation, daily operations, orders/products/customers.) Phase 1 (auth, schema, RLS, app shell, onboarding, PWA) plus the Today screen, editable daily schedule, task controls, today's three priorities, order-priority alerts and the deterministic recommendation engine (`docs/today-engine.md`). Content, Analytics and Forecasting are still honest "coming in Phase N" placeholders — see `docs/architecture.md` for the full phase plan and section 58 of the original product spec.
 
 ## Tech stack
 
@@ -36,6 +36,7 @@ npm install
    - `0004_onboarding_membership_policy.sql`
    - `0005_task_priorities_and_ordering.sql`
    - `0006_customer_name_index.sql`
+   - `0007_inventory_transactions_rpc.sql`
 
    Or, if you have the Supabase CLI linked to your project:
 

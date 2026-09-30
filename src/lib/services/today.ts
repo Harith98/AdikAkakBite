@@ -1,10 +1,11 @@
+import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database, PaymentStatus } from '@/lib/supabase/database.types'
 import { calculateOrderTotals } from '@/lib/calc/orders'
 import { getInventoryStatus, needsReorder } from '@/lib/calc/inventory'
 import type { EngineInventoryAlert, EngineOrder } from './recommendation'
 import type { ScheduleBlockLike, TaskLike } from './schedule'
 
-type Client = any
+type Client = SupabaseClient<Database>
 type TaskRow = Database['public']['Tables']['tasks']['Row']
 type TaskInsert = Database['public']['Tables']['tasks']['Insert']
 
@@ -92,10 +93,10 @@ export async function getTodayData(
       .eq('business_id', businessId),
   ])
 
-  const blockRows = must(blocksRes as any, 'schedule') as any[]
-  let taskRows = must(tasksRes as any, 'tasks') as any[]
-  const orderRows = must(ordersRes as any, 'orders') as any[]
-  const inventoryRows = must(inventoryRes as any, 'inventory') as any[]
+  const blockRows = must(blocksRes, 'schedule')
+  let taskRows = must(tasksRes, 'tasks')
+  const orderRows = must(ordersRes, 'orders')
+  const inventoryRows = must(inventoryRes, 'inventory')
 
   // Create today's tasks from each block's default tasks the first time the
   // day is viewed. Idempotent: a unique index + ignoreDuplicates means a
@@ -103,13 +104,12 @@ export async function getTodayData(
   if (isWorkingDay) {
     const existing = new Set(
       taskRows
-        .filter((t: any) => t.schedule_block_id && t.scheduled_date === today)
-        .map((t: any) => `${t.schedule_block_id}::${t.title}`)
+        .filter((t) => t.schedule_block_id && t.scheduled_date === today)
+        .map((t) => `${t.schedule_block_id}::${t.title}`)
     )
-    const missing: TaskInsert[] = blockRows.flatMap((block: any) => {
-      const defaultTitles = (block.default_tasks ?? []) as string[]
-      return Array.from(new Set(defaultTitles.map((t: string) => t.trim()).filter((t): t is string => Boolean(t))))
-        .map((title: string, index: number): TaskInsert => ({
+    const missing: TaskInsert[] = blockRows.flatMap((block) =>
+      Array.from(new Set(block.default_tasks.map((t) => t.trim()).filter(Boolean)))
+        .map((title, index): TaskInsert => ({
           business_id: businessId,
           title,
           category: block.category,
@@ -123,7 +123,7 @@ export async function getTodayData(
           sort_order: index,
         }))
         .filter((row) => !existing.has(`${row.schedule_block_id}::${row.title}`))
-    })
+    )
     if (missing.length > 0) {
       const { error } = await supabase
         .from('tasks')
@@ -134,20 +134,20 @@ export async function getTodayData(
   }
 
   // Order details (items + customer names), fetched only if there are orders.
-  const orderIds = orderRows.map((o: any) => o.id)
-  const customerIds = Array.from(new Set(orderRows.map((o: any) => o.customer_id).filter((id): id is string => id !== null)))
+  const orderIds = orderRows.map((o) => o.id)
+  const customerIds = Array.from(new Set(orderRows.map((o) => o.customer_id).filter((id): id is string => id !== null)))
   const [itemsRes, customersRes] = await Promise.all([
     orderIds.length > 0 ? supabase.from('order_items').select('*').in('order_id', orderIds) : Promise.resolve(null),
     customerIds.length > 0 ? supabase.from('customers').select('id, name').in('id', customerIds) : Promise.resolve(null),
   ])
-  const itemRows = itemsRes ? must(itemsRes as any, 'order items') as any[] : []
-  const customerRows = customersRes ? must(customersRes as any, 'customers') as any[] : []
-  const customerNames = new Map((customerRows as any[]).map((c: any) => [c.id, c.name]))
+  const itemRows = itemsRes ? must(itemsRes, 'order items') : []
+  const customerRows = customersRes ? must(customersRes, 'customers') : []
+  const customerNames = new Map(customerRows.map((c) => [c.id, c.name]))
 
-  const orders: TodayOrder[] = orderRows.map((o: any) => {
-    const items = itemRows.filter((i: any) => i.order_id === o.id)
+  const orders: TodayOrder[] = orderRows.map((o) => {
+    const items = itemRows.filter((i) => i.order_id === o.id)
     const totals = calculateOrderTotals({
-      items: items.map((i: any) => ({ quantity: i.quantity, unitPrice: i.unit_price })),
+      items: items.map((i) => ({ quantity: i.quantity, unitPrice: i.unit_price })),
       discount: o.discount,
       deliveryFee: o.delivery_fee,
       deposit: o.deposit,
@@ -159,7 +159,7 @@ export async function getTodayData(
       requiredTime: o.required_time,
       status: o.status,
       paymentStatus: o.payment_status,
-      items: items.map((i: any) => ({ name: i.product_name, quantity: i.quantity })),
+      items: items.map((i) => ({ name: i.product_name, quantity: i.quantity })),
       total: totals.total,
       balance: totals.balance,
       notes: o.notes,
@@ -169,8 +169,8 @@ export async function getTodayData(
   // Inventory is a small table for a small business, so it is filtered here
   // rather than in SQL (PostgREST can't compare two columns of the same row).
   const inventoryAlerts: EngineInventoryAlert[] = inventoryRows
-    .filter((i: any) => needsReorder(getInventoryStatus(i.current_quantity, i.reorder_level)))
-    .map((i: any) => ({
+    .filter((i) => needsReorder(getInventoryStatus(i.current_quantity, i.reorder_level)))
+    .map((i) => ({
       id: i.id,
       name: i.name,
       currentQuantity: i.current_quantity,
@@ -179,7 +179,7 @@ export async function getTodayData(
     }))
 
   return {
-    blocks: blockRows.map((b: any) => ({
+    blocks: blockRows.map((b) => ({
       id: b.id,
       title: b.title,
       category: b.category,

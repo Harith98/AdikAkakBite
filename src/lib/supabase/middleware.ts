@@ -1,4 +1,4 @@
-import { createServerClient } from '@supabase/ssr'
+import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 import type { Database } from './database.types'
 
@@ -10,6 +10,9 @@ import type { Database } from './database.types'
 export async function updateSession(request: NextRequest) {
   let response = NextResponse.next({ request })
 
+  // Same generic-signature mismatch as client.ts/server.ts; only auth.getUser()
+  // is used here so the untyped surface is trivial regardless, but the cast
+  // keeps this consistent with the rest of the codebase.
   const supabase = createServerClient<Database>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -18,7 +21,7 @@ export async function updateSession(request: NextRequest) {
         getAll() {
           return request.cookies.getAll()
         },
-        setAll(cookiesToSet: Array<{ name: string; value: string; options?: any }>) {
+        setAll(cookiesToSet: { name: string; value: string; options: CookieOptions }[]) {
           cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
           response = NextResponse.next({ request })
           cookiesToSet.forEach(({ name, value, options }) =>
@@ -40,7 +43,6 @@ export async function updateSession(request: NextRequest) {
   const isPublicAsset =
     path.startsWith('/_next') ||
     path.startsWith('/api/auth') || // email-confirmation / magic-link callback must work signed out
-
     path.startsWith('/manifest.json') ||
     path.startsWith('/sw.js') ||
     path.startsWith('/icons') ||

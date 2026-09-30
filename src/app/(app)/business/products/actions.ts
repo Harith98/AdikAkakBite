@@ -48,15 +48,15 @@ export async function saveProduct(_prev: SaveProductState, formData: FormData): 
       business_id: businessId,
       ...productFields,
     }
-    const { error } = await (supabase.from('products') as any).insert(productInsert)
+    const { error } = await supabase.from('products').insert(productInsert)
     if (error) return { error: error.message, nonce: 0 }
     const costInsert: Database['public']['Tables']['product_costs']['Insert'] = { product_id: id, ...costFields }
-    const { error: costError } = await (supabase.from('product_costs') as any).insert(costInsert)
+    const { error: costError } = await supabase.from('product_costs').insert(costInsert)
     if (costError) {
       await supabase.from('products').delete().eq('id', id).eq('business_id', businessId)
       return { error: costError.message, nonce: 0 }
     }
-    await (supabase.from('business_activity_logs') as any).insert({
+    await supabase.from('business_activity_logs').insert({
       business_id: businessId, user_id: userId, action: 'product_created', entity_type: 'product', entity_id: id,
     })
     revalidatePath('/business', 'layout')
@@ -64,7 +64,7 @@ export async function saveProduct(_prev: SaveProductState, formData: FormData): 
   }
 
   const productUpdate: Database['public']['Tables']['products']['Update'] = productFields
-  const { data: updated, error } = await (supabase.from('products') as any)
+  const { data: updated, error } = await supabase.from('products')
     .update(productUpdate)
     .eq('id', idRaw)
     .eq('business_id', businessId)
@@ -74,11 +74,12 @@ export async function saveProduct(_prev: SaveProductState, formData: FormData): 
   if (!updated) return { error: 'That product could not be found.', nonce: 0 }
 
   // Only touch cost history if a cost actually changed.
-  const { data: costs } = await (supabase.from('product_costs') as any)
+  const { data: costs } = await supabase
+    .from('product_costs')
     .select('*')
     .eq('product_id', idRaw)
     .is('effective_to', null)
-  const current = (costs ?? []).sort((a: any, b: any) => b.effective_from.localeCompare(a.effective_from))[0]
+  const current = (costs ?? []).sort((a, b) => b.effective_from.localeCompare(a.effective_from))[0]
   const changed =
     !current ||
     current.ingredient_cost !== p.ingredientCost ||
@@ -87,14 +88,14 @@ export async function saveProduct(_prev: SaveProductState, formData: FormData): 
   if (changed) {
     // Insert the new cost first, then close the old one, so a failure never leaves no cost at all.
     const costInsert: Database['public']['Tables']['product_costs']['Insert'] = { product_id: idRaw, ...costFields }
-    const { error: costError } = await (supabase.from('product_costs') as any).insert(costInsert)
+    const { error: costError } = await supabase.from('product_costs').insert(costInsert)
     if (costError) return { error: costError.message, nonce: 0 }
     if (current) {
-      await (supabase.from('product_costs') as any).update({ effective_to: new Date().toISOString() }).eq('id', current.id)
+      await supabase.from('product_costs').update({ effective_to: new Date().toISOString() }).eq('id', current.id)
     }
   }
 
-  await (supabase.from('business_activity_logs') as any).insert({
+  await supabase.from('business_activity_logs').insert({
     business_id: businessId, user_id: userId, action: 'product_edited', entity_type: 'product', entity_id: idRaw,
   })
   revalidatePath('/business', 'layout')

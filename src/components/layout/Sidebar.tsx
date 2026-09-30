@@ -7,10 +7,10 @@ import { NAV_ITEMS } from '@/lib/constants'
 import { NavIcon } from './NavIcon'
 
 interface SidebarProps {
-  businessName?: string
+  businessName: string
 }
 
-export function Sidebar({ businessName = 'Business' }: SidebarProps) {
+export function Sidebar({ businessName }: SidebarProps) {
   const pathname = usePathname()
 
   return (

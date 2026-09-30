@@ -2,13 +2,13 @@ import Link from 'next/link'
 import { Card } from '@/components/ui/Card'
 
 const AVAILABLE = [
+  { href: '/business/sales', title: 'Sales', text: 'Today, this week and this month, plus your daily close' },
   { href: '/business/products', title: 'Products', text: 'Prices, costs, profit and margin for everything you sell' },
+  { href: '/business/inventory', title: 'Inventory', text: 'Stock levels, reorder alerts, usage and waste' },
   { href: '/business/customers', title: 'Customers', text: 'Who buys, how much, and who has come back' },
 ]
 
 const COMING = [
-  { title: 'Inventory', phase: 'Phase 3B', text: 'Stock levels, reorder alerts, usage and waste' },
-  { title: 'Sales', phase: 'Phase 3B', text: 'Daily, weekly and monthly revenue and the closing form' },
   { title: 'Dashboard & goals', phase: 'Phase 5', text: 'Trends, comparisons, top products and goal progress' },
   { title: 'Forecasts', phase: 'Phase 6', text: 'Estimated sales, busy days and stock running out' },
 ]

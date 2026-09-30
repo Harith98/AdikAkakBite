@@ -5,8 +5,10 @@ import { formatTime12, getBusinessNow } from '@/lib/time'
 import { getBlockCandidates, getBlockProgress, getCurrentBlock, getNextBlock } from '@/lib/services/schedule'
 import { getNextRecommendedTask, getOrderUrgency } from '@/lib/services/recommendation'
 import { getSuggestedPriorities } from '@/lib/services/priorities'
+import { getRecentCloses } from '@/lib/services/sales'
 import { Badge } from '@/components/ui/Badge'
 import { Card } from '@/components/ui/Card'
+import { LinkButton } from '@/components/ui/LinkButton'
 import { AddTaskForm } from '@/components/today/AddTaskForm'
 import { AlertsCard } from '@/components/today/AlertsCard'
 import { CurrentActivity } from '@/components/today/CurrentActivity'
@@ -66,6 +68,10 @@ export default async function TodayPage() {
   const tasksDone = todaysTasks.filter((t) => t.status === 'completed' || t.status === 'skipped').length
   const ordersToday = data.orders.filter((o) => o.requiredDate === now.isoDate).length
 
+  // Nudge toward the daily close once Closing is the active block (spec §8/§61), unless already done.
+  const isClosingBlock = block?.title.toLowerCase() === 'closing'
+  const closedToday = isClosingBlock ? (await getRecentCloses(supabase, business.id, 1)).some((c) => c.review_date === now.isoDate) : false
+
   return (
     <div className="flex flex-col gap-6">
       <header>
@@ -109,7 +115,25 @@ export default async function TodayPage() {
               deprioritized={hasUrgentOrder}
               nextBlock={nextBlock}
             />
-          ) : (
+          ) : null}
+
+          {isWorkingDay && isClosingBlock && (
+            <Card className={closedToday ? 'border border-sage/40' : 'border-2 border-raspberry'}>
+              <p className="text-xs font-medium uppercase tracking-wide text-ink-faint">
+                {closedToday ? "Today's close is saved" : 'Wrap up the day'}
+              </p>
+              <p className="mt-1 text-sm text-ink-muted">
+                {closedToday
+                  ? 'You can still update the waste value or notes if anything changes.'
+                  : 'Record any waste for today — revenue and orders are saved automatically.'}
+              </p>
+              <LinkButton href="/business/sales" className="mt-3">
+                {closedToday ? 'Review close' : 'Close today'}
+              </LinkButton>
+            </Card>
+          )}
+
+          {!isWorkingDay && (
             <Card>
               <p className="font-display text-2xl text-ink">It&apos;s a day off</p>
               <p className="mt-1 text-sm text-ink-muted">

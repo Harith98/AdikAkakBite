@@ -59,7 +59,7 @@ This follows the phase plan from the original product spec (§58) exactly:
 
 1. **Foundation** — Next.js/TS, Supabase, auth, schema, RLS, layout, PWA. *(done)*
 2. **Daily operations** — Today screen, schedule, tasks, the deterministic task recommendation engine, order priority. *(done — see `docs/today-engine.md`)*
-3. **Business data** — Products & costing, Orders, Customers *(3A done — see `docs/orders-products-customers.md`)*; Sales, Inventory *(3B, next)*.
+3. **Business data** — Products & costing, Orders, Customers *(3A)*; Sales, Inventory *(3B — done, see `docs/sales-and-inventory.md`)*.
 4. **Content** — planner, tracking, analytics.
 5. **Analytics** — dashboard, daily/weekly/monthly summaries, product/customer/inventory analytics.
 6. **Forecasting** — moving average, day-of-week average, trend, inventory days-remaining, confidence indicators.

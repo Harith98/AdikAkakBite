@@ -1,8 +1,9 @@
+import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database, OrderStatus, PaymentStatus } from '@/lib/supabase/database.types'
 import { calculateOrderTotals, type OrderTotals } from '@/lib/calc/orders'
 import { selectInChunks } from './db-helpers'
 
-type Client = any
+type Client = SupabaseClient<Database>
 type OrderRow = Database['public']['Tables']['orders']['Row']
 
 export interface OrderItemView {
@@ -36,11 +37,11 @@ export async function hydrateOrders(supabase: Client, businessId: string, rows: 
   const orderIds = rows.map((o) => o.id)
   const customerIds = Array.from(new Set(rows.map((o) => o.customer_id).filter((id): id is string => id !== null)))
 
-  const [items, customers] = (await Promise.all([
+  const [items, customers] = await Promise.all([
     selectInChunks(orderIds, (ids) => supabase.from('order_items').select('*').in('order_id', ids).order('created_at')),
     selectInChunks(customerIds, (ids) => supabase.from('customers').select('id, name').eq('business_id', businessId).in('id', ids)),
-  ])) as [any[], any[]]
-  const names = new Map((customers as any[]).map((c: any) => [c.id, c.name]))
+  ])
+  const names = new Map(customers.map((c) => [c.id, c.name]))
 
   return rows.map((o) => {
     const orderItems = items.filter((i) => i.order_id === o.id)
@@ -99,4 +100,22 @@ export async function getOrder(supabase: Client, businessId: string, orderId: st
   if (!data) return null
   const [view] = await hydrateOrders(supabase, businessId, [data])
   return view ?? null
+}
+
+/** Completed orders in a date range, for sales summaries (spec §20-21). */
+export async function getCompletedOrdersInRange(
+  supabase: Client,
+  businessId: string,
+  startDate: string,
+  endDate: string
+): Promise<OrderRow[]> {
+  const { data, error } = await supabase
+    .from('orders')
+    .select('*')
+    .eq('business_id', businessId)
+    .eq('status', 'completed')
+    .gte('order_date', startDate)
+    .lte('order_date', endDate)
+  if (error) throw new Error(`Could not load orders: ${error.message}`)
+  return data ?? []
 }

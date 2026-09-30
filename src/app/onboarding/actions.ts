@@ -87,7 +87,7 @@ export async function completeOnboarding(
     return { error: scheduleError.message }
   }
 
-  await (supabase.from('business_activity_logs') as any).insert({
+  await supabase.from('business_activity_logs').insert({
     business_id: businessId,
     user_id: user.id,
     action: 'business_onboarded',

@@ -6,7 +6,6 @@ import { formatMoney } from '@/lib/constants'
 import { formatDateShort, formatTime12 } from '@/lib/time'
 import clsx from '@/lib/clsx'
 import { Card } from '@/components/ui/Card'
-import { DataLink } from '@/components/ui/DataLink'
 import { LinkButton } from '@/components/ui/LinkButton'
 import { OrderStatusBadge, PaymentBadge } from '@/components/orders/StatusBadge'
 
@@ -59,7 +58,7 @@ export default async function OrdersPage({ searchParams }: { searchParams: { sta
         <ul className="flex flex-col gap-3">
           {orders.map((order: OrderView) => (
             <li key={order.id}>
-              <DataLink href={`/orders/${order.id}`} className="block">
+              <Link href={`/orders/${order.id}`} className="block">
                 <Card className="transition-colors hover:bg-base-soft">
                   <div className="flex items-start justify-between gap-3">
                     <p className="font-display text-xl text-ink">{order.customerName ?? 'Customer'}</p>
@@ -78,7 +77,7 @@ export default async function OrdersPage({ searchParams }: { searchParams: { sta
                     <PaymentBadge status={order.paymentStatus} />
                   </div>
                 </Card>
-              </DataLink>
+              </Link>
             </li>
           ))}
         </ul>

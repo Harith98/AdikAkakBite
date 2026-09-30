@@ -22,7 +22,7 @@ Vercel serves everything over HTTPS by default, which satisfies the PWA requirem
 
 ## Before going live, sanity-check
 
-- [ ] Migrations `0001`–`0006` applied, in order, to the production database
+- [ ] Migrations `0001`–`0007` applied, in order, to the production database
 - [ ] RLS verified with two separate test accounts/businesses (one must never see the other's data)
 - [ ] `.env.local` values are not the same ones committed anywhere — production uses its own Supabase project
 - [ ] Auth redirect URLs updated in Supabase to match the production domain

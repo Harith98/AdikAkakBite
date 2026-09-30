@@ -5,7 +5,6 @@ import { getProducts } from '@/lib/services/products'
 import { formatMoney, formatPercent } from '@/lib/constants'
 import { Badge } from '@/components/ui/Badge'
 import { Card } from '@/components/ui/Card'
-import { DataLink } from '@/components/ui/DataLink'
 import { LinkButton } from '@/components/ui/LinkButton'
 
 export default async function ProductsPage() {
@@ -33,7 +32,7 @@ export default async function ProductsPage() {
         <ul className="flex flex-col gap-3">
           {products.map((p) => (
             <li key={p.id}>
-              <DataLink href={`/business/products/${p.id}`} className="block">
+              <Link href={`/business/products/${p.id}`} className="block">
                 <Card className={p.isActive ? 'transition-colors hover:bg-base-soft' : 'opacity-70'}>
                   <div className="flex items-start justify-between gap-3">
                     <div>
@@ -52,7 +51,7 @@ export default async function ProductsPage() {
                   </dl>
                   {!p.isActive && <div className="mt-3"><Badge>Inactive</Badge></div>}
                 </Card>
-              </DataLink>
+              </Link>
             </li>
           ))}
         </ul>

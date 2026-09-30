@@ -1,16 +1,23 @@
 import { cookies } from 'next/headers'
-import { createServerClient } from '@supabase/ssr'
+import { createServerClient, type CookieOptions } from '@supabase/ssr'
+import type { SupabaseClient } from '@supabase/supabase-js'
+import type { Database } from './database.types'
 
 /**
  * Supabase client for use in Server Components, Route Handlers and Server
  * Actions. Always uses the anon key + the caller's own session cookies, so
  * every query still goes through Row Level Security as that user — this is
  * NOT a service-role bypass.
+ *
+ * See the matching comment in client.ts: the cast below isolates a generic
+ * signature mismatch between the installed @supabase/ssr (0.5.2) and
+ * @supabase/supabase-js (2.117.2) to this one line. Everything downstream is
+ * fully typed against `Database`.
  */
-export function createClient(): any {
+export function createClient(): SupabaseClient<Database> {
   const cookieStore = cookies()
 
-  return createServerClient(
+  return createServerClient<Database>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
@@ -18,7 +25,7 @@ export function createClient(): any {
         getAll() {
           return cookieStore.getAll()
         },
-        setAll(cookiesToSet: Array<{ name: string; value: string; options?: any }>) {
+        setAll(cookiesToSet: { name: string; value: string; options: CookieOptions }[]) {
           try {
             cookiesToSet.forEach(({ name, value, options }) =>
               cookieStore.set(name, value, options)
@@ -32,7 +39,7 @@ export function createClient(): any {
         },
       },
     }
-  )
+  ) as unknown as SupabaseClient<Database>
 }
 
 /**
@@ -45,8 +52,8 @@ export function createClient(): any {
  * has already re-verified the request), never in response to arbitrary
  * user-triggered requests without your own authorization check first.
  */
-export function createServiceRoleClient(): any {
-  return createServerClient(
+export function createServiceRoleClient(): SupabaseClient<Database> {
+  return createServerClient<Database>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!,
     {
@@ -59,5 +66,5 @@ export function createServiceRoleClient(): any {
         },
       },
     }
-  )
+  ) as unknown as SupabaseClient<Database>
 }

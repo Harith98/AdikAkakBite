@@ -8,6 +8,7 @@ PostgreSQL via Supabase. Migrations live in `supabase/migrations/`, numbered and
 4. `0004_onboarding_membership_policy.sql` — lets a new business's first owner add themselves (bootstrapping)
 5. `0005_task_priorities_and_ordering.sql` — `tasks.daily_priority_rank`, `tasks.sort_order`, and the unique indexes that make daily task creation idempotent
 6. `0006_customer_name_index.sql` — index for finding a customer by name when creating an order
+7. `0007_inventory_transactions_rpc.sql` — `record_inventory_transaction()`, an atomic stock-update function
 
 ## Conventions
 
