@@ -6,6 +6,7 @@ import { TASK_CATEGORY_OPTIONS } from '@/lib/constants'
 import { getActionContext } from '@/lib/services/action-context'
 import { UUID_PATTERN } from '@/lib/validation/common'
 import { canManageBusiness } from '@/lib/team'
+import { getBusinessNow } from '@/lib/time'
 
 export interface ScheduleFormState {
   error: string | null
@@ -66,6 +67,9 @@ export async function saveScheduleBlock(_prev: ScheduleFormState, formData: Form
       .maybeSingle()
     if (error) return { error: error.message, nonce: 0 }
     if (!data) return { error: 'That block could not be found.', nonce: 0 }
+
+    const syncError = await syncTodaysBlockTasks(ctx, id, isActive ? defaultTasks : [], startTime)
+    if (syncError) return { error: syncError, nonce: 0 }
   } else {
     const { data: last } = await supabase
       .from('schedule_blocks')
@@ -98,8 +102,55 @@ export async function deleteScheduleBlock(formData: FormData): Promise<void> {
   const ctx = await getActionContext()
   if (!ctx.ok) throw new Error(ctx.error)
   if (!canManageBusiness(ctx.role)) throw new Error('Only owners and admins can change the schedule.')
+  const syncError = await syncTodaysBlockTasks(ctx, id, [], null)
+  if (syncError) throw new Error(syncError)
   const { error } = await ctx.supabase.from('schedule_blocks').delete().eq('id', id).eq('business_id', ctx.businessId)
   if (error) throw new Error(error.message)
   revalidatePath('/settings/schedule')
   revalidatePath('/today')
+}
+
+/**
+ * Today's tasks are created from a block's lines the first time the day is
+ * viewed, so editing the lines afterwards must update them too. Otherwise a
+ * reworded line leaves the old task next to the new one and inflates
+ * "Tasks done". Untouched tasks whose line was removed are deleted (all of
+ * them when the block is turned off or deleted); anything already started,
+ * done or skipped is kept as a record of the day. The Today page creates
+ * tasks for new lines as usual.
+ */
+async function syncTodaysBlockTasks(
+  ctx: Extract<Awaited<ReturnType<typeof getActionContext>>, { ok: true }>,
+  blockId: string,
+  titles: string[],
+  startTime: string | null
+): Promise<string | null> {
+  const { supabase, businessId, timezone } = ctx
+  const today = getBusinessNow(timezone).isoDate
+
+  const { data: tasks, error } = await supabase
+    .from('tasks')
+    .select('id, title, status')
+    .eq('business_id', businessId)
+    .eq('schedule_block_id', blockId)
+    .eq('scheduled_date', today)
+  if (error) return error.message
+
+  const rows = (tasks ?? []) as { id: string; title: string; status: string }[]
+  const stale = rows.filter((t) => t.status === 'not_started' && !titles.includes(t.title)).map((t) => t.id)
+  if (stale.length > 0) {
+    const { error: deleteError } = await supabase.from('tasks').delete().in('id', stale).eq('business_id', businessId)
+    if (deleteError) return deleteError.message
+  }
+
+  // Keep the remaining tasks in the new line order and at the block's new start time.
+  for (const task of rows.filter((t) => titles.includes(t.title))) {
+    const { error: updateError } = await supabase
+      .from('tasks')
+      .update({ sort_order: titles.indexOf(task.title), ...(startTime ? { scheduled_time: startTime } : {}) })
+      .eq('id', task.id)
+      .eq('business_id', businessId)
+    if (updateError) return updateError.message
+  }
+  return null
 }
