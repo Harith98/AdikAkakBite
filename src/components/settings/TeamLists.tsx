@@ -7,13 +7,14 @@ import {
   changeMemberRole,
   leaveBusiness,
   removeMember,
-  revokeInvitation,
+  resetMemberPassword,
   transferOwnership,
   type ActionResult,
+  type Credentials,
 } from '@/app/(app)/settings/team/actions'
 import type { BusinessMemberRole } from '@/lib/supabase/database.types'
 import { ROLE_LABELS } from '@/lib/team'
-import { InviteLinkShare } from './TeamInviteForm'
+import { CredentialsCard } from './AddMemberForm'
 
 const ROLE_TONE: Record<BusinessMemberRole, 'raspberry' | 'amber' | 'neutral'> = {
   owner: 'raspberry',
@@ -65,6 +66,16 @@ export function MemberRow({ memberId, email, displayName, role, joinedLabel, isY
   const { pending, error, run } = useTeamAction()
   const canEdit = assignable.length > 0 && !isYou
   const label = displayName ?? email
+  const [newCredentials, setNewCredentials] = useState<Credentials | null>(null)
+
+  function resetPassword() {
+    if (!confirm(`Give ${label} a new temporary password? Their current password stops working straight away.`)) return
+    void run(async () => {
+      const result = await resetMemberPassword(memberId)
+      if (result.credentials) setNewCredentials(result.credentials)
+      return result
+    })
+  }
 
   return (
     <li className="flex flex-col gap-2 py-3">
@@ -102,66 +113,21 @@ export function MemberRow({ memberId, email, displayName, role, joinedLabel, isY
             className="text-clay-dark"
             disabled={pending}
             onClick={() => {
-              if (confirm(`Remove ${label} from the team? They'll lose access straight away.`)) void run(() => removeMember(memberId))
+              if (confirm(`Remove ${label} from the team? Their login is deleted and they can't sign in any more.`)) {
+                void run(() => removeMember(memberId))
+              }
             }}
           >
             Remove
           </Button>
         </div>
       )}
-      {error && <p role="alert" className="text-sm text-clay-dark">{error}</p>}
-    </li>
-  )
-}
-
-export function PendingInviteRow({
-  invitationId,
-  email,
-  role,
-  token,
-  expiresLabel,
-  isExpired,
-}: {
-  invitationId: string
-  email: string
-  role: BusinessMemberRole
-  token: string
-  expiresLabel: string
-  isExpired: boolean
-}) {
-  const { pending, error, run } = useTeamAction()
-  const [showLink, setShowLink] = useState(false)
-
-  return (
-    <li className="flex flex-col gap-2 py-3">
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <p className="truncate text-sm font-medium text-ink">{email}</p>
-          <p className={isExpired ? 'text-xs text-clay-dark' : 'text-xs text-ink-muted'}>
-            {ROLE_LABELS[role]} · {isExpired ? `Expired ${expiresLabel} — cancel and invite again` : `Expires ${expiresLabel}`}
-          </p>
-        </div>
-        <Badge tone="amber">Invited</Badge>
-      </div>
-      <div className="flex gap-2">
-        {!isExpired && (
-          <Button type="button" variant="secondary" className="flex-1" onClick={() => setShowLink((v) => !v)}>
-            {showLink ? 'Hide link' : 'Share link'}
-          </Button>
-        )}
-        <Button
-          type="button"
-          variant="ghost"
-          className="text-clay-dark"
-          disabled={pending}
-          onClick={() => {
-            if (confirm(`Cancel the invite for ${email}? The link will stop working.`)) void run(() => revokeInvitation(invitationId))
-          }}
-        >
-          Cancel invite
+      {canEdit && (
+        <Button type="button" variant="secondary" disabled={pending} onClick={resetPassword} className="w-full">
+          Reset password
         </Button>
-      </div>
-      {showLink && <InviteLinkShare token={token} />}
+      )}
+      {newCredentials && <CredentialsCard credentials={newCredentials} heading="New temporary password" />}
       {error && <p role="alert" className="text-sm text-clay-dark">{error}</p>}
     </li>
   )
@@ -194,7 +160,7 @@ export function TransferOwnershipForm({
   }
 
   if (candidates.length === 0) {
-    return <p className="text-sm text-ink-muted">Invite someone first. Ownership can only go to an existing team member.</p>
+    return <p className="text-sm text-ink-muted">Add someone first. Ownership can only go to an existing team member.</p>
   }
 
   return (
@@ -231,7 +197,7 @@ export function LeaveBusinessButton({ businessName }: { businessName: string }) 
         className="w-full text-clay-dark"
         disabled={pending}
         onClick={() => {
-          if (!confirm(`Leave ${businessName}? You'll lose access until someone invites you again.`)) return
+          if (!confirm(`Leave ${businessName}? You'll lose access until an owner or admin adds you back.`)) return
           void run(leaveBusiness).then((ok) => {
             // Full reload: every cached page for the old business must go.
             if (ok) window.location.assign('/no-access')

@@ -53,6 +53,11 @@ export const getCurrentBusinessContext = cache(async (): Promise<CurrentBusiness
     redirect('/login')
   }
 
+  // Signed in with a temporary password an owner/admin set: choose their own first.
+  if (user.user_metadata?.must_change_password === true) {
+    redirect('/reset-password')
+  }
+
   // Membership, business and settings in ONE round trip via PostgREST
   // embedding (business_members → businesses → business_settings). Every
   // page runs this, so it's the hottest query in the app.

@@ -1,5 +1,5 @@
 /**
- * The app's public address, for links that leave the browser — invite links
+ * The app's public address, for links that leave the browser — shared sign-in links
  * and the redirect in Supabase's confirmation / sign-in emails.
  *
  * Never use window.location.origin for these: opened from a Vercel preview

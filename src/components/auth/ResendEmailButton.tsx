@@ -8,9 +8,9 @@ export const RESEND_COOLDOWN_SECONDS = 60
 
 /** Turn Supabase's rate-limit errors into something a person can act on. */
 export function friendlyEmailError(message: string): string {
-  // Sign-in links don't create accounts (the app is invite-only).
+  // Sign-in links don't create accounts (owners/admins create accounts).
   if (/signups not allowed/i.test(message)) {
-    return 'No account uses this email yet. Open your invite link to create one.'
+    return 'No account uses this email yet. Ask the owner or an admin to create one for you.'
   }
   if (/email rate limit exceeded/i.test(message)) {
     return 'Too many emails have been sent from the app this hour. Please try again later.'

@@ -1,29 +1,24 @@
 import { createClient } from '@/lib/supabase/server'
 import { isAppSetUp } from '@/lib/services/setup'
-import { safeNextPath } from '@/lib/validation/common'
 import { Card } from '@/components/ui/Card'
 import { LinkButton } from '@/components/ui/LinkButton'
 import { SignupForm } from './SignupForm'
 
 /**
- * Accounts are created in exactly two situations:
- *  - from an invite link (next=/invite/…), to join the team, or
- *  - by the owner, once, before the business exists (first-time setup).
- * Anyone else is told the app is invite-only.
+ * Self sign-up exists for one moment only: the owner's first-time setup,
+ * before the business exists. After that, owners/admins create everyone
+ * else's account in Settings → Team.
  */
-export default async function SignupPage({ searchParams }: { searchParams: { next?: string; email?: string } }) {
-  const requested = safeNextPath(searchParams.next, '/onboarding')
-  const isInvite = requested.startsWith('/invite/')
-
-  if (!isInvite && (await isAppSetUp(createClient()))) {
+export default async function SignupPage() {
+  if (await isAppSetUp(createClient())) {
     return (
       <div className="flex min-h-dvh items-center justify-center bg-base px-4 py-10">
         <div className="w-full max-w-sm">
-          <p className="mb-8 text-center font-display text-3xl text-ink">Invite only</p>
+          <p className="mb-8 text-center font-display text-3xl text-ink">Ask for an account</p>
           <Card>
-            <p className="text-sm text-ink">New accounts are by invitation.</p>
+            <p className="text-sm text-ink">Accounts are created by the owner or an admin.</p>
             <p className="mt-2 text-sm text-ink-muted">
-              Ask the owner to send you an invite link, then open it to create your account and join the team.
+              Ask them to add you in Settings → Team. They&apos;ll give you an email and a temporary password to sign in with.
             </p>
             <LinkButton href="/login" variant="secondary" className="mt-5 w-full">
               Back to sign in
@@ -34,5 +29,5 @@ export default async function SignupPage({ searchParams }: { searchParams: { nex
     )
   }
 
-  return <SignupForm next={isInvite ? requested : '/onboarding'} initialEmail={searchParams.email ?? ''} />
+  return <SignupForm />
 }

@@ -12,8 +12,8 @@ describe('friendlyEmailError', () => {
     expect(friendlyEmailError('email rate limit exceeded')).toMatch(/Too many emails/)
   })
 
-  it('points people without an account to their invite link', () => {
-    expect(friendlyEmailError('Signups not allowed for otp')).toMatch(/invite link/)
+  it('points people without an account to the owner or an admin', () => {
+    expect(friendlyEmailError('Signups not allowed for otp')).toMatch(/owner or an admin/)
   })
 
   it('passes anything else through unchanged', () => {

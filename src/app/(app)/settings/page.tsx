@@ -38,6 +38,8 @@ export default async function SettingsPage() {
         <ProfileForm displayName={displayName} email={userEmail} />
       </Card>
 
+      <NavCard href="/settings/account" title="Email & password" text="Change the email or password you sign in with" />
+
       <Card>
         <p className="text-xs font-medium uppercase tracking-wide text-ink-faint">Business</p>
         <dl className="mt-3 flex flex-col gap-3 text-sm">
@@ -75,7 +77,7 @@ export default async function SettingsPage() {
       <NavCard
         href="/settings/team"
         title="Team"
-        text={canManageBusiness(role) ? 'Invite people and manage who has access' : 'See who is on the team'}
+        text={canManageBusiness(role) ? 'Add people and manage who has access' : 'See who is on the team'}
       />
 
       {canManageBusiness(role) && (

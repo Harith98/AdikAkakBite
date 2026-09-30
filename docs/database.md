@@ -25,7 +25,7 @@ PostgreSQL via Supabase. Migrations live in `supabase/migrations/`, numbered and
 | `admin` | Business settings, daily schedule, inviting/re-roling/removing staff. |
 | `staff` | Day-to-day work: Today, orders, products, inventory, customers, sales. |
 
-Enforced in SQL by `can_manage_business()` and `can_manage_role()`; `src/lib/team.ts` mirrors the same rules only to decide which controls the UI shows. Invitations are link-based (`/invite/<token>`, valid 7 days) and can only be accepted by a signed-in account whose email matches the invite.
+Enforced in SQL by `can_manage_business()` and `can_manage_role()`; `src/lib/team.ts` mirrors the same rules only to decide which controls the UI shows. Team members are added by an owner/admin in Settings → Team, which creates their login directly through the Supabase admin API (server-only `SUPABASE_SERVICE_ROLE_KEY`): no email, account pre-confirmed, a temporary password they must change at first sign-in (`must_change_password` user metadata). Removing a member also deletes their login. The `business_invitations` table and invite functions from 0009 are no longer used by the app.
 
 ## Conventions
 

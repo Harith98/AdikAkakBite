@@ -1,6 +1,6 @@
 import { cookies } from 'next/headers'
 import { createServerClient, type CookieOptions } from '@supabase/ssr'
-import type { SupabaseClient } from '@supabase/supabase-js'
+import { createClient as createSupabaseClient, type SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from './database.types'
 
 /**
@@ -51,20 +51,16 @@ export function createClient(): SupabaseClient<Database> {
  * from trusted server code (e.g. a scheduled job, or a route handler that
  * has already re-verified the request), never in response to arbitrary
  * user-triggered requests without your own authorization check first.
+ *
+ * Returns null when SUPABASE_SERVICE_ROLE_KEY isn't configured, so callers
+ * can show a setup message instead of crashing.
  */
-export function createServiceRoleClient(): SupabaseClient<Database> {
-  return createServerClient<Database>(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return []
-        },
-        setAll() {
-          // Service-role client is not tied to a user session.
-        },
-      },
-    }
-  ) as unknown as SupabaseClient<Database>
+export function createServiceRoleClient(): SupabaseClient<Database> | null {
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY
+  if (!key) return null
+  // Plain supabase-js client: no cookies and no session of its own, so every
+  // request carries the service key — which the auth.admin API requires.
+  return createSupabaseClient<Database>(process.env.NEXT_PUBLIC_SUPABASE_URL!, key, {
+    auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
+  })
 }

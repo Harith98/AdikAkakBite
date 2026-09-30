@@ -44,11 +44,10 @@ export async function updateSession(request: NextRequest) {
   const user = claimsData?.claims?.sub ? { id: claimsData.claims.sub } : null
 
   const path = request.nextUrl.pathname
-  const isAuthRoute = path.startsWith('/login') || path.startsWith('/signup')
+  const isAuthRoute = path.startsWith('/login') || path.startsWith('/signup') || path.startsWith('/forgot-password')
   const isPublicAsset =
     path.startsWith('/_next') ||
     path.startsWith('/api/auth') || // email-confirmation / magic-link callback must work signed out
-    path.startsWith('/invite/') || // invite links explain themselves before asking the person to sign in
     path.startsWith('/manifest.json') ||
     path.startsWith('/sw.js') ||
     path.startsWith('/icons') ||

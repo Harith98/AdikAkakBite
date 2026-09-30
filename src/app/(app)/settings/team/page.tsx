@@ -3,34 +3,21 @@ import { createClient } from '@/lib/supabase/server'
 import { getCurrentBusinessContext } from '@/lib/services/current-business'
 import { assignableRoles, canManageRole, ROLE_DESCRIPTIONS, ROLE_LABELS } from '@/lib/team'
 import { Card } from '@/components/ui/Card'
-import { TeamInviteForm } from '@/components/settings/TeamInviteForm'
-import { LeaveBusinessButton, MemberRow, PendingInviteRow, TransferOwnershipForm } from '@/components/settings/TeamLists'
+import { AddMemberForm } from '@/components/settings/AddMemberForm'
+import { LeaveBusinessButton, MemberRow, TransferOwnershipForm } from '@/components/settings/TeamLists'
 
 const dateLabel = (iso: string, timeZone: string) =>
   new Date(iso).toLocaleDateString('en-GB', { timeZone, day: 'numeric', month: 'short', year: 'numeric' })
 
 export default async function TeamPage() {
   const { business, settings, userId, role } = await getCurrentBusinessContext()
-  const supabase = createClient()
-  const canInvite = assignableRoles(role).length > 0
+  const canAddPeople = assignableRoles(role).length > 0
+  // Creating/resetting/deleting logins needs the server-only admin key.
+  const adminKeyMissing = !process.env.SUPABASE_SERVICE_ROLE_KEY
 
-  const [membersRes, invitesRes] = await Promise.all([
-    supabase.rpc('get_business_members', { p_business_id: business.id }),
-    // RLS only returns invitations this user is allowed to manage, so staff get none.
-    canInvite
-      ? supabase
-          .from('business_invitations')
-          .select('id, email, role, token, expires_at')
-          .eq('business_id', business.id)
-          .is('accepted_at', null)
-          .order('created_at', { ascending: false })
-      : Promise.resolve({ data: [], error: null }),
-  ])
+  const membersRes = await createClient().rpc('get_business_members', { p_business_id: business.id })
   if (membersRes.error) throw new Error(`Could not load your team: ${membersRes.error.message}`)
-  if (invitesRes.error) throw new Error(`Could not load invitations: ${invitesRes.error.message}`)
   const members = membersRes.data ?? []
-  const invites = invitesRes.data ?? []
-  const now = Date.now()
 
   return (
     <div className="flex max-w-2xl flex-col gap-6">
@@ -62,29 +49,20 @@ export default async function TeamPage() {
         </ul>
       </Card>
 
-      {canInvite && invites.length > 0 && (
+      {canAddPeople && (
         <Card>
-          <p className="text-xs font-medium uppercase tracking-wide text-ink-faint">Pending invites · {invites.length}</p>
-          <ul className="mt-1 divide-y divide-ink/10">
-            {invites.map((inv) => (
-              <PendingInviteRow
-                key={inv.id}
-                invitationId={inv.id}
-                email={inv.email}
-                role={inv.role}
-                token={inv.token}
-                expiresLabel={dateLabel(inv.expires_at, settings.timezone)}
-                isExpired={new Date(inv.expires_at).getTime() < now}
-              />
-            ))}
-          </ul>
-        </Card>
-      )}
-
-      {canInvite && (
-        <Card>
-          <p className="mb-3 text-xs font-medium uppercase tracking-wide text-ink-faint">Invite someone</p>
-          <TeamInviteForm roles={assignableRoles(role)} />
+          <p className="text-xs font-medium uppercase tracking-wide text-ink-faint">Add team member</p>
+          <p className="mb-3 mt-1 text-sm text-ink-muted">
+            Create their account here. No email is sent. Give them the sign-in details and they can start straight away.
+          </p>
+          {adminKeyMissing ? (
+            <p className="rounded-card bg-amber-soft p-3 text-sm text-ink">
+              Adding people isn&apos;t switched on yet. The server needs the <strong>SUPABASE_SERVICE_ROLE_KEY</strong>{' '}
+              environment variable (Supabase → Project Settings → API keys). Add it in Vercel, then redeploy.
+            </p>
+          ) : (
+            <AddMemberForm roles={assignableRoles(role)} />
+          )}
         </Card>
       )}
 

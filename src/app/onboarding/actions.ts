@@ -48,14 +48,14 @@ export async function completeOnboarding(
     redirect('/login')
   }
 
-  // Already a member (double-submit, or joined by invite): nothing to create.
+  // Already a member (double-submit, or added by an owner/admin): nothing to create.
   if (await hasMembership(supabase, user.id)) {
     redirect('/today')
   }
   // Single-business app: setup happens once. The database refuses a second
   // business too (migration 0013); this just gives a clear message first.
   if (await isAppSetUp(supabase)) {
-    return { error: 'This app is already set up. Ask the owner to send you an invite link.' }
+    return { error: 'This app is already set up. Ask the owner or an admin to create your account.' }
   }
 
   // The id is generated here rather than read back from the insert: the

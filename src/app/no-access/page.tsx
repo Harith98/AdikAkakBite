@@ -6,8 +6,8 @@ import { Card } from '@/components/ui/Card'
 import { signOut } from '@/app/(app)/settings/actions'
 
 /**
- * Signed in, but not on the team (never invited, removed, or left). This is a
- * single-business app, so there's nothing to create — only an invite gets in.
+ * Signed in, but not on the team (removed, left, or never added). This is a
+ * single-business app, so there's nothing to create — an owner/admin adds people.
  */
 export default async function NoAccessPage() {
   const supabase = createClient()
@@ -34,7 +34,7 @@ export default async function NoAccessPage() {
             You&apos;re signed in as <strong>{user.email}</strong>, but this account isn&apos;t on the team.
           </p>
           <p className="mt-2 text-sm text-ink-muted">
-            Ask the owner to send an invite link to this email address, then open the link to join.
+            Ask the owner or an admin to add you in Settings → Team.
           </p>
           <form action={signOut} className="mt-5">
             <Button type="submit" variant="secondary" className="w-full">

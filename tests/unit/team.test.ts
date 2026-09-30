@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { assignableRoles, canManageBusiness, canManageRole } from '@/lib/team'
+import { assignableRoles, canManageBusiness, canManageRole, generateTempPassword, MIN_PASSWORD_LENGTH } from '@/lib/team'
 
 describe('team permissions', () => {
   it('owners manage admins and staff, never other owners', () => {
@@ -28,5 +28,19 @@ describe('team permissions', () => {
     expect(canManageBusiness('owner')).toBe(true)
     expect(canManageBusiness('admin')).toBe(true)
     expect(canManageBusiness('staff')).toBe(false)
+  })
+})
+
+describe('generateTempPassword', () => {
+  it('is long enough, grouped for reading aloud, and free of look-alike characters', () => {
+    const password = generateTempPassword()
+    expect(password).toMatch(/^[A-Za-z2-9]{4}-[A-Za-z2-9]{4}-[A-Za-z2-9]{4}$/)
+    expect(password.length).toBeGreaterThanOrEqual(MIN_PASSWORD_LENGTH)
+    expect(password).not.toMatch(/[0O1lI]/)
+  })
+
+  it('is different every time', () => {
+    const passwords = new Set(Array.from({ length: 50 }, () => generateTempPassword()))
+    expect(passwords.size).toBe(50)
   })
 })

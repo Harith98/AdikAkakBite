@@ -9,15 +9,14 @@ import { Card } from '@/components/ui/Card'
 import { authCallbackUrl } from '@/lib/site-url'
 import { friendlyEmailError, ResendEmailButton } from '@/components/auth/ResendEmailButton'
 
-/**
- * `next` is either an invite link (joining the team) or /onboarding (the
- * owner's one-time first setup) — page.tsx decides which is allowed.
- */
-export function SignupForm({ next, initialEmail }: { next: string; initialEmail: string }) {
+/** After confirming, the owner continues to first-time business setup. */
+const next = '/onboarding'
+
+/** The owner's own account, created once before first-time setup (page.tsx enforces that). */
+export function SignupForm() {
   const router = useRouter()
-  const isInvite = next.startsWith('/invite/')
   const [name, setName] = useState('')
-  const [email, setEmail] = useState(initialEmail)
+  const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -64,18 +63,16 @@ export function SignupForm({ next, initialEmail }: { next: string; initialEmail:
     <div className="flex min-h-dvh items-center justify-center bg-base px-4 py-10">
       <div className="w-full max-w-sm">
         <div className="mb-8 text-center">
-          <p className="font-display text-3xl text-ink">{isInvite ? 'Create your account' : 'First-time setup'}</p>
-          <p className="mt-1 text-sm text-ink-muted">
-            {isInvite ? 'Then you can accept your team invite' : 'Create the owner account, then set up the business'}
-          </p>
+          <p className="font-display text-3xl text-ink">First-time setup</p>
+          <p className="mt-1 text-sm text-ink-muted">Create the owner account, then set up the business</p>
         </div>
 
         <Card>
           {confirmationSent ? (
             <div className="flex flex-col gap-4">
               <p className="text-sm text-ink">
-                Check <strong>{email}</strong> to confirm your account. The link in that email brings you straight back
-                {isInvite ? ' to your invite.' : ' to finish setup.'}
+                Check <strong>{email}</strong> to confirm your account. The link in that email brings you straight back to
+                finish setup.
               </p>
               <p className="text-xs text-ink-muted">It can take a minute. Check your spam or promotions folder too.</p>
               <ResendEmailButton
@@ -142,7 +139,7 @@ export function SignupForm({ next, initialEmail }: { next: string; initialEmail:
 
         <p className="mt-6 text-center text-sm text-ink-muted">
           Already have an account?{' '}
-          <Link href={isInvite ? `/login?next=${encodeURIComponent(next)}` : '/login'} className="font-medium text-raspberry">
+          <Link href="/login" className="font-medium text-raspberry">
             Sign in
           </Link>
         </p>

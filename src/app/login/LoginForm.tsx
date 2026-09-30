@@ -12,7 +12,6 @@ import { friendlyEmailError, ResendEmailButton } from '@/components/auth/ResendE
 /** `next` is already validated by page.tsx; `isSetUp` = the business exists (so no self-signup). */
 export function LoginForm({ next, isSetUp }: { next: string; isSetUp: boolean }) {
   const router = useRouter()
-  const isInvite = next.startsWith('/invite/')
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -118,7 +117,12 @@ export function LoginForm({ next, isSetUp }: { next: string; isSetUp: boolean })
                 />
               </label>
               <label className="flex flex-col gap-1.5 text-sm">
-                <span className="font-medium text-ink">Password</span>
+                <span className="flex items-baseline justify-between gap-3">
+                  <span className="font-medium text-ink">Password</span>
+                  <Link href="/forgot-password" className="text-xs font-medium text-raspberry">
+                    Forgot password?
+                  </Link>
+                </span>
                 <input
                   type="password"
                   required
@@ -152,14 +156,7 @@ export function LoginForm({ next, isSetUp }: { next: string; isSetUp: boolean })
         </Card>
 
         <p className="mt-6 text-center text-sm text-ink-muted">
-          {isInvite ? (
-            <>
-              New here?{' '}
-              <Link href={`/signup?next=${encodeURIComponent(next)}`} className="font-medium text-raspberry">
-                Create your account
-              </Link>
-            </>
-          ) : !isSetUp ? (
+          {!isSetUp ? (
             <>
               First time?{' '}
               <Link href="/signup" className="font-medium text-raspberry">
@@ -167,7 +164,7 @@ export function LoginForm({ next, isSetUp }: { next: string; isSetUp: boolean })
               </Link>
             </>
           ) : (
-            'Need access? Ask the owner to send you an invite link.'
+            'No account yet? Ask the owner or an admin to create one for you.'
           )}
         </p>
       </div>

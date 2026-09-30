@@ -17,21 +17,36 @@ export const ROLE_DESCRIPTIONS: Record<BusinessMemberRole, string> = {
   staff: 'Day-to-day work: Today, orders, products, inventory, customers, sales',
 }
 
-export const INVITE_EXPIRY_DAYS = 7
+export const MIN_PASSWORD_LENGTH = 8
+
+// No 0/O, 1/l/I: temporary passwords get read out loud or copied by hand.
+const PASSWORD_ALPHABET = 'abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789'
+
+/**
+ * A temporary password for a new or reset account, e.g. "Kq7m-Xt3r-P9wa".
+ * 12 random characters (~68 bits) from crypto.getRandomValues — works both in
+ * the browser ("Generate" button) and on the server (password reset).
+ */
+export function generateTempPassword(): string {
+  const bytes = new Uint32Array(12)
+  globalThis.crypto.getRandomValues(bytes)
+  const chars = Array.from(bytes, (b) => PASSWORD_ALPHABET[b % PASSWORD_ALPHABET.length])
+  return [chars.slice(0, 4), chars.slice(4, 8), chars.slice(8, 12)].map((group) => group.join('')).join('-')
+}
 
 /** Owners and admins can edit business settings and the daily schedule. */
 export function canManageBusiness(role: BusinessMemberRole): boolean {
   return role === 'owner' || role === 'admin'
 }
 
-/** Can `actor` invite, re-role or remove someone holding `target`? */
+/** Can `actor` add, re-role, reset or remove someone holding `target`? */
 export function canManageRole(actor: BusinessMemberRole, target: BusinessMemberRole): boolean {
   if (actor === 'owner') return target === 'admin' || target === 'staff'
   if (actor === 'admin') return target === 'staff'
   return false
 }
 
-/** Roles `actor` may hand out in an invitation or role change. */
+/** Roles `actor` may give when adding someone or changing a role. */
 export function assignableRoles(actor: BusinessMemberRole): BusinessMemberRole[] {
   return (['admin', 'staff'] as const).filter((role) => canManageRole(actor, role))
 }
