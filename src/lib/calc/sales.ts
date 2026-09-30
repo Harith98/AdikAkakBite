@@ -1,6 +1,6 @@
 export interface OrderForSales {
-  /** YYYY-MM-DD */
-  orderDate: string
+  /** Day the order was completed, YYYY-MM-DD. */
+  saleDate: string
   total: number
 }
 

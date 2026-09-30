@@ -29,14 +29,14 @@ export async function getSalesSummary(supabase: Client, businessId: string, toda
   const orders = await getCompletedOrdersInRange(supabase, businessId, rangeStart, today)
 
   const rows = orders.map((o) => ({
-    orderDate: o.order_date,
+    saleDate: o.completed_on,
     total: calculateOrderTotals({
       items: (o.order_items ?? []).map((i) => ({ quantity: i.quantity, unitPrice: i.unit_price })),
       discount: o.discount,
       deliveryFee: o.delivery_fee,
     }).total,
   }))
-  const since = (start: string) => summarizeSales(rows.filter((r) => r.orderDate >= start))
+  const since = (start: string) => summarizeSales(rows.filter((r) => r.saleDate >= start))
 
   return [
     { label: 'Today', startDate: today, endDate: today, totals: since(today) },

@@ -16,6 +16,7 @@ PostgreSQL via Supabase. Migrations live in `supabase/migrations/`, numbered and
 12. `0012_customer_phone_key.sql` — `customers.phone_key`, a generated, normalised phone number (indexed) used to identify customers phone-first. Must stay in sync with `normalizePhone()` in `src/lib/customer-identity.ts`.
 13. `0013_single_business.sql` — makes the deployment single-business: `businesses` can hold at most one row, only the first account may create it (while none exists), and `app_is_set_up()` tells the sign-in/sign-up pages whether first-time setup is still open. After setup, people join only by invitation; signed-in non-members see `/no-access`.
 14. `0014_member_display_names.sql` — `get_business_members()` also returns each member's own name (`display_name` from their auth user metadata, set at sign-up or in Settings → Your profile) for the Team page.
+15. `0015_order_completed_on.sql` — `orders.completed_on`, the business-local day an order was completed, set by a trigger. Sales totals and the daily close group by it, so an advance order counts on the day it's fulfilled, not the day it was taken. Orders completed earlier are backfilled with their `order_date`.
 
 ## Team roles
 

@@ -120,13 +120,13 @@ export async function getOrder(supabase: Client, businessId: string, orderId: st
 
 export interface CompletedOrderForSales {
   id: string
-  order_date: string
+  completed_on: string
   discount: number
   delivery_fee: number
   order_items: { quantity: number; unit_price: number }[] | null
 }
 
-/** Completed orders in a date range with their line items (one round trip), for sales summaries (spec §20-21). */
+/** Orders completed in a date range (by completion day, so advance orders count when fulfilled) with their line items, for sales summaries (spec §20-21). */
 export async function getCompletedOrdersInRange(
   supabase: Client,
   businessId: string,
@@ -135,11 +135,11 @@ export async function getCompletedOrdersInRange(
 ): Promise<CompletedOrderForSales[]> {
   const { data, error } = await supabase
     .from('orders')
-    .select('id, order_date, discount, delivery_fee, order_items(quantity, unit_price)')
+    .select('id, completed_on, discount, delivery_fee, order_items(quantity, unit_price)')
     .eq('business_id', businessId)
     .eq('status', 'completed')
-    .gte('order_date', startDate)
-    .lte('order_date', endDate)
+    .gte('completed_on', startDate)
+    .lte('completed_on', endDate)
   if (error) throw new Error(`Could not load orders: ${error.message}`)
   return (data ?? []) as unknown as CompletedOrderForSales[]
 }

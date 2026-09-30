@@ -309,6 +309,7 @@ export interface Database {
           notes: string | null
           receipt_number: number | null
           receipt_issued_at: string | null
+          completed_on: string | null
           payment_method: PaymentMethod | null
           created_at: string
           updated_at: string
@@ -328,6 +329,7 @@ export interface Database {
           notes?: string | null
           receipt_number?: number | null
           receipt_issued_at?: string | null
+          completed_on?: string | null
           payment_method?: PaymentMethod | null
           created_at?: string
           updated_at?: string
