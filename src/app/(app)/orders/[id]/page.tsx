@@ -23,7 +23,7 @@ export default async function OrderPage({ params }: { params: { id: string } }) 
   const [order, products, customersRes] = await Promise.all([
     getOrder(supabase, business.id, params.id),
     getProducts(supabase, business.id),
-    supabase.from('customers').select('name, phone').eq('business_id', business.id).order('name').limit(500),
+    supabase.from('customers').select('id, name, phone').eq('business_id', business.id).order('name').limit(500),
   ])
   if (!order) notFound()
   const orderData: OrderView = order
@@ -33,7 +33,7 @@ export default async function OrderPage({ params }: { params: { id: string } }) 
     <div className="flex max-w-2xl flex-col gap-5">
       <header>
         <Link href="/orders" className="text-sm text-ink-muted">← Orders</Link>
-        <p className="mt-2 font-display text-3xl text-ink">{orderData.customerName ?? 'Customer'}</p>
+        <p className="mt-2 font-display text-3xl text-ink">{orderData.customerName ?? 'Walk-in'}</p>
         <div className="mt-2 flex flex-wrap gap-2">
           <OrderStatusBadge status={orderData.status} />
           <PaymentBadge status={orderData.paymentStatus} />

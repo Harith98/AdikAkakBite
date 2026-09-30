@@ -9,15 +9,19 @@ const form = (o: Record<string, string> = {}, items: unknown[] = [item()]) =>
 
 describe('parseOrderForm', () => {
   it('accepts a valid order and calculates totals server-side', () => {
-    const r = parseOrderForm(form({ requiredDate: '2026-09-28', requiredTime: '16:00', discount: '5', deliveryFee: '8', deposit: '20', customerPhone: ' 012 ' }))
+    const r = parseOrderForm(form({ requiredDate: '2026-09-28', requiredTime: '16:00', discount: '5', deliveryFee: '8', deposit: '20', customerPhone: ' 012-345 6789 ' }))
     expect(r.ok).toBe(true)
     if (r.ok) {
       expect(r.value.totals.subtotal).toBe(50)
       expect(r.value.totals.total).toBe(53)
       expect(r.value.totals.balance).toBe(33)
       expect(r.value.paymentStatus).toBe('deposit_paid')
-      expect(r.value.customerPhone).toBe('012')
+      expect(r.value.customerPhone).toBe('012-345 6789')
     }
+  })
+
+  it('rejects a phone number that is too short to identify anyone', () => {
+    expect(parseOrderForm(form({ customerPhone: '012' })).ok).toBe(false)
   })
   it('requires a customer name', () => {
     expect(parseOrderForm(form({ customerName: ' ' })).ok).toBe(false)

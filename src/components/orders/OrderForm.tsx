@@ -7,6 +7,7 @@ import { calculateOrderTotals } from '@/lib/calc/orders'
 import { formatMoney } from '@/lib/constants'
 import { saveOrder, type SaveOrderState } from '@/app/(app)/orders/actions'
 import type { OrderView } from '@/lib/services/orders'
+import { resolveCustomer, type CustomerMatch } from '@/lib/customer-identity'
 
 export interface ProductOption {
   id: string
@@ -14,6 +15,7 @@ export interface ProductOption {
   price: number
 }
 export interface CustomerOption {
+  id: string
   name: string
   phone: string | null
 }
@@ -54,8 +56,9 @@ export function OrderForm({
         }))
       : [{ key: nextKey.current++, productId: '', productName: '', quantity: '1', unitPrice: '' }]
   )
-  const [customerName, setCustomerName] = useState(order?.customerName ?? '')
-  const [customerPhone, setCustomerPhone] = useState('')
+  // An existing order with no customer was a walk-in.
+  const [customerName, setCustomerName] = useState(order ? order.customerName ?? 'Walk-in' : '')
+  const [customerPhone, setCustomerPhone] = useState(order?.customerPhone ?? '')
   const [discount, setDiscount] = useState(order && order.discount > 0 ? String(order.discount) : '')
   const [deliveryFee, setDeliveryFee] = useState(order && order.deliveryFee > 0 ? String(order.deliveryFee) : '')
   const [deposit, setDeposit] = useState(order && order.deposit > 0 ? String(order.deposit) : '')
@@ -72,9 +75,17 @@ export function OrderForm({
 
   function onCustomerChange(value: string) {
     setCustomerName(value)
-    const match = customers.find((c) => c.name.toLowerCase() === value.trim().toLowerCase())
-    if (match?.phone && !customerPhone) setCustomerPhone(match.phone)
+    // Only auto-fill the phone when the name points at exactly one customer —
+    // with shared names, picking one would silently choose the wrong person.
+    const sameName = customers.filter((c) => c.name.trim().toLowerCase() === value.trim().toLowerCase())
+    const only = sameName.length === 1 ? sameName[0] : undefined
+    if (only?.phone && !customerPhone) setCustomerPhone(only.phone)
   }
+
+  // Same rules the server uses when saving, run live so the user sees who the order will go to.
+  const customerHint = customerName.trim()
+    ? describeMatch(customerName.trim(), resolveCustomer({ name: customerName, phone: customerPhone || null, candidates: customers }))
+    : null
 
   const totals = calculateOrderTotals({
     items: items.map((i) => ({ quantity: toNumber(i.quantity), unitPrice: toNumber(i.unitPrice) })),
@@ -113,19 +124,28 @@ export function OrderForm({
         />
         <datalist id="customer-names">
           {customers.map((c) => (
-            <option key={c.name} value={c.name} />
+            // The phone as the label tells apart customers who share a name.
+            <option key={c.id} value={c.name}>
+              {c.phone ?? ''}
+            </option>
           ))}
         </datalist>
         <input
           name="customerPhone"
           value={customerPhone}
           onChange={(e) => setCustomerPhone(e.target.value)}
-          placeholder="Phone (optional)"
+          placeholder="Phone (recommended, e.g. 012-345 6789)"
           aria-label="Customer phone"
           inputMode="tel"
+          autoComplete="off"
           maxLength={30}
           className={input}
         />
+        {customerHint && (
+          <p className={customerHint.warn ? 'text-sm text-clay-dark' : 'text-sm text-ink-muted'} aria-live="polite">
+            {customerHint.text}
+          </p>
+        )}
       </fieldset>
 
       <fieldset>
@@ -254,6 +274,27 @@ export function OrderForm({
       <SubmitButton label={order ? 'Save changes' : 'Create order'} />
     </form>
   )
+}
+
+function describeMatch(typedName: string, match: CustomerMatch): { text: string; warn: boolean } {
+  switch (match.kind) {
+    case 'anonymous':
+      return { text: 'Walk-in: saved without a customer profile.', warn: false }
+    case 'ambiguous':
+      return { text: `${match.count} customers are called “${typedName}”. Add their phone number to pick the right one.`, warn: true }
+    case 'existing':
+      if (match.matchedBy === 'phone' && match.name.trim().toLowerCase() !== typedName.toLowerCase()) {
+        return { text: `This number belongs to ${match.name}, so the order will be saved under them.`, warn: true }
+      }
+      return {
+        text: match.setPhone ? `✓ Existing customer ${match.name}. This phone will be added to their profile.` : `✓ Existing customer: ${match.name}`,
+        warn: false,
+      }
+    case 'new':
+      return match.reason === 'different_phone'
+        ? { text: `New customer. The “${typedName}” you already have uses a different number.`, warn: false }
+        : { text: 'New customer. They’ll be added to your customer list.', warn: false }
+  }
 }
 
 function SubmitButton({ label }: { label: string }) {

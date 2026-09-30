@@ -2,7 +2,8 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database, OrderStatus } from '@/lib/supabase/database.types'
 import { calculateOrderTotals } from '@/lib/calc/orders'
 import { computeCustomerMetrics, type CustomerOrderInput } from '@/lib/calc/customers'
-import { groupBy } from './db-helpers'
+import { isWalkInName, normalizePhone, resolveCustomer, type CustomerCandidate } from '@/lib/customer-identity'
+import { escapeLike, groupBy } from './db-helpers'
 import type { CustomerMetrics } from './types'
 
 type Client = SupabaseClient<Database>
@@ -42,7 +43,9 @@ export async function getCustomerMetrics(
   const [customersRes, ordersRes] = await Promise.all([customersQuery.order('name', { ascending: true }), ordersQuery])
   if (customersRes.error) throw new Error(`Could not load customers: ${customersRes.error.message}`)
   if (ordersRes.error) throw new Error(`Could not load orders: ${ordersRes.error.message}`)
-  const customers = customersRes.data ?? []
+  // Old "Walk-in" records (from before walk-ins were saved without a customer)
+  // aren't a real person, so they'd skew repeat-customer figures.
+  const customers = (customersRes.data ?? []).filter((c) => customerId || !isWalkInName(c.name))
   const orders = (ordersRes.data ?? []) as unknown as {
     id: string
     customer_id: string | null
@@ -72,4 +75,55 @@ export async function getCustomerMetrics(
       notes: customer.notes,
     }
   })
+}
+
+export type CustomerResolution = { ok: true; customerId: string | null } | { ok: false; error: string }
+
+/**
+ * Find (or create) the customer an order belongs to, using the phone-first
+ * rules in resolveCustomer(). Returns customerId null for anonymous walk-ins.
+ */
+export async function findOrCreateCustomer(
+  supabase: Client,
+  businessId: string,
+  name: string,
+  phone: string | null
+): Promise<CustomerResolution> {
+  const phoneKey = normalizePhone(phone)
+  // Two small indexed lookups in parallel: everyone with this number, and
+  // everyone with this exact name (case-insensitive, wildcards escaped).
+  const [byPhone, byName] = await Promise.all([
+    phoneKey
+      ? supabase.from('customers').select('id, name, phone').eq('business_id', businessId).eq('phone_key', phoneKey).limit(5)
+      : Promise.resolve({ data: [], error: null }),
+    supabase.from('customers').select('id, name, phone').eq('business_id', businessId).ilike('name', escapeLike(name)).limit(20),
+  ])
+  if (byPhone.error) return { ok: false, error: byPhone.error.message }
+  if (byName.error) return { ok: false, error: byName.error.message }
+
+  const candidates = new Map<string, CustomerCandidate>()
+  for (const c of [...(byPhone.data ?? []), ...(byName.data ?? [])]) candidates.set(c.id, c)
+  const match = resolveCustomer({ name, phone, candidates: Array.from(candidates.values()) })
+
+  switch (match.kind) {
+    case 'anonymous':
+      return { ok: true, customerId: null }
+    case 'ambiguous':
+      return {
+        ok: false,
+        error: `You have ${match.count} customers called "${name}". Add their phone number so the order goes to the right one.`,
+      }
+    case 'existing':
+      if (match.setPhone && phone) {
+        const { error } = await supabase.from('customers').update({ phone }).eq('id', match.id).eq('business_id', businessId)
+        if (error) return { ok: false, error: error.message }
+      }
+      return { ok: true, customerId: match.id }
+    case 'new': {
+      const id = crypto.randomUUID()
+      const { error } = await supabase.from('customers').insert({ id, business_id: businessId, name, phone })
+      if (error) return { ok: false, error: error.message }
+      return { ok: true, customerId: id }
+    }
+  }
 }

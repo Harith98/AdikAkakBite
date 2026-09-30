@@ -41,7 +41,7 @@ export function OrderCard({ order, urgency, today, currency }: OrderCardProps) {
         <Badge tone={urgency.isUrgent ? 'raspberry' : 'amber'}>{label}</Badge>
         <span className="text-xs text-ink-muted">{PAYMENT_LABEL[order.paymentStatus]}</span>
       </div>
-      <p className="mt-3 font-display text-2xl text-ink">{order.customerName ?? 'Customer'}</p>
+      <p className="mt-3 font-display text-2xl text-ink">{order.customerName ?? 'Walk-in'}</p>
       {order.items.length > 0 ? (
         <ul className="mt-1 text-sm text-ink">
           {order.items.map((item, index) => (

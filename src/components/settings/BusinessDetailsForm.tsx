@@ -10,6 +10,7 @@ const textarea = 'w-full rounded-card border border-ink/15 bg-base p-3 text-sm o
 
 export interface BusinessDetails {
   name: string
+  ownerName: string | null
   phone: string | null
   email: string | null
   address: string | null
@@ -24,6 +25,11 @@ export function BusinessDetailsForm({ details }: { details: BusinessDetails }) {
       <label className="flex flex-col gap-1 text-sm">
         <span className="font-medium text-ink">Business name</span>
         <input name="name" required maxLength={120} defaultValue={details.name} className={input} />
+      </label>
+      <label className="flex flex-col gap-1 text-sm">
+        <span className="font-medium text-ink">Owner name</span>
+        <input name="ownerName" maxLength={120} defaultValue={details.ownerName ?? ''} placeholder="e.g. Aina" className={input} />
+        <span className="text-xs text-ink-faint">Used in the greeting on the Today screen.</span>
       </label>
       <div className="grid grid-cols-2 gap-2">
         <label className="flex flex-col gap-1 text-sm">

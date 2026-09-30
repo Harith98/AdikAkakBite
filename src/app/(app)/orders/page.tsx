@@ -62,7 +62,7 @@ export default async function OrdersPage({ searchParams }: { searchParams: { sta
               <Link href={`/orders/${order.id}`} className="block">
                 <Card className="transition-colors hover:bg-base-soft">
                   <div className="flex items-start justify-between gap-3">
-                    <p className="font-display text-xl text-ink">{order.customerName ?? 'Customer'}</p>
+                    <p className="font-display text-xl text-ink">{order.customerName ?? 'Walk-in'}</p>
                     <p className="text-sm font-medium text-ink">{formatMoney(order.total, settings.currency)}</p>
                   </div>
                   <p className="mt-1 text-sm text-ink-muted">

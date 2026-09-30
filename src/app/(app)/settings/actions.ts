@@ -18,13 +18,14 @@ export interface BusinessDetailsState {
   nonce: number
 }
 
-const LIMITS = { name: 120, phone: 30, email: 200, address: 300, registrationNumber: 50, receiptFooter: 300 } as const
+const LIMITS = { name: 120, ownerName: 120, phone: 30, email: 200, address: 300, registrationNumber: 50, receiptFooter: 300 } as const
 
-/** Business name + the contact details printed on receipts (owners/admins). */
+/** Business name, owner name + the contact details printed on receipts (owners/admins). */
 export async function updateBusinessDetails(_prev: BusinessDetailsState, formData: FormData): Promise<BusinessDetailsState> {
   const fail = (error: string): BusinessDetailsState => ({ error, nonce: 0 })
   const values = {
     name: str(formData, 'name'),
+    ownerName: str(formData, 'ownerName'),
     phone: str(formData, 'phone'),
     email: str(formData, 'email'),
     address: str(formData, 'address'),
@@ -45,6 +46,7 @@ export async function updateBusinessDetails(_prev: BusinessDetailsState, formDat
     .from('businesses')
     .update({
       name: values.name,
+      owner_name: values.ownerName || null,
       phone: values.phone || null,
       email: values.email || null,
       address: values.address || null,
@@ -56,6 +58,25 @@ export async function updateBusinessDetails(_prev: BusinessDetailsState, formDat
     .maybeSingle()
   if (error) return fail(error.message)
   if (!data) return fail("Couldn't save the business details.")
+
+  revalidatePath('/', 'layout')
+  return { error: null, nonce: Date.now() }
+}
+
+export interface ProfileState {
+  error: string | null
+  nonce: number
+}
+
+/** Any team member: set the name the app greets you by and shows on the Team page. */
+export async function updateMyName(_prev: ProfileState, formData: FormData): Promise<ProfileState> {
+  const name = str(formData, 'displayName')
+  if (name.length > 80) return { error: 'Keep your name under 80 characters.', nonce: 0 }
+
+  const supabase = createClient()
+  // Stored in the auth user's own metadata, so each person manages only their own.
+  const { error } = await supabase.auth.updateUser({ data: { display_name: name || null } })
+  if (error) return { error: error.message, nonce: 0 }
 
   revalidatePath('/', 'layout')
   return { error: null, nonce: Date.now() }

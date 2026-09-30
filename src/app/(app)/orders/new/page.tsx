@@ -11,7 +11,7 @@ export default async function NewOrderPage() {
 
   const [products, customersRes] = await Promise.all([
     getProducts(supabase, business.id),
-    supabase.from('customers').select('name, phone').eq('business_id', business.id).order('name').limit(500),
+    supabase.from('customers').select('id, name, phone').eq('business_id', business.id).order('name').limit(500),
   ])
   if (customersRes.error) throw new Error(`Could not load customers: ${customersRes.error.message}`)
 

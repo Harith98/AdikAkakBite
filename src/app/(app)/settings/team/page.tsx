@@ -52,6 +52,7 @@ export default async function TeamPage() {
               key={m.member_id}
               memberId={m.member_id}
               email={m.email}
+              displayName={m.display_name ?? null}
               role={m.role}
               joinedLabel={dateLabel(m.joined_at, settings.timezone)}
               isYou={m.user_id === userId}
@@ -110,7 +111,7 @@ export default async function TeamPage() {
             businessName={business.name}
             candidates={members
               .filter((m) => m.user_id !== userId)
-              .map((m) => ({ memberId: m.member_id, email: m.email, role: m.role }))}
+              .map((m) => ({ memberId: m.member_id, label: m.display_name ? `${m.display_name} · ${m.email}` : m.email, role: m.role }))}
           />
         </Card>
       )}

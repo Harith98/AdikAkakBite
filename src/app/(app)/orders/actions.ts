@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { getActionContext } from '@/lib/services/action-context'
-import { escapeLike } from '@/lib/services/db-helpers'
+import { findOrCreateCustomer } from '@/lib/services/customers'
 import { getBusinessNow } from '@/lib/time'
 import { parseOrderForm } from '@/lib/validation/orders'
 import { derivePaymentStatus } from '@/lib/calc/orders'
@@ -31,30 +31,12 @@ export async function saveOrder(_prev: SaveOrderState, formData: FormData): Prom
   if (!ctx.ok) return { error: ctx.error, nonce: 0 }
   const { supabase, businessId, userId, timezone } = ctx
 
-  // ---- find or create the customer (case-insensitive name match) ----
-  const { data: found, error: findError } = await supabase.from('customers')
-    .select('id, phone')
-    .eq('business_id', businessId)
-    .ilike('name', escapeLike(order.customerName))
-    .limit(1)
-    .maybeSingle()
-  if (findError) return { error: findError.message, nonce: 0 }
-
-  let customerId: string
-  if (found) {
-    customerId = found.id
-    if (order.customerPhone && !found.phone) {
-      await supabase.from('customers').update({ phone: order.customerPhone }).eq('id', found.id).eq('business_id', businessId)
-    }
-  } else {
-    customerId = crypto.randomUUID()
-    const { error } = await supabase.from('customers')
-      .insert({ id: customerId, business_id: businessId, name: order.customerName, phone: order.customerPhone })
-    if (error) return { error: error.message, nonce: 0 }
-  }
+  // ---- find or create the customer: phone first, then name (see customer-identity.ts) ----
+  const customer = await findOrCreateCustomer(supabase, businessId, order.customerName, order.customerPhone)
+  if (!customer.ok) return { error: customer.error, nonce: 0 }
 
   const fields = {
-    customer_id: customerId,
+    customer_id: customer.customerId,
     required_date: order.requiredDate,
     required_time: order.requiredTime,
     discount: order.discount,

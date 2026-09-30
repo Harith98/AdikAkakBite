@@ -163,7 +163,7 @@ export async function transferOwnership(memberId: string): Promise<ActionResult>
   return { error: null }
 }
 
-/** Leave the business (anyone but an owner). The account then starts fresh at onboarding. */
+/** Leave the business (anyone but an owner). Afterwards they see the No access page until invited again. */
 export async function leaveBusiness(): Promise<ActionResult> {
   const ctx = await getActionContext()
   if (!ctx.ok) return { error: ctx.error }

@@ -27,8 +27,20 @@ Deleting a product is safe for the same reason. Product images are an optional l
   order is deleted; on edit, new items are added *before* old ones are removed).
 
 ## Customers
-Customers are created automatically from orders (name match is case-insensitive) — there is no separate
-"add customer" form. Metrics are derived from orders each time (`src/lib/calc/customers.ts`):
+Customers are created automatically from orders — there is no separate "add customer" form. An order's
+customer is identified **phone first, name second** (`resolveCustomer` in `src/lib/customer-identity.ts`,
+also run live in the order form to show who the order will go to):
+- Phone matches an existing customer (via `customers.phone_key`, a normalised form: "012-345 6789",
+  "+60 12 345 6789" → "60123456789") → that customer, whatever name was typed.
+- Phone given, no match → the only same-name customer *without* a phone gets it; otherwise a new customer
+  (same name + different number = a different person).
+- No phone → a unique name match is used; several customers with that name → the save is refused and the
+  phone is asked for; no match → a new customer.
+- "Walk-in" → no customer record (`orders.customer_id` null), so anonymous sales don't count as one huge
+  repeat customer. Legacy "Walk-in" customer rows are left out of customer metrics.
+- Two customers can't be given the same phone number when editing customer details.
+
+Metrics are derived from orders each time (`src/lib/calc/customers.ts`):
 - Only **completed** orders count as purchases; open orders are shown separately; cancelled are ignored.
 - Lifetime value = sum of completed order totals. Repeat customer = more than one completed order.
 - Orders per month = completed orders ÷ active period (first completed order → today, minimum one month).

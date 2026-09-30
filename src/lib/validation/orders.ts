@@ -1,5 +1,6 @@
 import { calculateOrderTotals, derivePaymentStatus, type OrderTotals } from '@/lib/calc/orders'
 import type { PaymentStatus } from '@/lib/supabase/database.types'
+import { isValidPhoneKey, normalizePhone } from '@/lib/customer-identity'
 import {
   fail,
   isValidISODate,
@@ -46,6 +47,10 @@ export function parseOrderForm(form: FormSource): ParseResult<ParsedOrder> {
 
   const customerPhone = str(form, 'customerPhone')
   if (customerPhone.length > 30) return fail('The phone number is too long.')
+  if (customerPhone) {
+    const key = normalizePhone(customerPhone)
+    if (!key || !isValidPhoneKey(key)) return fail('Enter a valid phone number, e.g. 012-345 6789.')
+  }
 
   const requiredDate = str(form, 'requiredDate')
   const requiredTime = str(form, 'requiredTime')

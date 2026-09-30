@@ -52,6 +52,8 @@ function useTeamAction() {
 export interface MemberRowProps {
   memberId: string
   email: string
+  /** Their own name, if they've set one; the email is shown instead otherwise. */
+  displayName: string | null
   role: BusinessMemberRole
   joinedLabel: string
   isYou: boolean
@@ -59,19 +61,22 @@ export interface MemberRowProps {
   assignable: BusinessMemberRole[]
 }
 
-export function MemberRow({ memberId, email, role, joinedLabel, isYou, assignable }: MemberRowProps) {
+export function MemberRow({ memberId, email, displayName, role, joinedLabel, isYou, assignable }: MemberRowProps) {
   const { pending, error, run } = useTeamAction()
   const canEdit = assignable.length > 0 && !isYou
+  const label = displayName ?? email
 
   return (
     <li className="flex flex-col gap-2 py-3">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="truncate text-sm font-medium text-ink">
-            {email}
+            {label}
             {isYou && <span className="font-normal text-ink-muted"> (you)</span>}
           </p>
-          <p className="text-xs text-ink-muted">Joined {joinedLabel}</p>
+          <p className="truncate text-xs text-ink-muted">
+            {displayName ? `${email} · ` : ''}Joined {joinedLabel}
+          </p>
         </div>
         {!canEdit && <Badge tone={ROLE_TONE[role]}>{ROLE_LABELS[role]}</Badge>}
       </div>
@@ -81,7 +86,7 @@ export function MemberRow({ memberId, email, role, joinedLabel, isYou, assignabl
           <select
             value={role}
             disabled={pending}
-            aria-label={`Role for ${email}`}
+            aria-label={`Role for ${label}`}
             onChange={(e) => run(() => changeMemberRole(memberId, e.target.value))}
             className="h-11 flex-1 rounded-card border border-ink/15 bg-base px-3 text-sm outline-none focus:border-raspberry"
           >
@@ -97,7 +102,7 @@ export function MemberRow({ memberId, email, role, joinedLabel, isYou, assignabl
             className="text-clay-dark"
             disabled={pending}
             onClick={() => {
-              if (confirm(`Remove ${email} from the team? They'll lose access straight away.`)) void run(() => removeMember(memberId))
+              if (confirm(`Remove ${label} from the team? They'll lose access straight away.`)) void run(() => removeMember(memberId))
             }}
           >
             Remove
@@ -167,7 +172,7 @@ export function TransferOwnershipForm({
   candidates,
 }: {
   businessName: string
-  candidates: { memberId: string; email: string; role: BusinessMemberRole }[]
+  candidates: { memberId: string; label: string; role: BusinessMemberRole }[]
 }) {
   const { pending, error, run } = useTeamAction()
   const [memberId, setMemberId] = useState('')
@@ -176,7 +181,7 @@ export function TransferOwnershipForm({
   function submit() {
     if (!chosen) return
     const typed = window.prompt(
-      `Make ${chosen.email} the owner of ${businessName}?\n\nYou'll become an admin: you keep settings and staff access, but lose control of admins and can't undo this yourself.\n\nType the business name to confirm:`
+      `Make ${chosen.label} the owner of ${businessName}?\n\nYou'll become an admin: you keep settings and staff access, but lose control of admins and can't undo this yourself.\n\nType the business name to confirm:`
     )
     if (typed === null) return
     if (typed.trim().toLowerCase() !== businessName.trim().toLowerCase()) {
@@ -204,7 +209,7 @@ export function TransferOwnershipForm({
         <option value="">Choose the new owner…</option>
         {candidates.map((c) => (
           <option key={c.memberId} value={c.memberId}>
-            {c.email} ({ROLE_LABELS[c.role]})
+            {c.label} ({ROLE_LABELS[c.role]})
           </option>
         ))}
       </select>
@@ -229,7 +234,7 @@ export function LeaveBusinessButton({ businessName }: { businessName: string }) 
           if (!confirm(`Leave ${businessName}? You'll lose access until someone invites you again.`)) return
           void run(leaveBusiness).then((ok) => {
             // Full reload: every cached page for the old business must go.
-            if (ok) window.location.assign('/onboarding')
+            if (ok) window.location.assign('/no-access')
           })
         }}
       >

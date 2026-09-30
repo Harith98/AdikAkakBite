@@ -3,14 +3,17 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { buildDefaultScheduleBlocks } from '@/lib/services/default-schedule'
+import { hasMembership, isAppSetUp } from '@/lib/services/setup'
+import { readDisplayName } from '@/lib/services/current-business'
 
 export interface OnboardingFormState {
   error: string | null
 }
 
 /**
- * Creates the new business + its settings + the caller's membership row +
- * the default schedule (spec §8), then marks onboarding complete.
+ * First-time setup of the app's single business: creates the business + its
+ * settings + the caller's (owner) membership row + the default schedule
+ * (spec §8), then marks onboarding complete. Refused once the business exists.
  *
  * This covers onboarding steps 1–4 and 9 from spec §38 (business name,
  * owner name, hours, working days, review schedule). Steps 5–8 (products,
@@ -45,16 +48,14 @@ export async function completeOnboarding(
     redirect('/login')
   }
 
-  // Already belongs to a business (e.g. joined through an invite, or a
-  // double-submit): don't create a second one.
-  const { data: existingMembership } = await supabase
-    .from('business_members')
-    .select('id')
-    .eq('user_id', user.id)
-    .limit(1)
-    .maybeSingle()
-  if (existingMembership) {
+  // Already a member (double-submit, or joined by invite): nothing to create.
+  if (await hasMembership(supabase, user.id)) {
     redirect('/today')
+  }
+  // Single-business app: setup happens once. The database refuses a second
+  // business too (migration 0013); this just gives a clear message first.
+  if (await isAppSetUp(supabase)) {
+    return { error: 'This app is already set up. Ask the owner to send you an invite link.' }
   }
 
   // The id is generated here rather than read back from the insert: the
@@ -106,6 +107,12 @@ export async function completeOnboarding(
     entity_type: 'business',
     entity_id: businessId,
   })
+
+  // The owner name typed here is also the owner's own name for greetings,
+  // unless they already gave one at sign-up.
+  if (ownerName && !readDisplayName(user.user_metadata)) {
+    await supabase.auth.updateUser({ data: { display_name: ownerName } })
+  }
 
   redirect('/today')
 }

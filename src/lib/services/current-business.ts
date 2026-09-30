@@ -17,7 +17,10 @@ export interface CurrentBusinessContext {
   business: Business
   settings: BusinessSettings
   userId: string
+  userEmail: string | null
   role: BusinessMemberRole
+  /** The signed-in person's own name (auth user metadata), if they've set one. */
+  displayName: string | null
 }
 
 /**
@@ -29,8 +32,9 @@ export interface CurrentBusinessContext {
  * The schema already supports more than one via business_members, so a
  * business switcher can be added later without a migration.
  *
- * Redirects to onboarding if the user has no business yet (e.g. straight
- * after signup), and to /login if there is no session at all.
+ * Redirects to /no-access if the user isn't on the team (which in turn
+ * forwards to first-time setup if no business exists yet), and to /login if
+ * there is no session at all.
  */
 export const getCurrentBusinessContext = cache(async (): Promise<CurrentBusinessContext> => {
   const supabase = createClient()
@@ -61,20 +65,34 @@ export const getCurrentBusinessContext = cache(async (): Promise<CurrentBusiness
   const membership = data as unknown as MembershipWithBusiness | null
 
   if (!membership) {
-    redirect('/onboarding')
+    // Not on the team. /no-access forwards to first-time setup if the
+    // business doesn't exist yet.
+    redirect('/no-access')
   }
 
   const businessRow = one(membership.business)
   const settings = one(businessRow?.settings)
-  if (!businessRow || !settings) {
-    redirect('/onboarding')
+  // A member whose business has no (completed) settings means first-time
+  // setup failed part-way. Sending them to /onboarding would loop (it
+  // forwards members back here), so surface it instead.
+  if (!businessRow || !settings || !settings.onboarding_completed) {
+    throw new Error('Your business setup is incomplete (settings are missing). Please contact support to finish it.')
   }
   const business: Business = { ...businessRow }
   delete (business as Partial<typeof businessRow>).settings
 
-  if (!settings.onboarding_completed) {
-    redirect('/onboarding')
+  return {
+    business,
+    settings,
+    userId: user.id,
+    userEmail: user.email ?? null,
+    role: membership.role,
+    displayName: readDisplayName(user.user_metadata),
   }
-
-  return { business, settings, userId: user.id, role: membership.role }
 })
+
+/** A person's own name lives in their auth user metadata (set in Settings → Your profile). */
+export function readDisplayName(metadata: Record<string, unknown> | undefined): string | null {
+  const value = metadata?.display_name
+  return typeof value === 'string' && value.trim() ? value.trim() : null
+}

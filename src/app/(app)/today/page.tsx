@@ -19,8 +19,10 @@ import { LiveClock } from '@/components/today/LiveClock'
 const MAX_ORDER_CARDS = 3
 
 export default async function TodayPage() {
-  const { business, settings } = await getCurrentBusinessContext()
+  const { business, settings, role, displayName } = await getCurrentBusinessContext()
   const supabase = createClient()
+  // Greet each person by their own name; the business's owner name only ever stands in for the owner.
+  const greetName = displayName ?? (role === 'owner' ? business.owner_name : null) ?? 'there'
 
   const now = getBusinessNow(settings.timezone)
   const isWorkingDay = settings.working_days.includes(now.isoWeekday)
@@ -81,8 +83,8 @@ export default async function TodayPage() {
     <div className="flex flex-col gap-6">
       <header>
         <p className="font-display text-3xl text-ink">
-  {greeting(now.time)}, {business.owner_name ?? 'there'}! 👋
-</p>
+          {greeting(now.time)}, {greetName}! 👋
+        </p>
         <p className="mt-1 text-sm text-ink-muted">
           {now.dateLabel} · <LiveClock timezone={settings.timezone} initialTime={formatTime12(now.time)} />
         </p>

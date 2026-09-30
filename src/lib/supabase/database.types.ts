@@ -219,6 +219,8 @@ export interface Database {
           business_id: string
           name: string
           phone: string | null
+          /** Generated from phone (migration 0012); read-only. */
+          phone_key: string | null
           email: string | null
           notes: string | null
           created_at: string
@@ -621,6 +623,10 @@ export interface Database {
         Args: { p_token: string }
         Returns: string
       }
+      app_is_set_up: {
+        Args: Record<string, never>
+        Returns: boolean
+      }
       issue_order_receipt: {
         Args: { p_order_id: string; p_payment_method: PaymentMethod | null }
         Returns: number
@@ -635,6 +641,8 @@ export interface Database {
           member_id: string
           user_id: string
           email: string
+          /** Added in migration 0014; absent (undefined) before it's applied. */
+          display_name?: string | null
           role: BusinessMemberRole
           joined_at: string
         }[]

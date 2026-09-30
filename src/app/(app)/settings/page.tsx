@@ -4,6 +4,7 @@ import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { canManageBusiness, ROLE_LABELS } from '@/lib/team'
 import { BusinessDetailsForm } from '@/components/settings/BusinessDetailsForm'
+import { ProfileForm } from '@/components/settings/ProfileForm'
 import { signOut } from './actions'
 
 const WEEKDAY_LABELS: Record<number, string> = {
@@ -17,7 +18,7 @@ const WEEKDAY_LABELS: Record<number, string> = {
 }
 
 export default async function SettingsPage() {
-  const { business, settings, role } = await getCurrentBusinessContext()
+  const { business, settings, role, displayName, userEmail } = await getCurrentBusinessContext()
 
   const workingDaysLabel = settings.working_days
     .slice()
@@ -31,6 +32,11 @@ export default async function SettingsPage() {
         <p className="font-display text-3xl text-ink">Settings</p>
         <p className="mt-1 text-sm text-ink-muted">Your business details and preferences</p>
       </header>
+
+      <Card>
+        <p className="mb-3 text-xs font-medium uppercase tracking-wide text-ink-faint">Your profile</p>
+        <ProfileForm displayName={displayName} email={userEmail} />
+      </Card>
 
       <Card>
         <p className="text-xs font-medium uppercase tracking-wide text-ink-faint">Business</p>
@@ -55,6 +61,7 @@ export default async function SettingsPage() {
           <BusinessDetailsForm
             details={{
               name: business.name,
+              ownerName: business.owner_name,
               phone: business.phone,
               email: business.email,
               address: business.address,

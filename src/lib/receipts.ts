@@ -1,4 +1,5 @@
 import type { PaymentMethod } from '@/lib/supabase/database.types'
+import { normalizePhone } from '@/lib/customer-identity'
 
 export const PAYMENT_METHOD_LABELS: Record<PaymentMethod, string> = {
   cash: 'Cash',
@@ -50,13 +51,9 @@ export function buildReceiptText(input: {
 
 /**
  * Phone as typed ("012-345 6789", "+60 12 345 6789") → wa.me digits
- * ("60123456789"). Local Malaysian numbers starting with 0 get the 60
- * country code; anything too short to be a phone number returns null.
+ * ("60123456789"), or null if it isn't a usable number.
  */
-export function toWhatsAppNumber(phone: string | null | undefined, countryCode = '60'): string | null {
-  if (!phone) return null
-  let digits = phone.replace(/\D/g, '')
-  if (digits.startsWith('00')) digits = digits.slice(2)
-  else if (digits.startsWith('0')) digits = countryCode + digits.slice(1)
-  return digits.length >= 8 ? digits : null
+export function toWhatsAppNumber(phone: string | null | undefined): string | null {
+  const key = normalizePhone(phone)
+  return key && key.length >= 8 ? key : null
 }

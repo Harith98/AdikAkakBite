@@ -13,6 +13,9 @@ PostgreSQL via Supabase. Migrations live in `supabase/migrations/`, numbered and
 9. `0009_team_invitations.sql` — `business_invitations`, role-aware membership policies (replaces 0003's "any member can manage members"), owner/admin-only writes to settings and the schedule, and the `get_invitation` / `accept_business_invitation` / `get_business_members` functions
 10. `0010_transfer_ownership.sql` — `transfer_business_ownership()`: the owner hands ownership to an existing member and becomes an admin, atomically
 11. `0011_receipts.sql` — business contact fields (phone, email, address, registration number, receipt message), `orders.receipt_number` / `receipt_issued_at` / `payment_method`, and `issue_order_receipt()`, which assigns per-business sequential receipt numbers under an advisory lock. Numbers are never reused or changed once issued.
+12. `0012_customer_phone_key.sql` — `customers.phone_key`, a generated, normalised phone number (indexed) used to identify customers phone-first. Must stay in sync with `normalizePhone()` in `src/lib/customer-identity.ts`.
+13. `0013_single_business.sql` — makes the deployment single-business: `businesses` can hold at most one row, only the first account may create it (while none exists), and `app_is_set_up()` tells the sign-in/sign-up pages whether first-time setup is still open. After setup, people join only by invitation; signed-in non-members see `/no-access`.
+14. `0014_member_display_names.sql` — `get_business_members()` also returns each member's own name (`display_name` from their auth user metadata, set at sign-up or in Settings → Your profile) for the Team page.
 
 ## Team roles
 

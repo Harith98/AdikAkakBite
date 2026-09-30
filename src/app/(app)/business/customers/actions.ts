@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { getActionContext } from '@/lib/services/action-context'
 import type { Database } from '@/lib/supabase/database.types'
 import { str } from '@/lib/validation/common'
+import { isValidPhoneKey, normalizePhone } from '@/lib/customer-identity'
 
 export interface SaveCustomerState {
   error: string | null
@@ -25,9 +26,27 @@ export async function saveCustomer(_prev: SaveCustomerState, formData: FormData)
     return { error: 'One of the fields is too long.', nonce: 0 }
   }
   if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return { error: 'Enter a valid email address.', nonce: 0 }
+  const phoneKey = normalizePhone(phone)
+  if (phone && (!phoneKey || !isValidPhoneKey(phoneKey))) {
+    return { error: 'Enter a valid phone number, e.g. 012-345 6789.', nonce: 0 }
+  }
 
   const ctx = await getActionContext()
   if (!ctx.ok) return { error: ctx.error, nonce: 0 }
+
+  // The phone is how customers are told apart, so two customers can't share one.
+  if (phoneKey) {
+    const { data: clash, error: clashError } = await ctx.supabase
+      .from('customers')
+      .select('name')
+      .eq('business_id', ctx.businessId)
+      .eq('phone_key', phoneKey)
+      .neq('id', id)
+      .limit(1)
+      .maybeSingle()
+    if (clashError) return { error: clashError.message, nonce: 0 }
+    if (clash) return { error: `That phone number already belongs to ${clash.name}.`, nonce: 0 }
+  }
 
   const customerUpdate: Database['public']['Tables']['customers']['Update'] = {
     name,
