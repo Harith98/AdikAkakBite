@@ -35,3 +35,13 @@ export function isValidTime(value: string): boolean {
 }
 
 export const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
+/**
+ * Only allow same-origin, path-only redirect targets. Rejects absolute URLs,
+ * protocol-relative "//host" and "/\host" forms, so a crafted ?next= link
+ * can't bounce a freshly signed-in user to another site.
+ */
+export function safeNextPath(value: string | null | undefined, fallback = '/today'): string {
+  if (!value || !value.startsWith('/') || value.startsWith('//') || value.startsWith('/\\')) return fallback
+  return value
+}

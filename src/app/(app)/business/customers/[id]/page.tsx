@@ -19,7 +19,7 @@ export default async function CustomerPage({ params }: { params: { id: string } 
   const today = getBusinessNow(settings.timezone).isoDate
 
   const [customers, ordersRes] = await Promise.all([
-    getCustomerMetrics(supabase, business.id, today),
+    getCustomerMetrics(supabase, business.id, today, params.id),
     supabase
       .from('orders')
       .select('*')

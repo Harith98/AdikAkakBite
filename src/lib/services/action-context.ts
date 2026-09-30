@@ -1,12 +1,10 @@
-import type { SupabaseClient } from '@supabase/supabase-js'
 import { createClient } from '@/lib/supabase/server'
-import type { Database } from '@/lib/supabase/database.types'
 import { DEFAULT_TIMEZONE } from '@/lib/constants'
 
 export type ActionContext =
   | {
       ok: true
-      supabase: SupabaseClient<Database>
+      supabase: any
       userId: string
       businessId: string
       timezone: string
@@ -20,9 +18,14 @@ export type ActionContext =
  */
 export async function getActionContext(): Promise<ActionContext> {
   const supabase = createClient()
+  // Middleware already ran auth.getUser() for this request (a verified
+  // round trip to Supabase Auth). Reading the session here is a local
+  // cookie read, not a network call, so we avoid paying for that
+  // verification twice per request.
   const {
-    data: { user },
-  } = await supabase.auth.getUser()
+    data: { session },
+  } = await supabase.auth.getSession()
+  const user = session?.user
   if (!user) return { ok: false, error: 'Your session has expired. Please sign in again.' }
 
   const { data: membership } = await supabase

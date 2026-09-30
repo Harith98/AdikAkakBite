@@ -20,8 +20,11 @@ export const metadata: Metadata = {
   description: 'Know what to do right now. Track orders, sales, inventory and content for your dessert business.',
   manifest: '/manifest.json',
   icons: {
-    icon: '/icons/iconAdik192x192.png',
-    shortcut: '/icons/iconAdik192x192.png',
+    icon: [
+      { url: '/icons/iconAdik-16x16.png', sizes: '16x16', type: 'image/png' },
+      { url: '/icons/iconAdik-32x32.png', sizes: '32x32', type: 'image/png' },
+      { url: '/icons/iconAdik192x192.png', sizes: '192x192', type: 'image/png' },
+    ],
     apple: '/icons/iconAdik-180x180.png',
   },
   openGraph: {

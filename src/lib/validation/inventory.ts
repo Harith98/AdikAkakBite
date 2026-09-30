@@ -1,4 +1,4 @@
-import { fail, parseMoney, str, type FormSource, type ParseResult } from './common'
+import { fail, isValidISODate, parseMoney, str, type FormSource, type ParseResult } from './common'
 
 export interface ParsedInventoryItem {
   name: string
@@ -41,6 +41,7 @@ export function parseInventoryItemForm(form: FormSource): ParseResult<ParsedInve
   const notes = str(form, 'notes')
   if (notes.length > 500) return fail('Keep notes under 500 characters.')
   const expiryDate = str(form, 'expiryDate')
+  if (expiryDate && !isValidISODate(expiryDate)) return fail('Enter a valid expiry date.')
 
   const currentQuantity = parseQuantity(str(form, 'currentQuantity'), 'Starting quantity')
   if (!currentQuantity.ok) return currentQuantity
@@ -88,6 +89,7 @@ export function parseTransactionForm(form: FormSource, today: string): ParseResu
   const notes = str(form, 'notes')
   if (notes.length > 500) return fail('Keep notes under 500 characters.')
   const transactionDate = str(form, 'transactionDate') || today
+  if (!isValidISODate(transactionDate)) return fail('Enter a valid date.')
 
   return {
     ok: true,

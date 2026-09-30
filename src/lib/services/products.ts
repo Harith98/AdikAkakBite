@@ -1,9 +1,8 @@
-import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '@/lib/supabase/database.types'
 import { calculateProductEconomics, type ProductEconomics } from '@/lib/calc/products'
-import { selectInChunks } from './db-helpers'
+import { groupBy, selectInChunks } from './db-helpers'
 
-type Client = SupabaseClient<Database>
+type Client = any
 type ProductRow = Database['public']['Tables']['products']['Row']
 type CostRow = Database['public']['Tables']['product_costs']['Row']
 
@@ -62,20 +61,29 @@ export async function getProducts(supabase: Client, businessId: string): Promise
     .order('is_active', { ascending: false })
     .order('name', { ascending: true })
   if (error) throw new Error(`Could not load products: ${error.message}`)
-  const products = data ?? []
+  const products = (data ?? []) as any[]
 
   const costs = await selectInChunks(
-    products.map((p) => p.id),
+    products.map((p: any) => p.id),
     (ids) => supabase.from('product_costs').select('*').in('product_id', ids).is('effective_to', null)
   )
-  return products.map((p) => toView(p, pickCurrentCost(costs.filter((c) => c.product_id === p.id))))
+  const costsByProduct = groupBy(costs as CostRow[], (c) => c.product_id)
+  return products.map((p: any) => toView(p, pickCurrentCost(costsByProduct.get(p.id) ?? [])))
 }
 
 export async function getProduct(supabase: Client, businessId: string, productId: string): Promise<ProductView | null> {
-  const { data, error } = await supabase.from('products').select('*').eq('business_id', businessId).eq('id', productId).maybeSingle()
+  // Fetch the product and its cost history together instead of waiting for
+  // the product to come back before asking for costs — they don't depend
+  // on each other, so there's no reason to pay for two round trips in a row.
+  const [
+    { data, error },
+    { data: costs, error: costError },
+  ] = await Promise.all([
+    supabase.from('products').select('*').eq('business_id', businessId).eq('id', productId).maybeSingle(),
+    supabase.from('product_costs').select('*').eq('product_id', productId).is('effective_to', null),
+  ])
   if (error) throw new Error(`Could not load the product: ${error.message}`)
   if (!data) return null
-  const { data: costs, error: costError } = await supabase.from('product_costs').select('*').eq('product_id', productId).is('effective_to', null)
   if (costError) throw new Error(`Could not load the product's costs: ${costError.message}`)
   return toView(data, pickCurrentCost(costs ?? []))
 }

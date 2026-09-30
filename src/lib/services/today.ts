@@ -2,6 +2,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database, PaymentStatus } from '@/lib/supabase/database.types'
 import { calculateOrderTotals } from '@/lib/calc/orders'
 import { getInventoryStatus, needsReorder } from '@/lib/calc/inventory'
+import { groupBy, selectInChunks } from './db-helpers'
 import type { EngineInventoryAlert, EngineOrder } from './recommendation'
 import type { ScheduleBlockLike, TaskLike } from './schedule'
 
@@ -136,16 +137,15 @@ export async function getTodayData(
   // Order details (items + customer names), fetched only if there are orders.
   const orderIds = orderRows.map((o) => o.id)
   const customerIds = Array.from(new Set(orderRows.map((o) => o.customer_id).filter((id): id is string => id !== null)))
-  const [itemsRes, customersRes] = await Promise.all([
-    orderIds.length > 0 ? supabase.from('order_items').select('*').in('order_id', orderIds) : Promise.resolve(null),
-    customerIds.length > 0 ? supabase.from('customers').select('id, name').in('id', customerIds) : Promise.resolve(null),
+  const [itemRows, customerRows] = await Promise.all([
+    selectInChunks(orderIds, (ids) => supabase.from('order_items').select('*').in('order_id', ids)),
+    selectInChunks(customerIds, (ids) => supabase.from('customers').select('id, name').in('id', ids)),
   ])
-  const itemRows = itemsRes ? must(itemsRes, 'order items') : []
-  const customerRows = customersRes ? must(customersRes, 'customers') : []
   const customerNames = new Map(customerRows.map((c) => [c.id, c.name]))
+  const itemsByOrder = groupBy(itemRows, (i) => i.order_id)
 
   const orders: TodayOrder[] = orderRows.map((o) => {
-    const items = itemRows.filter((i) => i.order_id === o.id)
+    const items = itemsByOrder.get(o.id) ?? []
     const totals = calculateOrderTotals({
       items: items.map((i) => ({ quantity: i.quantity, unitPrice: i.unit_price })),
       discount: o.discount,

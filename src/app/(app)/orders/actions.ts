@@ -88,11 +88,11 @@ export async function saveOrder(_prev: SaveOrderState, formData: FormData): Prom
 
     const { error: updateError } = await supabase.from('orders').update(fields).eq('id', orderIdRaw).eq('business_id', businessId)
     if (updateError) {
-      await supabase.from('order_items').delete().in('id', (inserted ?? []).map((i) => i.id))
+      await supabase.from('order_items').delete().in('id', (inserted ?? []).map((i: { id: string }) => i.id))
       return { error: updateError.message, nonce: 0 }
     }
 
-    const oldIds = (oldItems ?? []).map((i) => i.id)
+    const oldIds = (oldItems ?? []).map((i: { id: string }) => i.id)
     if (oldIds.length > 0) {
       const { error: deleteError } = await supabase.from('order_items').delete().in('id', oldIds)
       if (deleteError) return { error: deleteError.message, nonce: 0 }

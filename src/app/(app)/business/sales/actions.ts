@@ -23,8 +23,8 @@ export async function closeDay(_prev: CloseDayState, formData: FormData): Promis
   const { supabase, businessId, timezone } = ctx
   const today = getBusinessNow(timezone).isoDate
 
-  const [summary] = await getSalesSummary(supabase, businessId, today)
   try {
+    const [summary] = await getSalesSummary(supabase, businessId, today)
     await saveDailyClose(supabase, businessId, {
       reviewDate: today,
       revenue: summary?.totals.revenue ?? 0,

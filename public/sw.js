@@ -7,7 +7,7 @@
 // "You're offline, this will save when your connection returns" message),
 // not queued and replayed by this worker.
 
-const CACHE_VERSION = 'dessert-os-v1'
+const CACHE_VERSION = 'dessert-os-v2' // bump whenever a cached icon changes
 const APP_SHELL_URLS = [
   '/manifest.json',
   '/icons/iconAdik192x192.png',

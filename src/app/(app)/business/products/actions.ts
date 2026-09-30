@@ -79,7 +79,7 @@ export async function saveProduct(_prev: SaveProductState, formData: FormData): 
     .select('*')
     .eq('product_id', idRaw)
     .is('effective_to', null)
-  const current = (costs ?? []).sort((a, b) => b.effective_from.localeCompare(a.effective_from))[0]
+  const current = (costs ?? []).sort((a: any, b: any) => b.effective_from.localeCompare(a.effective_from))[0]
   const changed =
     !current ||
     current.ingredient_cost !== p.ingredientCost ||

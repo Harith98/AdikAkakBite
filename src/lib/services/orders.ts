@@ -1,7 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database, OrderStatus, PaymentStatus } from '@/lib/supabase/database.types'
 import { calculateOrderTotals, type OrderTotals } from '@/lib/calc/orders'
-import { selectInChunks } from './db-helpers'
+import { groupBy, selectInChunks } from './db-helpers'
 
 type Client = SupabaseClient<Database>
 type OrderRow = Database['public']['Tables']['orders']['Row']
@@ -42,9 +42,10 @@ export async function hydrateOrders(supabase: Client, businessId: string, rows: 
     selectInChunks(customerIds, (ids) => supabase.from('customers').select('id, name').eq('business_id', businessId).in('id', ids)),
   ])
   const names = new Map(customers.map((c) => [c.id, c.name]))
+  const itemsByOrder = groupBy(items, (i) => i.order_id)
 
   return rows.map((o) => {
-    const orderItems = items.filter((i) => i.order_id === o.id)
+    const orderItems = itemsByOrder.get(o.id) ?? []
     const totals = calculateOrderTotals({
       items: orderItems.map((i) => ({ quantity: i.quantity, unitPrice: i.unit_price })),
       discount: o.discount,

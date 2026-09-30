@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import type { TaskCategory } from '@/lib/supabase/database.types'
 import { TASK_CATEGORY_OPTIONS } from '@/lib/constants'
 import { getActionContext } from '@/lib/services/action-context'
+import { UUID_PATTERN } from '@/lib/validation/common'
 
 export interface ScheduleFormState {
   error: string | null
@@ -33,6 +34,7 @@ export async function saveScheduleBlock(_prev: ScheduleFormState, formData: Form
     )
   )
 
+  if (id && !UUID_PATTERN.test(id)) return { error: 'Invalid block.', nonce: 0 }
   if (!title) return { error: 'Give the block a name.', nonce: 0 }
   if (title.length > MAX_TITLE) return { error: `Keep the name under ${MAX_TITLE} characters.`, nonce: 0 }
   if (!CATEGORIES.includes(category)) return { error: 'Pick a category.', nonce: 0 }
@@ -46,7 +48,7 @@ export async function saveScheduleBlock(_prev: ScheduleFormState, formData: Form
   const { supabase, businessId } = ctx
 
   if (id) {
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from('schedule_blocks')
       .update({
         title,
@@ -58,7 +60,10 @@ export async function saveScheduleBlock(_prev: ScheduleFormState, formData: Form
       })
       .eq('id', id)
       .eq('business_id', businessId)
+      .select('id')
+      .maybeSingle()
     if (error) return { error: error.message, nonce: 0 }
+    if (!data) return { error: 'That block could not be found.', nonce: 0 }
   } else {
     const { data: last } = await supabase
       .from('schedule_blocks')
@@ -87,7 +92,7 @@ export async function saveScheduleBlock(_prev: ScheduleFormState, formData: Form
 
 export async function deleteScheduleBlock(formData: FormData): Promise<void> {
   const id = String(formData.get('id') ?? '')
-  if (!id) return
+  if (!UUID_PATTERN.test(id)) return
   const ctx = await getActionContext()
   if (!ctx.ok) throw new Error(ctx.error)
   const { error } = await ctx.supabase.from('schedule_blocks').delete().eq('id', id).eq('business_id', ctx.businessId)

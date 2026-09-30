@@ -27,9 +27,15 @@ export interface CurrentBusinessContext {
 export const getCurrentBusinessContext = cache(async (): Promise<CurrentBusinessContext> => {
   const supabase = createClient()
 
+  // Middleware already called auth.getUser() for this request, which
+  // contacts Supabase Auth to verify and refresh the token. Re-verifying
+  // here would be a second network round trip for no extra safety, so we
+  // read the already-validated session from cookies instead (no network
+  // call). Do not use getSession() in code paths middleware doesn't cover.
   const {
-    data: { user },
-  } = await supabase.auth.getUser()
+    data: { session },
+  } = await supabase.auth.getSession()
+  const user = session?.user
 
   if (!user) {
     redirect('/login')

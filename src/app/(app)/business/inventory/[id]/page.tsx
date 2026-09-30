@@ -20,9 +20,12 @@ export default async function InventoryItemPage({ params }: { params: { id: stri
   const { business } = await getCurrentBusinessContext()
   const supabase = createClient()
 
-  const item = await getInventoryItem(supabase, business.id, params.id)
+  // Independent reads — fetch together. RLS scopes transactions to this business.
+  const [item, transactions] = await Promise.all([
+    getInventoryItem(supabase, business.id, params.id),
+    getRecentTransactions(supabase, params.id),
+  ])
   if (!item) notFound()
-  const transactions = await getRecentTransactions(supabase, params.id)
 
   return (
     <div className="flex max-w-2xl flex-col gap-5">

@@ -22,3 +22,15 @@ export async function selectInChunks<T>(
 export function escapeLike(value: string): string {
   return value.replace(/[\\%_]/g, (c) => `\\${c}`)
 }
+
+/** Buckets rows by key in one pass, so joining children to parents is O(n) rather than O(parents × children). */
+export function groupBy<T, K>(rows: readonly T[], key: (row: T) => K): Map<K, T[]> {
+  const groups = new Map<K, T[]>()
+  for (const row of rows) {
+    const k = key(row)
+    const bucket = groups.get(k)
+    if (bucket) bucket.push(row)
+    else groups.set(k, [row])
+  }
+  return groups
+}

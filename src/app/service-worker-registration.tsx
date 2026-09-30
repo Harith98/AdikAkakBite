@@ -11,11 +11,20 @@ export function ServiceWorkerRegistration() {
     if (typeof window === 'undefined' || !('serviceWorker' in navigator)) return
     if (process.env.NODE_ENV !== 'production') return // avoid caching issues during local dev
 
-    window.addEventListener('load', () => {
+    const register = () => {
       navigator.serviceWorker.register('/sw.js').catch((err) => {
         console.error('Service worker registration failed:', err)
       })
-    })
+    }
+
+    // Hydration can finish after `load` has already fired, in which case a
+    // load listener would never run and the worker would never register.
+    if (document.readyState === 'complete') {
+      register()
+      return
+    }
+    window.addEventListener('load', register, { once: true })
+    return () => window.removeEventListener('load', register)
   }, [])
 
   return null

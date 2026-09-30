@@ -29,7 +29,12 @@ export default async function TodayPage() {
     now.time >= settings.working_hours_start.slice(0, 5) &&
     now.time < settings.working_hours_end.slice(0, 5)
 
-  const data = await getTodayData(supabase, business.id, now.isoDate, isWorkingDay)
+  // The latest close is a tiny query, so fetch it alongside the main data
+  // rather than waiting until we know whether the Closing block is active.
+  const [data, latestClose] = await Promise.all([
+    getTodayData(supabase, business.id, now.isoDate, isWorkingDay),
+    isWorkingDay ? getRecentCloses(supabase, business.id, 1) : Promise.resolve([]),
+  ])
 
   // ---- Orders, most pressing first (overdue, then by due date/time) ----
   const orderRows = data.orders
@@ -70,7 +75,7 @@ export default async function TodayPage() {
 
   // Nudge toward the daily close once Closing is the active block (spec §8/§61), unless already done.
   const isClosingBlock = block?.title.toLowerCase() === 'closing'
-  const closedToday = isClosingBlock ? (await getRecentCloses(supabase, business.id, 1)).some((c) => c.review_date === now.isoDate) : false
+  const closedToday = latestClose.some((c) => c.review_date === now.isoDate)
 
   return (
     <div className="flex flex-col gap-6">

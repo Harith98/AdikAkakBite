@@ -2,6 +2,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '@/lib/supabase/database.types'
 import { calculateOrderTotals } from '@/lib/calc/orders'
 import { summarizeSales, type SalesTotals } from '@/lib/calc/sales'
+import { groupBy, selectInChunks } from './db-helpers'
 import { getCompletedOrdersInRange } from './orders'
 
 type Client = SupabaseClient<Database>
@@ -22,54 +23,31 @@ export interface SalesPeriod {
 export async function getSalesSummary(supabase: Client, businessId: string, today: string): Promise<SalesPeriod[]> {
   const monthStart = `${today.slice(0, 7)}-01`
   const weekStart = mondayOf(today)
+  // Early in a month the week began last month, so the week is NOT a subset of
+  // the month. Fetch once from whichever starts first and split in memory.
+  const rangeStart = weekStart < monthStart ? weekStart : monthStart
 
-  const [todayOrders, weekOrders, monthOrders] = await Promise.all([
-    getCompletedOrdersInRange(supabase, businessId, today, today),
-    getCompletedOrdersInRange(supabase, businessId, weekStart, today),
-    getCompletedOrdersInRange(supabase, businessId, monthStart, today),
-  ])
+  const orders = await getCompletedOrdersInRange(supabase, businessId, rangeStart, today)
+  const items = await selectInChunks(
+    orders.map((o) => o.id),
+    (ids) => supabase.from('order_items').select('order_id, quantity, unit_price').in('order_id', ids)
+  )
+  const itemsByOrder = groupBy(items, (i) => i.order_id)
 
-  const items = await supabase
-    .from('order_items')
-    .select('order_id, quantity, unit_price')
-    .in('order_id', monthOrders.map((o) => o.id))
-    .then((res) => {
-      if (res.error) throw new Error(`Could not load order items: ${res.error.message}`)
-      return res.data ?? []
-    })
-
-  const totalOf = (order: (typeof monthOrders)[number]) =>
-    calculateOrderTotals({
-      items: items.filter((i) => i.order_id === order.id).map((i) => ({ quantity: i.quantity, unitPrice: i.unit_price })),
-      discount: order.discount,
-      deliveryFee: order.delivery_fee,
-    }).total
-
-  // Today's and this week's orders are subsets of this month's (same business,
-  // same or narrower date range), so their totals are looked up from the one
-  // batch of items already fetched above rather than fetched again.
-  const monthTotals = monthOrders.map((o) => ({ orderDate: o.order_date, total: totalOf(o) }))
-  const totalsById = new Map(monthOrders.map((o, i) => [o.id, monthTotals[i]!.total]))
+  const rows = orders.map((o) => ({
+    orderDate: o.order_date,
+    total: calculateOrderTotals({
+      items: (itemsByOrder.get(o.id) ?? []).map((i) => ({ quantity: i.quantity, unitPrice: i.unit_price })),
+      discount: o.discount,
+      deliveryFee: o.delivery_fee,
+    }).total,
+  }))
+  const since = (start: string) => summarizeSales(rows.filter((r) => r.orderDate >= start))
 
   return [
-    {
-      label: 'Today',
-      startDate: today,
-      endDate: today,
-      totals: summarizeSales(todayOrders.map((o) => ({ orderDate: o.order_date, total: totalsById.get(o.id) ?? 0 }))),
-    },
-    {
-      label: 'This week',
-      startDate: weekStart,
-      endDate: today,
-      totals: summarizeSales(weekOrders.map((o) => ({ orderDate: o.order_date, total: totalsById.get(o.id) ?? 0 }))),
-    },
-    {
-      label: 'This month',
-      startDate: monthStart,
-      endDate: today,
-      totals: summarizeSales(monthTotals),
-    },
+    { label: 'Today', startDate: today, endDate: today, totals: since(today) },
+    { label: 'This week', startDate: weekStart, endDate: today, totals: since(weekStart) },
+    { label: 'This month', startDate: monthStart, endDate: today, totals: since(monthStart) },
   ]
 }
 
