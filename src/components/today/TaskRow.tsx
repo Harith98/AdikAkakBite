@@ -37,22 +37,27 @@ export function TaskRow({ id, title, status, isPriority }: TaskRowProps) {
 
   return (
     <li className="flex flex-col">
-      <div className="flex min-h-11 items-center gap-3">
+      <div className="flex min-h-11 items-center gap-1">
+        {/* 44px square tap target around a 28px circle, so it stays round and easy to hit on phones. */}
         <button
           type="button"
           onClick={toggle}
           disabled={pending}
           aria-label={done ? `Mark "${title}" as not done` : `Mark "${title}" as done`}
-          className={clsx(
-            'flex h-7 w-7 shrink-0 items-center justify-center rounded-pill border-2 transition-colors',
-            done ? 'border-sage-dark bg-sage-dark text-white' : 'border-ink-faint text-transparent hover:border-raspberry'
-          )}
+          className="group -ml-2 flex h-11 w-11 shrink-0 items-center justify-center rounded-pill disabled:opacity-60"
         >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-            <path d="M5 13l4 4L19 7" />
-          </svg>
+          <span
+            className={clsx(
+              'flex h-7 w-7 items-center justify-center rounded-pill border-2 transition-colors',
+              done ? 'border-sage-dark bg-sage-dark text-white' : 'border-ink-faint text-transparent group-hover:border-raspberry'
+            )}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M5 13l4 4L19 7" />
+            </svg>
+          </span>
         </button>
-        <span className={clsx('flex-1 text-sm', done || status === 'skipped' ? 'text-ink-faint line-through' : 'text-ink')}>
+        <span className={clsx('min-w-0 flex-1 break-words text-sm', done || status === 'skipped' ? 'text-ink-faint line-through' : 'text-ink')}>
           {title}
         </span>
         {status === 'in_progress' && <span className="text-xs font-medium text-raspberry-dark">In progress</span>}

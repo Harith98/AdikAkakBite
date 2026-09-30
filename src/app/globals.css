@@ -32,6 +32,34 @@ body {
   }
 }
 
+/* Form fields on phones.
+   - iPhone Safari zooms the whole page in when you tap a field whose text is
+     under 16px, and doesn't zoom back out, so the page ends up cut off and
+     scrolling sideways. Fields stay at 16px on phones (desktop keeps text-sm).
+   - iOS draws date/time fields at a fixed native width that ignores
+     width: 100% and pokes out of narrow grid columns; dropping the native
+     appearance lets them size like any other field (tapping still opens the
+     phone's own date/time picker). */
+@media (max-width: 639px), (pointer: coarse) {
+  input:not([type='checkbox']):not([type='radio']),
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+
+  input[type='date'],
+  input[type='time'] {
+    -webkit-appearance: none;
+    appearance: none;
+    min-width: 0;
+    display: block;
+  }
+
+  input::-webkit-date-and-time-value {
+    text-align: left;
+  }
+}
+
 ::selection {
   background-color: #f7e8ec;
   color: #252627;

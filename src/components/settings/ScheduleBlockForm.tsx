@@ -40,7 +40,7 @@ export function ScheduleBlockForm({ block }: { block?: ScheduleBlockFormValues }
           <span className="font-medium text-ink">Name</span>
           <input name="title" required maxLength={120} defaultValue={block?.title} className={inputClass} />
         </label>
-        <div className="grid grid-cols-3 gap-2">
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
           <label className="flex flex-col gap-1 text-sm">
             <span className="font-medium text-ink">Starts</span>
             <input type="time" name="startTime" required defaultValue={block?.startTime} className={inputClass} />
@@ -49,7 +49,7 @@ export function ScheduleBlockForm({ block }: { block?: ScheduleBlockFormValues }
             <span className="font-medium text-ink">Ends</span>
             <input type="time" name="endTime" required defaultValue={block?.endTime} className={inputClass} />
           </label>
-          <label className="flex flex-col gap-1 text-sm">
+          <label className="col-span-2 flex flex-col gap-1 text-sm sm:col-span-1">
             <span className="font-medium text-ink">Category</span>
             <select name="category" defaultValue={block?.category ?? 'business'} className={inputClass}>
               {TASK_CATEGORY_OPTIONS.map((c) => (

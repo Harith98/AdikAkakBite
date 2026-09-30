@@ -58,18 +58,23 @@ export function PrioritiesCard({ priorities, suggestions }: PrioritiesCardProps)
           const done = task?.status === 'completed'
           return (
             <li key={`${rank}-${task?.id ?? 'empty'}-${task?.title ?? ''}`}>
-              <form onSubmit={(e) => handleSave(rank, e)} className="flex items-center gap-2">
+              <form onSubmit={(e) => handleSave(rank, e)} className="flex items-center gap-1.5">
+                {/* 44px tap target around a 36px circle: stays round and easy to hit on phones. */}
                 <button
                   type="button"
                   disabled={!task || busy}
                   aria-label={task ? (done ? 'Mark priority as not done' : 'Mark priority as done') : `Priority ${rank}`}
                   onClick={() => task && guard(() => setTaskStatus(task.id, done ? 'not_started' : 'completed'))}
-                  className={clsx(
-                    'flex h-9 w-9 shrink-0 items-center justify-center rounded-pill border-2 text-sm font-medium transition-colors',
-                    done ? 'border-sage-dark bg-sage-dark text-white' : 'border-ink-faint text-ink-muted'
-                  )}
+                  className="-ml-1 flex h-11 w-11 shrink-0 items-center justify-center rounded-pill"
                 >
-                  {done ? '✓' : rank}
+                  <span
+                    className={clsx(
+                      'flex h-9 w-9 items-center justify-center rounded-pill border-2 text-sm font-medium transition-colors',
+                      done ? 'border-sage-dark bg-sage-dark text-white' : 'border-ink-faint text-ink-muted'
+                    )}
+                  >
+                    {done ? '✓' : rank}
+                  </span>
                 </button>
                 <input
                   name="title"
