@@ -18,11 +18,11 @@ interface OrderCardProps {
 export function OrderCard({ order, urgency, today, currency }: OrderCardProps) {
   const isLate = urgency.isOverdue
   const label = isLate
-    ? '🔴 Overdue'
+    ? 'Overdue'
     : urgency.isUrgent
-      ? '🔴 Due soon'
+      ? 'Due soon'
       : order.requiredDate === today
-        ? '🟡 Due today'
+        ? 'Due today'
         : 'Upcoming'
 
   const due = order.requiredDate && order.requiredDate < today
@@ -36,9 +36,11 @@ export function OrderCard({ order, urgency, today, currency }: OrderCardProps) {
       : 'Due today · no time set'
 
   return (
-    <Card className={urgency.isUrgent ? 'border-2 border-raspberry' : undefined}>
+    <Card className={isLate ? '!border-2 !border-clay' : urgency.isUrgent ? '!border-2 !border-clay/60' : undefined}>
       <div className="flex items-start justify-between gap-3">
-        <Badge tone={urgency.isUrgent ? 'raspberry' : 'amber'}>{label}</Badge>
+        <Badge tone={isLate ? 'clay-solid' : urgency.isUrgent ? 'clay' : 'amber'} dot>
+          {label}
+        </Badge>
         <span className="text-xs text-ink-muted">{PAYMENT_LABEL[order.paymentStatus]}</span>
       </div>
       <p className="mt-3 font-display text-2xl text-ink">{order.customerName ?? 'Walk-in'}</p>

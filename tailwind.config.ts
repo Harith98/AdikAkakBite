@@ -33,9 +33,11 @@ const config: Config = {
           dark: '#78611B',
         },
         clay: {
-          DEFAULT: '#B4574A', // status: reorder / urgent / negative trend
-          soft: '#F6E4E1',
-          dark: '#8F3D31',
+          // status: reorder / overdue / errors. A warm brick-orange, kept clearly
+          // apart from the pink raspberry brand accent so alerts read as alerts.
+          DEFAULT: '#C4502D',
+          soft: '#FCEBE4',
+          dark: '#9A3412',
         },
       },
       fontFamily: {

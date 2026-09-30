@@ -1,4 +1,6 @@
 import Link from 'next/link'
+import clsx from '@/lib/clsx'
+import { needsReorder } from '@/lib/calc/inventory'
 import { createClient } from '@/lib/supabase/server'
 import { getCurrentBusinessContext } from '@/lib/services/current-business'
 import { getInventoryItems } from '@/lib/services/inventory'
@@ -9,7 +11,7 @@ import { InventoryStatusBadge } from '@/components/business/InventoryStatusBadge
 export default async function InventoryPage() {
   const { business } = await getCurrentBusinessContext()
   const items = await getInventoryItems(createClient(), business.id)
-  const alerts = items.filter((i) => i.status === 'reorder' || i.status === 'out_of_stock').length
+  const alerts = items.filter((i) => needsReorder(i.status)).length
 
   return (
     <div className="flex max-w-2xl flex-col gap-5">
@@ -17,7 +19,12 @@ export default async function InventoryPage() {
         <div>
           <Link href="/business" className="text-sm text-ink-muted">← Business</Link>
           <p className="mt-2 font-display text-3xl text-ink">Inventory</p>
-          {alerts > 0 && <p className="mt-1 text-sm text-clay-dark">{alerts} item{alerts === 1 ? '' : 's'} need attention</p>}
+          {alerts > 0 && (
+            <p className="mt-2 inline-flex items-center gap-1.5 rounded-pill bg-clay-soft px-3 py-1 text-sm font-medium text-clay-dark">
+              <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-current" />
+              {alerts} item{alerts === 1 ? '' : 's'} need{alerts === 1 ? 's' : ''} attention
+            </p>
+          )}
         </div>
         <LinkButton href="/business/inventory/new">Add item</LinkButton>
       </header>
@@ -34,7 +41,12 @@ export default async function InventoryPage() {
           {items.map((item) => (
             <li key={item.id}>
               <Link href={`/business/inventory/${item.id}`} className="block">
-                <Card className="transition-colors hover:bg-base-soft">
+                <Card
+                  className={clsx(
+                    'transition-colors hover:bg-base-soft',
+                    needsReorder(item.status) && '!border-l-4 !border-l-clay'
+                  )}
+                >
                   <div className="flex items-start justify-between gap-3">
                     <div>
                       <p className="font-display text-xl text-ink">{item.name}</p>

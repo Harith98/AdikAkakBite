@@ -1,3 +1,5 @@
+import Link from 'next/link'
+import clsx from '@/lib/clsx'
 import { createClient } from '@/lib/supabase/server'
 import { getCurrentBusinessContext } from '@/lib/services/current-business'
 import { getTodayData } from '@/lib/services/today'
@@ -94,7 +96,12 @@ export default async function TodayPage() {
         <div className="mt-4 grid grid-cols-3 gap-3">
           <Stat label="Orders due today" value={String(ordersToday)} />
           <Stat label="Tasks done" value={todaysTasks.length > 0 ? `${tasksDone}/${todaysTasks.length}` : '—'} />
-          <Stat label="Low stock" value={String(data.inventoryAlerts.length)} />
+          <Stat
+            label="Low stock"
+            value={String(data.inventoryAlerts.length)}
+            href="/business/inventory"
+            alert={data.inventoryAlerts.length > 0}
+          />
         </div>
       </header>
 
@@ -160,12 +167,23 @@ export default async function TodayPage() {
   )
 }
 
-function Stat({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-card bg-base-card p-3 shadow-card">
-      <p className="font-display text-2xl text-ink">{value}</p>
-      <p className="mt-0.5 text-xs text-ink-muted">{label}</p>
-    </div>
+function Stat({ label, value, href, alert }: { label: string; value: string; href?: string; alert?: boolean }) {
+  const body = (
+    <>
+      <p className={clsx('font-display text-2xl', alert ? 'text-clay-dark' : 'text-ink')}>{value}</p>
+      <p className={clsx('mt-0.5 text-xs', alert ? 'font-medium text-clay-dark' : 'text-ink-muted')}>{label}</p>
+    </>
+  )
+  const className = clsx(
+    'block rounded-card p-3 shadow-card',
+    alert ? 'bg-clay-soft ring-1 ring-clay/30' : 'bg-base-card'
+  )
+  return href && alert ? (
+    <Link href={href} className={clsx(className, 'transition-colors hover:bg-clay-soft/70')}>
+      {body}
+    </Link>
+  ) : (
+    <div className={className}>{body}</div>
   )
 }
 
