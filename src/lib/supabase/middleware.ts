@@ -48,6 +48,7 @@ export async function updateSession(request: NextRequest) {
   const isPublicAsset =
     path.startsWith('/_next') ||
     path.startsWith('/api/auth') || // email-confirmation / magic-link callback must work signed out
+    path.startsWith('/api/cron') || // Vercel Cron; the route checks CRON_SECRET itself
     path.startsWith('/manifest.json') ||
     path.startsWith('/sw.js') ||
     path.startsWith('/icons') ||

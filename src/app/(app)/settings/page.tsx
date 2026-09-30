@@ -40,6 +40,12 @@ export default async function SettingsPage() {
 
       <NavCard href="/settings/account" title="Email & password" text="Change the email or password you sign in with" />
 
+      <NavCard
+        href="/settings/notifications"
+        title="Notifications"
+        text="Low stock, order reminders and schedule changes on your phone"
+      />
+
       <Card>
         <p className="text-xs font-medium uppercase tracking-wide text-ink-faint">Business</p>
         <dl className="mt-3 flex flex-col gap-3 text-sm">
@@ -89,7 +95,7 @@ export default async function SettingsPage() {
           Coming in a later phase
         </p>
         <p className="mt-2 text-sm text-ink-muted">
-          Editing these values in place, notification preferences, forecast settings and data
+          Editing these values in place, forecast settings and data
           export (CSV) land alongside the modules they belong to.
         </p>
       </Card>

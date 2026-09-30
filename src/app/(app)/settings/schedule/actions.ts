@@ -7,6 +7,8 @@ import { getActionContext } from '@/lib/services/action-context'
 import { UUID_PATTERN } from '@/lib/validation/common'
 import { canManageBusiness } from '@/lib/team'
 import { getBusinessNow } from '@/lib/time'
+import { scheduleChangeMessage, type ScheduleBlockSnapshot } from '@/lib/notifications/messages'
+import { notifyTeam } from '@/lib/notifications/push'
 
 export interface ScheduleFormState {
   error: string | null
@@ -48,9 +50,12 @@ export async function saveScheduleBlock(_prev: ScheduleFormState, formData: Form
   const ctx = await getActionContext()
   if (!ctx.ok) return { error: ctx.error, nonce: 0 }
   if (!canManageBusiness(ctx.role)) return { error: 'Only owners and admins can change the schedule.', nonce: 0 }
-  const { supabase, businessId } = ctx
+  const { supabase, businessId, userId } = ctx
+  const after: ScheduleBlockSnapshot = { title, startTime, endTime, isActive }
+  let before: ScheduleBlockSnapshot | null = null
 
   if (id) {
+    before = await getBlockSnapshot(ctx, id)
     const { data, error } = await supabase
       .from('schedule_blocks')
       .update({
@@ -91,6 +96,9 @@ export async function saveScheduleBlock(_prev: ScheduleFormState, formData: Form
     if (error) return { error: error.message, nonce: 0 }
   }
 
+  const message = scheduleChangeMessage(before, after)
+  if (message) await notifyTeam(businessId, 'schedule_change', message, { excludeUserId: userId })
+
   revalidatePath('/settings/schedule')
   revalidatePath('/today')
   return { error: null, nonce: Date.now() }
@@ -102,10 +110,13 @@ export async function deleteScheduleBlock(formData: FormData): Promise<void> {
   const ctx = await getActionContext()
   if (!ctx.ok) throw new Error(ctx.error)
   if (!canManageBusiness(ctx.role)) throw new Error('Only owners and admins can change the schedule.')
+  const before = await getBlockSnapshot(ctx, id)
   const syncError = await syncTodaysBlockTasks(ctx, id, [], null)
   if (syncError) throw new Error(syncError)
   const { error } = await ctx.supabase.from('schedule_blocks').delete().eq('id', id).eq('business_id', ctx.businessId)
   if (error) throw new Error(error.message)
+  const message = scheduleChangeMessage(before, null)
+  if (message) await notifyTeam(ctx.businessId, 'schedule_change', message, { excludeUserId: ctx.userId })
   revalidatePath('/settings/schedule')
   revalidatePath('/today')
 }
@@ -120,7 +131,7 @@ export async function deleteScheduleBlock(formData: FormData): Promise<void> {
  * tasks for new lines as usual.
  */
 async function syncTodaysBlockTasks(
-  ctx: Extract<Awaited<ReturnType<typeof getActionContext>>, { ok: true }>,
+  ctx: OkContext,
   blockId: string,
   titles: string[],
   startTime: string | null
@@ -153,4 +164,18 @@ async function syncTodaysBlockTasks(
     if (updateError) return updateError.message
   }
   return null
+}
+
+type OkContext = Extract<Awaited<ReturnType<typeof getActionContext>>, { ok: true }>
+
+/** The block as it was before a change, to tell the team what moved. */
+async function getBlockSnapshot(ctx: OkContext, blockId: string): Promise<ScheduleBlockSnapshot | null> {
+  const { data } = await ctx.supabase
+    .from('schedule_blocks')
+    .select('title, start_time, end_time, is_active')
+    .eq('id', blockId)
+    .eq('business_id', ctx.businessId)
+    .maybeSingle()
+  const row = data as { title: string; start_time: string; end_time: string; is_active: boolean } | null
+  return row ? { title: row.title, startTime: row.start_time, endTime: row.end_time, isActive: row.is_active } : null
 }

@@ -310,6 +310,7 @@ export interface Database {
           receipt_number: number | null
           receipt_issued_at: string | null
           completed_on: string | null
+          due_reminder_sent_for: string | null
           payment_method: PaymentMethod | null
           created_at: string
           updated_at: string
@@ -330,6 +331,7 @@ export interface Database {
           receipt_number?: number | null
           receipt_issued_at?: string | null
           completed_on?: string | null
+          due_reminder_sent_for?: string | null
           payment_method?: PaymentMethod | null
           created_at?: string
           updated_at?: string
@@ -607,6 +609,54 @@ export interface Database {
           updated_at?: string
         }
         Update: Partial<Database['public']['Tables']['business_invitations']['Insert']>
+        Relationships: []
+      }
+      push_subscriptions: {
+        Row: {
+          id: string
+          business_id: string
+          user_id: string
+          endpoint: string
+          p256dh: string
+          auth: string
+          user_agent: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          business_id: string
+          user_id: string
+          endpoint: string
+          p256dh: string
+          auth: string
+          user_agent?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: Partial<Database['public']['Tables']['push_subscriptions']['Insert']>
+        Relationships: []
+      }
+      notification_preferences: {
+        Row: {
+          user_id: string
+          business_id: string
+          low_stock: boolean
+          order_due: boolean
+          schedule_change: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          user_id: string
+          business_id: string
+          low_stock?: boolean
+          order_due?: boolean
+          schedule_change?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: Partial<Database['public']['Tables']['notification_preferences']['Insert']>
         Relationships: []
       }
     }

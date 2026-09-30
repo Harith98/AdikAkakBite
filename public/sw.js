@@ -7,7 +7,7 @@
 // "You're offline, this will save when your connection returns" message),
 // not queued and replayed by this worker.
 
-const CACHE_VERSION = 'dessert-os-v2' // bump whenever a cached icon changes
+const CACHE_VERSION = 'dessert-os-v3' // bump whenever a cached icon changes
 const APP_SHELL_URLS = [
   '/manifest.json',
   '/icons/iconAdik192x192.png',
@@ -66,4 +66,46 @@ self.addEventListener('fetch', (event) => {
       )
     )
   }
+})
+
+// ---------------------------------------------------------------------------
+// Phone notifications (web push). The server sends JSON:
+//   { title, body, url, tag }   — see src/lib/notifications/messages.ts
+// ---------------------------------------------------------------------------
+
+self.addEventListener('push', (event) => {
+  let data = {}
+  try {
+    data = event.data ? event.data.json() : {}
+  } catch {
+    data = { body: event.data ? event.data.text() : '' }
+  }
+  const title = data.title || 'Adik Akak Bite'
+  event.waitUntil(
+    self.registration.showNotification(title, {
+      body: data.body || '',
+      icon: '/icons/iconAdik192x192.png',
+      badge: '/icons/iconAdik192x192.png',
+      tag: data.tag,
+      renotify: Boolean(data.tag),
+      data: { url: data.url || '/today' },
+    })
+  )
+})
+
+// Tapping a notification focuses an open app window (navigating it to the
+// relevant page) or opens a new one.
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close()
+  const target = new URL((event.notification.data && event.notification.data.url) || '/today', self.location.origin).href
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windows) => {
+      for (const client of windows) {
+        if (new URL(client.url).origin === self.location.origin && 'focus' in client) {
+          return client.focus().then((focused) => (focused && 'navigate' in focused ? focused.navigate(target) : focused))
+        }
+      }
+      return self.clients.openWindow(target)
+    })
+  )
 })

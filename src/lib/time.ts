@@ -82,3 +82,11 @@ export function formatDateShort(isoDate: string): string {
     month: 'short',
   })
 }
+
+/** A YYYY-MM-DD date moved by a whole number of days (date-only, so timezone can't shift it). */
+export function addDaysISO(isoDate: string, days: number): string {
+  const [y, m, d] = isoDate.split('-').map(Number)
+  const date = new Date(Date.UTC(y ?? 0, (m ?? 1) - 1, d ?? 1))
+  date.setUTCDate(date.getUTCDate() + days)
+  return date.toISOString().slice(0, 10)
+}
