@@ -57,3 +57,6 @@ export function toWhatsAppNumber(phone: string | null | undefined): string | nul
   const key = normalizePhone(phone)
   return key && key.length >= 8 ? key : null
 }
+
+/** id of the receipt element on the receipt page; the "Send receipt PDF" button draws it into the PDF. */
+export const RECEIPT_ELEMENT_ID = 'receipt'

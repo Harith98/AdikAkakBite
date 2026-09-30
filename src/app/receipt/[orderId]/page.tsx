@@ -5,7 +5,7 @@ import { createClient } from '@/lib/supabase/server'
 import { getCurrentBusinessContext } from '@/lib/services/current-business'
 import { getOrder } from '@/lib/services/orders'
 import { formatMoney } from '@/lib/constants'
-import { buildReceiptText, formatReceiptNumber, PAYMENT_METHOD_LABELS, toWhatsAppNumber } from '@/lib/receipts'
+import { buildReceiptText, formatReceiptNumber, PAYMENT_METHOD_LABELS, RECEIPT_ELEMENT_ID, toWhatsAppNumber } from '@/lib/receipts'
 import { formatDateShort } from '@/lib/time'
 import { UUID_PATTERN } from '@/lib/validation/common'
 import { ReceiptToolbar } from '@/components/orders/ReceiptToolbar'
@@ -71,9 +71,14 @@ export default async function ReceiptPage({ params }: { params: { orderId: strin
 
   return (
     <Shell>
-      <ReceiptToolbar orderId={order.id} whatsappText={whatsappText} whatsappNumber={toWhatsAppNumber(order.customerPhone)} />
+      <ReceiptToolbar
+        orderId={order.id}
+        receiptNumber={receiptNo}
+        whatsappText={whatsappText}
+        whatsappNumber={toWhatsAppNumber(order.customerPhone)}
+      />
 
-      <article className="rounded-card bg-white p-6 text-ink shadow-card print:rounded-none print:p-0 print:shadow-none">
+      <article id={RECEIPT_ELEMENT_ID} className="rounded-card bg-white p-6 text-ink shadow-card print:rounded-none print:p-0 print:shadow-none">
         {/* Business */}
         <header className="border-b border-dashed border-ink/20 pb-4 text-center">
           {/* eslint-disable-next-line @next/next/no-img-element */}
