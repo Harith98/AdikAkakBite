@@ -1,7 +1,7 @@
 import { cache } from 'react'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
-import type { Database } from '@/lib/supabase/database.types'
+import type { BusinessMemberRole, Database } from '@/lib/supabase/database.types'
 
 type Business = Database['public']['Tables']['businesses']['Row']
 type BusinessSettings = Database['public']['Tables']['business_settings']['Row']
@@ -10,6 +10,7 @@ export interface CurrentBusinessContext {
   business: Business
   settings: BusinessSettings
   userId: string
+  role: BusinessMemberRole
 }
 
 /**
@@ -43,7 +44,7 @@ export const getCurrentBusinessContext = cache(async (): Promise<CurrentBusiness
 
   const { data: membership } = await supabase
     .from('business_members')
-    .select('business_id')
+    .select('business_id, role')
     .eq('user_id', user.id)
     .limit(1)
     .maybeSingle()
@@ -65,5 +66,5 @@ export const getCurrentBusinessContext = cache(async (): Promise<CurrentBusiness
     redirect('/onboarding')
   }
 
-  return { business, settings, userId: user.id }
+  return { business, settings, userId: user.id, role: membership.role }
 })

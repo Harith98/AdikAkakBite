@@ -1,15 +1,29 @@
 'use client'
 
-import { useState, type FormEvent } from 'react'
+import { Suspense, useState, type FormEvent } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
+import { safeNextPath } from '@/lib/validation/common'
 
+// useSearchParams() must sit under a Suspense boundary or `next build` fails.
 export default function SignupPage() {
+  return (
+    <Suspense fallback={null}>
+      <SignupForm />
+    </Suspense>
+  )
+}
+
+function SignupForm() {
   const router = useRouter()
-  const [email, setEmail] = useState('')
+  const searchParams = useSearchParams()
+  // Arriving from an invite link: return there afterwards instead of creating a new business.
+  const next = safeNextPath(searchParams.get('next'), '/onboarding')
+  const isInvite = next.startsWith('/invite/')
+  const [email, setEmail] = useState(searchParams.get('email') ?? '')
   const [password, setPassword] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -29,7 +43,7 @@ export default function SignupPage() {
     const { data, error: signUpError } = await supabase.auth.signUp({
       email,
       password,
-      options: { emailRedirectTo: `${window.location.origin}/api/auth/callback?next=/onboarding` },
+      options: { emailRedirectTo: `${window.location.origin}/api/auth/callback?next=${encodeURIComponent(next)}` },
     })
 
     setIsSubmitting(false)
@@ -39,10 +53,9 @@ export default function SignupPage() {
     }
 
     // If email confirmation is off in the Supabase project, we already have
-    // a session and can go straight to onboarding. Otherwise, ask them to
-    // check their inbox.
+    // a session and can go straight on. Otherwise, ask them to check their inbox.
     if (data.session) {
-      router.push('/onboarding')
+      router.push(next)
       router.refresh()
     } else {
       setConfirmationSent(true)
@@ -53,14 +66,17 @@ export default function SignupPage() {
     <div className="flex min-h-dvh items-center justify-center bg-base px-4 py-10">
       <div className="w-full max-w-sm">
         <div className="mb-8 text-center">
-          <p className="font-display text-3xl text-ink">Set up your business</p>
-          <p className="mt-1 text-sm text-ink-muted">Takes about two minutes</p>
+          <p className="font-display text-3xl text-ink">{isInvite ? 'Create your account' : 'Set up your business'}</p>
+          <p className="mt-1 text-sm text-ink-muted">
+            {isInvite ? 'Then you can accept your team invite' : 'Takes about two minutes'}
+          </p>
         </div>
 
         <Card>
           {confirmationSent ? (
             <p className="text-sm text-ink">
-              Check <strong>{email}</strong> to confirm your account, then come back to finish setup.
+              Check <strong>{email}</strong> to confirm your account. The link in that email brings you straight back
+              {isInvite ? ' to your invite.' : ' to finish setup.'}
             </p>
           ) : (
             <form onSubmit={handleSignup} className="flex flex-col gap-4">
@@ -100,7 +116,7 @@ export default function SignupPage() {
 
         <p className="mt-6 text-center text-sm text-ink-muted">
           Already set up?{' '}
-          <Link href="/login" className="font-medium text-raspberry">
+          <Link href={isInvite ? `/login?next=${encodeURIComponent(next)}` : '/login'} className="font-medium text-raspberry">
             Sign in
           </Link>
         </p>

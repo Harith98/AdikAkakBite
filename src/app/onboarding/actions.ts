@@ -45,6 +45,18 @@ export async function completeOnboarding(
     redirect('/login')
   }
 
+  // Already belongs to a business (e.g. joined through an invite, or a
+  // double-submit): don't create a second one.
+  const { data: existingMembership } = await supabase
+    .from('business_members')
+    .select('id')
+    .eq('user_id', user.id)
+    .limit(1)
+    .maybeSingle()
+  if (existingMembership) {
+    redirect('/today')
+  }
+
   // The id is generated here rather than read back from the insert: the
   // businesses SELECT policy requires membership, which doesn't exist until
   // the next statement, so `.insert().select()` would be blocked by RLS.

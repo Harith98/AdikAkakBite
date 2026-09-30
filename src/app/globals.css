@@ -36,3 +36,15 @@ body {
   background-color: #f7e8ec;
   color: #252627;
 }
+
+/* Receipts (and anything else printed): plain white page, keep badge colours. */
+@media print {
+  @page {
+    margin: 12mm;
+  }
+  body {
+    background: #fff;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}

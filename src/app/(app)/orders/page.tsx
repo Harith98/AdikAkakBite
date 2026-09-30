@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { getCurrentBusinessContext } from '@/lib/services/current-business'
 import { getOrders, type OrderFilter, type OrderView } from '@/lib/services/orders'
 import { formatMoney } from '@/lib/constants'
+import { formatReceiptNumber } from '@/lib/receipts'
 import { formatDateShort, formatTime12 } from '@/lib/time'
 import clsx from '@/lib/clsx'
 import { Card } from '@/components/ui/Card'
@@ -75,6 +76,11 @@ export default async function OrdersPage({ searchParams }: { searchParams: { sta
                   <div className="mt-3 flex flex-wrap gap-2">
                     <OrderStatusBadge status={order.status} />
                     <PaymentBadge status={order.paymentStatus} />
+                    {order.receiptNumber !== null && (
+                      <span className="inline-flex items-center rounded-pill px-3 py-1 text-xs text-ink-muted">
+                        🧾 {formatReceiptNumber(order.receiptNumber)}
+                      </span>
+                    )}
                   </div>
                 </Card>
               </Link>

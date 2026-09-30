@@ -5,6 +5,7 @@ import type { TaskCategory } from '@/lib/supabase/database.types'
 import { TASK_CATEGORY_OPTIONS } from '@/lib/constants'
 import { getActionContext } from '@/lib/services/action-context'
 import { UUID_PATTERN } from '@/lib/validation/common'
+import { canManageBusiness } from '@/lib/team'
 
 export interface ScheduleFormState {
   error: string | null
@@ -45,6 +46,7 @@ export async function saveScheduleBlock(_prev: ScheduleFormState, formData: Form
 
   const ctx = await getActionContext()
   if (!ctx.ok) return { error: ctx.error, nonce: 0 }
+  if (!canManageBusiness(ctx.role)) return { error: 'Only owners and admins can change the schedule.', nonce: 0 }
   const { supabase, businessId } = ctx
 
   if (id) {
@@ -95,6 +97,7 @@ export async function deleteScheduleBlock(formData: FormData): Promise<void> {
   if (!UUID_PATTERN.test(id)) return
   const ctx = await getActionContext()
   if (!ctx.ok) throw new Error(ctx.error)
+  if (!canManageBusiness(ctx.role)) throw new Error('Only owners and admins can change the schedule.')
   const { error } = await ctx.supabase.from('schedule_blocks').delete().eq('id', id).eq('business_id', ctx.businessId)
   if (error) throw new Error(error.message)
   revalidatePath('/settings/schedule')

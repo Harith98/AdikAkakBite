@@ -1,6 +1,7 @@
 import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 import type { Database } from './database.types'
+import { safeNextPath } from '@/lib/validation/common'
 
 /**
  * Refreshes the Supabase auth session on every request and redirects
@@ -43,6 +44,7 @@ export async function updateSession(request: NextRequest) {
   const isPublicAsset =
     path.startsWith('/_next') ||
     path.startsWith('/api/auth') || // email-confirmation / magic-link callback must work signed out
+    path.startsWith('/invite/') || // invite links explain themselves before asking the person to sign in
     path.startsWith('/manifest.json') ||
     path.startsWith('/sw.js') ||
     path.startsWith('/icons') ||
@@ -55,7 +57,7 @@ export async function updateSession(request: NextRequest) {
   }
 
   if (user && isAuthRoute) {
-    return NextResponse.redirect(new URL('/today', request.url))
+    return NextResponse.redirect(new URL(safeNextPath(request.nextUrl.searchParams.get('next')), request.url))
   }
 
   return response

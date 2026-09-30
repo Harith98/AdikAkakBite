@@ -1,5 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
-import type { Database, OrderStatus, PaymentStatus } from '@/lib/supabase/database.types'
+import type { Database, OrderStatus, PaymentMethod, PaymentStatus } from '@/lib/supabase/database.types'
 import { calculateOrderTotals, type OrderTotals } from '@/lib/calc/orders'
 import { groupBy, selectInChunks } from './db-helpers'
 
@@ -25,6 +25,10 @@ export interface OrderView extends OrderTotals {
   paymentStatus: PaymentStatus
   items: OrderItemView[]
   notes: string | null
+  customerPhone: string | null
+  receiptNumber: number | null
+  receiptIssuedAt: string | null
+  paymentMethod: PaymentMethod | null
 }
 
 export type OrderFilter = 'active' | 'completed' | 'cancelled' | 'all'
@@ -39,9 +43,9 @@ export async function hydrateOrders(supabase: Client, businessId: string, rows: 
 
   const [items, customers] = await Promise.all([
     selectInChunks(orderIds, (ids) => supabase.from('order_items').select('*').in('order_id', ids).order('created_at')),
-    selectInChunks(customerIds, (ids) => supabase.from('customers').select('id, name').eq('business_id', businessId).in('id', ids)),
+    selectInChunks(customerIds, (ids) => supabase.from('customers').select('id, name, phone').eq('business_id', businessId).in('id', ids)),
   ])
-  const names = new Map(customers.map((c) => [c.id, c.name]))
+  const customersById = new Map(customers.map((c) => [c.id, c]))
   const itemsByOrder = groupBy(items, (i) => i.order_id)
 
   return rows.map((o) => {
@@ -56,7 +60,8 @@ export async function hydrateOrders(supabase: Client, businessId: string, rows: 
       ...totals,
       id: o.id,
       customerId: o.customer_id,
-      customerName: o.customer_id ? names.get(o.customer_id) ?? null : null,
+      customerName: o.customer_id ? customersById.get(o.customer_id)?.name ?? null : null,
+      customerPhone: o.customer_id ? customersById.get(o.customer_id)?.phone ?? null : null,
       orderDate: o.order_date,
       requiredDate: o.required_date,
       requiredTime: o.required_time,
@@ -70,6 +75,9 @@ export async function hydrateOrders(supabase: Client, businessId: string, rows: 
         unitPrice: i.unit_price,
       })),
       notes: o.notes,
+      receiptNumber: o.receipt_number,
+      receiptIssuedAt: o.receipt_issued_at,
+      paymentMethod: o.payment_method,
     }
   })
 }

@@ -5,7 +5,7 @@
 // accurate) version. Keeping a hand-written version in the meantime means
 // the rest of the app gets real type-checking from day one.
 
-export type BusinessMemberRole = 'owner' | 'staff'
+export type BusinessMemberRole = 'owner' | 'admin' | 'staff'
 
 export type TaskStatus = 'not_started' | 'in_progress' | 'paused' | 'completed' | 'skipped'
 export type TaskCategory =
@@ -24,6 +24,7 @@ export type TaskSource = 'manual' | 'schedule' | 'system_recommendation'
 
 export type OrderStatus = 'new' | 'confirmed' | 'preparing' | 'ready' | 'completed' | 'cancelled'
 export type PaymentStatus = 'unpaid' | 'deposit_paid' | 'fully_paid'
+export type PaymentMethod = 'cash' | 'bank_transfer' | 'duitnow_qr' | 'card' | 'ewallet' | 'other'
 
 export type InventoryStatus = 'ok' | 'low' | 'reorder' | 'out_of_stock'
 export type InventoryTransactionType = 'purchase' | 'usage' | 'waste' | 'adjustment'
@@ -59,6 +60,11 @@ export interface Database {
           id: string
           name: string
           owner_name: string | null
+          phone: string | null
+          email: string | null
+          address: string | null
+          registration_number: string | null
+          receipt_footer: string | null
           created_at: string
           updated_at: string
         }
@@ -66,6 +72,11 @@ export interface Database {
           id?: string
           name: string
           owner_name?: string | null
+          phone?: string | null
+          email?: string | null
+          address?: string | null
+          registration_number?: string | null
+          receipt_footer?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -294,6 +305,9 @@ export interface Database {
           payment_status: PaymentStatus
           status: OrderStatus
           notes: string | null
+          receipt_number: number | null
+          receipt_issued_at: string | null
+          payment_method: PaymentMethod | null
           created_at: string
           updated_at: string
         }
@@ -310,6 +324,9 @@ export interface Database {
           payment_status?: PaymentStatus
           status?: OrderStatus
           notes?: string | null
+          receipt_number?: number | null
+          receipt_issued_at?: string | null
+          payment_method?: PaymentMethod | null
           created_at?: string
           updated_at?: string
         }
@@ -558,9 +575,70 @@ export interface Database {
         Update: Partial<Database['public']['Tables']['business_activity_logs']['Insert']>
         Relationships: []
       }
+      business_invitations: {
+        Row: {
+          id: string
+          business_id: string
+          email: string
+          role: BusinessMemberRole
+          token: string
+          invited_by: string | null
+          expires_at: string
+          accepted_at: string | null
+          accepted_by: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          business_id: string
+          email: string
+          role?: BusinessMemberRole
+          token?: string
+          invited_by?: string | null
+          expires_at?: string
+          accepted_at?: string | null
+          accepted_by?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: Partial<Database['public']['Tables']['business_invitations']['Insert']>
+        Relationships: []
+      }
     }
     Views: { [_ in never]: never }
     Functions: {
+      get_invitation: {
+        Args: { p_token: string }
+        Returns: {
+          business_name: string
+          email: string
+          role: BusinessMemberRole
+          status: 'pending' | 'accepted' | 'expired'
+        }[]
+      }
+      accept_business_invitation: {
+        Args: { p_token: string }
+        Returns: string
+      }
+      issue_order_receipt: {
+        Args: { p_order_id: string; p_payment_method: PaymentMethod | null }
+        Returns: number
+      }
+      transfer_business_ownership: {
+        Args: { p_member_id: string }
+        Returns: null
+      }
+      get_business_members: {
+        Args: { p_business_id: string }
+        Returns: {
+          member_id: string
+          user_id: string
+          email: string
+          role: BusinessMemberRole
+          joined_at: string
+        }[]
+      }
       record_inventory_transaction: {
         Args: {
           p_business_id: string

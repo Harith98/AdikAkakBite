@@ -1,4 +1,6 @@
 import Link from 'next/link'
+import { redirect } from 'next/navigation'
+import { canManageBusiness } from '@/lib/team'
 import { createClient } from '@/lib/supabase/server'
 import { getCurrentBusinessContext } from '@/lib/services/current-business'
 import { formatTime12 } from '@/lib/time'
@@ -6,7 +8,8 @@ import { Card } from '@/components/ui/Card'
 import { ScheduleBlockForm } from '@/components/settings/ScheduleBlockForm'
 
 export default async function SchedulePage() {
-  const { business } = await getCurrentBusinessContext()
+  const { business, role } = await getCurrentBusinessContext()
+  if (!canManageBusiness(role)) redirect('/settings')
   const supabase = createClient()
 
   const { data: blocks, error } = await supabase

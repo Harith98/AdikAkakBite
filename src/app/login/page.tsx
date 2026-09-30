@@ -124,7 +124,7 @@ function LoginForm() {
 
         <p className="mt-6 text-center text-sm text-ink-muted">
           New here?{' '}
-          <Link href="/signup" className="font-medium text-raspberry">
+          <Link href={next === '/today' ? '/signup' : `/signup?next=${encodeURIComponent(next)}`} className="font-medium text-raspberry">
             Create your business
           </Link>
         </p>

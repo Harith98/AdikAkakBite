@@ -6,6 +6,9 @@ import { getActionContext } from '@/lib/services/action-context'
 import { escapeLike } from '@/lib/services/db-helpers'
 import { getBusinessNow } from '@/lib/time'
 import { parseOrderForm } from '@/lib/validation/orders'
+import { derivePaymentStatus } from '@/lib/calc/orders'
+import { isPaymentMethod } from '@/lib/receipts'
+import { getOrder } from '@/lib/services/orders'
 
 export interface SaveOrderState {
   error: string | null
@@ -138,4 +141,55 @@ export async function saveOrder(_prev: SaveOrderState, formData: FormData): Prom
   revalidatePath('/orders', 'layout')
   revalidatePath('/today')
   redirect('/orders')
+}
+
+export interface IssueReceiptState {
+  error: string | null
+}
+
+/**
+ * Issue a receipt for a completed order: optionally record that the customer
+ * has now paid in full, then assign the next receipt number (the database
+ * function refuses orders that aren't completed, and never reissues a number).
+ */
+export async function issueReceipt(orderId: string, _prev: IssueReceiptState, formData: FormData): Promise<IssueReceiptState> {
+  if (!UUID.test(orderId)) return { error: 'Invalid order.' }
+  const method = String(formData.get('paymentMethod') ?? '')
+  if (!isPaymentMethod(method)) return { error: 'Choose how the customer paid.' }
+  const paidInFull = formData.get('paidInFull') === 'on'
+
+  const ctx = await getActionContext()
+  if (!ctx.ok) return { error: ctx.error }
+  const { supabase, businessId, userId } = ctx
+
+  const order = await getOrder(supabase, businessId, orderId)
+  if (!order) return { error: 'That order could not be found.' }
+  if (order.status !== 'completed') return { error: 'Complete the order before generating its receipt.' }
+
+  if (paidInFull && order.balance > 0) {
+    const { error } = await supabase
+      .from('orders')
+      .update({ deposit: order.total, payment_status: derivePaymentStatus(order.total, order.total) })
+      .eq('id', orderId)
+      .eq('business_id', businessId)
+    if (error) return { error: error.message }
+  }
+
+  const { data: receiptNumber, error } = await supabase.rpc('issue_order_receipt', {
+    p_order_id: orderId,
+    p_payment_method: method,
+  })
+  if (error) return { error: error.message }
+
+  await supabase.from('business_activity_logs').insert({
+    business_id: businessId,
+    user_id: userId,
+    action: 'receipt_issued',
+    entity_type: 'order',
+    entity_id: orderId,
+    metadata: { receipt_number: receiptNumber, payment_method: method },
+  })
+
+  revalidatePath('/orders', 'layout')
+  redirect(`/receipt/${orderId}`)
 }

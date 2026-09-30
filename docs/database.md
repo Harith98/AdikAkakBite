@@ -9,6 +9,20 @@ PostgreSQL via Supabase. Migrations live in `supabase/migrations/`, numbered and
 5. `0005_task_priorities_and_ordering.sql` — `tasks.daily_priority_rank`, `tasks.sort_order`, and the unique indexes that make daily task creation idempotent
 6. `0006_customer_name_index.sql` — index for finding a customer by name when creating an order
 7. `0007_inventory_transactions_rpc.sql` — `record_inventory_transaction()`, an atomic stock-update function
+8. `0008_member_admin_role.sql` — adds the `admin` member role (own file: a new enum value can't be used in the transaction that adds it)
+9. `0009_team_invitations.sql` — `business_invitations`, role-aware membership policies (replaces 0003's "any member can manage members"), owner/admin-only writes to settings and the schedule, and the `get_invitation` / `accept_business_invitation` / `get_business_members` functions
+10. `0010_transfer_ownership.sql` — `transfer_business_ownership()`: the owner hands ownership to an existing member and becomes an admin, atomically
+11. `0011_receipts.sql` — business contact fields (phone, email, address, registration number, receipt message), `orders.receipt_number` / `receipt_issued_at` / `payment_method`, and `issue_order_receipt()`, which assigns per-business sequential receipt numbers under an advisory lock. Numbers are never reused or changed once issued.
+
+## Team roles
+
+| Role | Can do |
+|---|---|
+| `owner` | Everything, including inviting/re-roling/removing admins and staff. Can't be removed or re-roled through the app; can hand ownership to another member with `transfer_business_ownership()`. |
+| `admin` | Business settings, daily schedule, inviting/re-roling/removing staff. |
+| `staff` | Day-to-day work: Today, orders, products, inventory, customers, sales. |
+
+Enforced in SQL by `can_manage_business()` and `can_manage_role()`; `src/lib/team.ts` mirrors the same rules only to decide which controls the UI shows. Invitations are link-based (`/invite/<token>`, valid 7 days) and can only be accepted by a signed-in account whose email matches the invite.
 
 ## Conventions
 

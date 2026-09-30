@@ -16,6 +16,7 @@ const inter = Inter({
 })
 
 export const metadata: Metadata = {
+  metadataBase: new URL('https://adik-akak-bite.vercel.app'),
   title: 'AdikAkak Bite — Business Control Centre',
   description: 'Know what to do right now. Track orders, sales, inventory and content for your dessert business.',
   manifest: '/manifest.json',

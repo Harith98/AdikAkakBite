@@ -11,6 +11,9 @@ import { Card } from '@/components/ui/Card'
 import { OrderForm } from '@/components/orders/OrderForm'
 import { OrderStatusControls } from '@/components/orders/OrderStatusControls'
 import { OrderStatusBadge, PaymentBadge } from '@/components/orders/StatusBadge'
+import { GenerateReceiptForm } from '@/components/orders/GenerateReceiptForm'
+import { LinkButton } from '@/components/ui/LinkButton'
+import { formatReceiptNumber } from '@/lib/receipts'
 
 export default async function OrderPage({ params }: { params: { id: string } }) {
   if (!UUID_PATTERN.test(params.id)) notFound()
@@ -61,6 +64,34 @@ export default async function OrderPage({ params }: { params: { id: string } }) 
       </Card>
 
       <OrderStatusControls orderId={orderData.id} status={orderData.status} />
+
+      {orderData.status === 'completed' && (
+        <Card>
+          <p className="mb-1 text-xs font-medium uppercase tracking-wide text-ink-faint">Receipt</p>
+          {orderData.receiptNumber !== null ? (
+            <>
+              <p className="mb-3 text-sm text-ink-muted">
+                Receipt {formatReceiptNumber(orderData.receiptNumber)} has been issued for this order.
+              </p>
+              <LinkButton href={`/receipt/${orderData.id}`} className="w-full">
+                View / print receipt
+              </LinkButton>
+            </>
+          ) : (
+            <>
+              <p className="mb-3 text-sm text-ink-muted">
+                Give the customer a receipt with its own number, ready to print, save as PDF or send on WhatsApp.
+              </p>
+              <GenerateReceiptForm
+                orderId={orderData.id}
+                balanceLabel={money(orderData.balance)}
+                hasBalance={orderData.balance > 0}
+                defaultMethod={orderData.paymentMethod}
+              />
+            </>
+          )}
+        </Card>
+      )}
 
       <Card>
         <p className="mb-4 text-xs font-medium uppercase tracking-wide text-ink-faint">Edit order</p>

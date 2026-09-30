@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { DEFAULT_TIMEZONE } from '@/lib/constants'
+import type { BusinessMemberRole } from '@/lib/supabase/database.types'
 
 export type ActionContext =
   | {
@@ -7,6 +8,7 @@ export type ActionContext =
       supabase: any
       userId: string
       businessId: string
+      role: BusinessMemberRole
       timezone: string
     }
   | { ok: false; error: string }
@@ -30,7 +32,7 @@ export async function getActionContext(): Promise<ActionContext> {
 
   const { data: membership } = await supabase
     .from('business_members')
-    .select('business_id')
+    .select('business_id, role')
     .eq('user_id', user.id)
     .limit(1)
     .maybeSingle()
@@ -47,6 +49,7 @@ export async function getActionContext(): Promise<ActionContext> {
     supabase,
     userId: user.id,
     businessId: membership.business_id,
+    role: membership.role,
     timezone: settings?.timezone ?? DEFAULT_TIMEZONE,
   }
 }
