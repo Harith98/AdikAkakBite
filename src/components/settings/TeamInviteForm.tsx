@@ -5,6 +5,7 @@ import { useFormState, useFormStatus } from 'react-dom'
 import { Button } from '@/components/ui/Button'
 import { inviteMember, type InviteState } from '@/app/(app)/settings/team/actions'
 import type { BusinessMemberRole } from '@/lib/supabase/database.types'
+import { siteUrl } from '@/lib/site-url'
 import { INVITE_EXPIRY_DAYS, ROLE_DESCRIPTIONS, ROLE_LABELS } from '@/lib/team'
 
 const initialState: InviteState = { error: null, token: null, email: null }
@@ -61,11 +62,11 @@ function SubmitButton() {
   )
 }
 
-/** Copy / WhatsApp buttons for an invite link. The origin is read in the browser so it's right on any deployment. */
+/** Copy / WhatsApp buttons for an invite link. Always the public site address (see site-url.ts), never a preview URL. */
 export function InviteLinkShare({ token, className }: { token: string; className?: string }) {
   const [origin, setOrigin] = useState('')
   const [copied, setCopied] = useState(false)
-  useEffect(() => setOrigin(window.location.origin), [])
+  useEffect(() => setOrigin(siteUrl()), [])
 
   const link = `${origin}/invite/${token}`
   const whatsapp = `https://wa.me/?text=${encodeURIComponent(`You're invited to join our team on AdikAkak Bite: ${link}`)}`

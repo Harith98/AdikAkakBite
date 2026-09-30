@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
+import { authCallbackUrl } from '@/lib/site-url'
 
 /** `next` is already validated by page.tsx; `isSetUp` = the business exists (so no self-signup). */
 export function LoginForm({ next, isSetUp }: { next: string; isSetUp: boolean }) {
@@ -46,7 +47,7 @@ export function LoginForm({ next, isSetUp }: { next: string; isSetUp: boolean })
     const supabase = createClient()
     const { error: otpError } = await supabase.auth.signInWithOtp({
       email,
-      options: { emailRedirectTo: `${window.location.origin}/api/auth/callback?next=${encodeURIComponent(next)}` },
+      options: { emailRedirectTo: authCallbackUrl(next) },
     })
 
     setIsSubmitting(false)

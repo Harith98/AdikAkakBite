@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
+import { authCallbackUrl } from '@/lib/site-url'
 
 /**
  * `next` is either an invite link (joining the team) or /onboarding (the
@@ -36,7 +37,7 @@ export function SignupForm({ next, initialEmail }: { next: string; initialEmail:
       email,
       password,
       options: {
-        emailRedirectTo: `${window.location.origin}/api/auth/callback?next=${encodeURIComponent(next)}`,
+        emailRedirectTo: authCallbackUrl(next),
         // The person's own name (greeting, Team page); editable later in Settings → Your profile.
         data: { display_name: name.trim() || null },
       },
