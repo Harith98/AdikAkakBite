@@ -1,6 +1,5 @@
 import type { Database } from '@/lib/supabase/database.types'
 import { calculateProductEconomics, type ProductEconomics } from '@/lib/calc/products'
-import { groupBy, selectInChunks } from './db-helpers'
 
 type Client = any
 type ProductRow = Database['public']['Tables']['products']['Row']
@@ -54,21 +53,17 @@ function toView(product: ProductRow, cost: CostRow | undefined): ProductView {
 }
 
 export async function getProducts(supabase: Client, businessId: string): Promise<ProductView[]> {
+  // Current costs embedded (filtered to effective_to is null) — one round trip.
   const { data, error } = await supabase
     .from('products')
-    .select('*')
+    .select('*, product_costs(*)')
     .eq('business_id', businessId)
+    .is('product_costs.effective_to', null)
     .order('is_active', { ascending: false })
     .order('name', { ascending: true })
   if (error) throw new Error(`Could not load products: ${error.message}`)
-  const products = (data ?? []) as any[]
-
-  const costs = await selectInChunks(
-    products.map((p: any) => p.id),
-    (ids) => supabase.from('product_costs').select('*').in('product_id', ids).is('effective_to', null)
-  )
-  const costsByProduct = groupBy(costs as CostRow[], (c) => c.product_id)
-  return products.map((p: any) => toView(p, pickCurrentCost(costsByProduct.get(p.id) ?? [])))
+  const products = (data ?? []) as (ProductRow & { product_costs: CostRow[] | null })[]
+  return products.map((p) => toView(p, pickCurrentCost(p.product_costs ?? [])))
 }
 
 export async function getProduct(supabase: Client, businessId: string, productId: string): Promise<ProductView | null> {

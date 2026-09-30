@@ -1,7 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database, OrderStatus, PaymentMethod, PaymentStatus } from '@/lib/supabase/database.types'
 import { calculateOrderTotals, type OrderTotals } from '@/lib/calc/orders'
-import { groupBy, selectInChunks } from './db-helpers'
+import { one } from './db-helpers'
 
 type Client = SupabaseClient<Database>
 type OrderRow = Database['public']['Tables']['orders']['Row']
@@ -35,21 +35,24 @@ export type OrderFilter = 'active' | 'completed' | 'cancelled' | 'all'
 
 const ACTIVE: OrderStatus[] = ['new', 'confirmed', 'preparing', 'ready']
 
-/** Attach items, customer names and calculated totals to raw order rows. */
-export async function hydrateOrders(supabase: Client, businessId: string, rows: OrderRow[]): Promise<OrderView[]> {
-  if (rows.length === 0) return []
-  const orderIds = rows.map((o) => o.id)
-  const customerIds = Array.from(new Set(rows.map((o) => o.customer_id).filter((id): id is string => id !== null)))
+/**
+ * Order + its items + its customer in ONE round trip (PostgREST embedding over
+ * the order_items.order_id and orders.customer_id foreign keys), instead of
+ * fetching the orders first and their children second.
+ */
+export const ORDER_SELECT = '*, order_items(*), customer:customers(name, phone)'
 
-  const [items, customers] = await Promise.all([
-    selectInChunks(orderIds, (ids) => supabase.from('order_items').select('*').in('order_id', ids).order('created_at')),
-    selectInChunks(customerIds, (ids) => supabase.from('customers').select('id, name, phone').eq('business_id', businessId).in('id', ids)),
-  ])
-  const customersById = new Map(customers.map((c) => [c.id, c]))
-  const itemsByOrder = groupBy(items, (i) => i.order_id)
+type ItemRow = Database['public']['Tables']['order_items']['Row']
+export type OrderRowWithRelations = OrderRow & {
+  order_items: ItemRow[] | null
+  customer: { name: string; phone: string | null } | { name: string; phone: string | null }[] | null
+}
 
+/** Turn embedded order rows into views with calculated totals. */
+export function toOrderViews(rows: OrderRowWithRelations[]): OrderView[] {
   return rows.map((o) => {
-    const orderItems = itemsByOrder.get(o.id) ?? []
+    const orderItems = [...(o.order_items ?? [])].sort((a, b) => a.created_at.localeCompare(b.created_at))
+    const customer = one(o.customer)
     const totals = calculateOrderTotals({
       items: orderItems.map((i) => ({ quantity: i.quantity, unitPrice: i.unit_price })),
       discount: o.discount,
@@ -60,8 +63,8 @@ export async function hydrateOrders(supabase: Client, businessId: string, rows: 
       ...totals,
       id: o.id,
       customerId: o.customer_id,
-      customerName: o.customer_id ? customersById.get(o.customer_id)?.name ?? null : null,
-      customerPhone: o.customer_id ? customersById.get(o.customer_id)?.phone ?? null : null,
+      customerName: customer?.name ?? null,
+      customerPhone: customer?.phone ?? null,
       orderDate: o.order_date,
       requiredDate: o.required_date,
       requiredTime: o.required_time,
@@ -88,7 +91,7 @@ export async function getOrders(
   filter: OrderFilter,
   limit = 100
 ): Promise<OrderView[]> {
-  let query = supabase.from('orders').select('*').eq('business_id', businessId)
+  let query = supabase.from('orders').select(ORDER_SELECT).eq('business_id', businessId)
   if (filter === 'active') query = query.in('status', ACTIVE)
   if (filter === 'completed') query = query.eq('status', 'completed')
   if (filter === 'cancelled') query = query.eq('status', 'cancelled')
@@ -100,31 +103,43 @@ export async function getOrders(
 
   const { data, error } = await query.limit(limit)
   if (error) throw new Error(`Could not load orders: ${error.message}`)
-  return hydrateOrders(supabase, businessId, data ?? [])
+  return toOrderViews((data ?? []) as unknown as OrderRowWithRelations[])
 }
 
 export async function getOrder(supabase: Client, businessId: string, orderId: string): Promise<OrderView | null> {
-  const { data, error } = await supabase.from('orders').select('*').eq('business_id', businessId).eq('id', orderId).maybeSingle()
+  const { data, error } = await supabase
+    .from('orders')
+    .select(ORDER_SELECT)
+    .eq('business_id', businessId)
+    .eq('id', orderId)
+    .maybeSingle()
   if (error) throw new Error(`Could not load the order: ${error.message}`)
   if (!data) return null
-  const [view] = await hydrateOrders(supabase, businessId, [data])
-  return view ?? null
+  return toOrderViews([data as unknown as OrderRowWithRelations])[0] ?? null
 }
 
-/** Completed orders in a date range, for sales summaries (spec §20-21). */
+export interface CompletedOrderForSales {
+  id: string
+  order_date: string
+  discount: number
+  delivery_fee: number
+  order_items: { quantity: number; unit_price: number }[] | null
+}
+
+/** Completed orders in a date range with their line items (one round trip), for sales summaries (spec §20-21). */
 export async function getCompletedOrdersInRange(
   supabase: Client,
   businessId: string,
   startDate: string,
   endDate: string
-): Promise<OrderRow[]> {
+): Promise<CompletedOrderForSales[]> {
   const { data, error } = await supabase
     .from('orders')
-    .select('*')
+    .select('id, order_date, discount, delivery_fee, order_items(quantity, unit_price)')
     .eq('business_id', businessId)
     .eq('status', 'completed')
     .gte('order_date', startDate)
     .lte('order_date', endDate)
   if (error) throw new Error(`Could not load orders: ${error.message}`)
-  return data ?? []
+  return (data ?? []) as unknown as CompletedOrderForSales[]
 }

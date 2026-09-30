@@ -1,5 +1,5 @@
 import { PageSkeleton } from '@/components/ui/PageSkeleton'
 
 export default function Loading() {
-  return <PageSkeleton variant="today" back={false} />
+  return <PageSkeleton variant="form" back={false} />
 }

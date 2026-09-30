@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { DEFAULT_TIMEZONE } from '@/lib/constants'
 import type { BusinessMemberRole } from '@/lib/supabase/database.types'
+import { one } from './db-helpers'
 
 export type ActionContext =
   | {
@@ -30,19 +31,20 @@ export async function getActionContext(): Promise<ActionContext> {
   const user = session?.user
   if (!user) return { ok: false, error: 'Your session has expired. Please sign in again.' }
 
-  const { data: membership } = await supabase
+  // Membership + timezone in one round trip (business_members → businesses → business_settings).
+  const { data } = await supabase
     .from('business_members')
-    .select('business_id, role')
+    .select('business_id, role, business:businesses(settings:business_settings(timezone))')
     .eq('user_id', user.id)
     .limit(1)
     .maybeSingle()
+  const membership = data as {
+    business_id: string
+    role: BusinessMemberRole
+    business: { settings: { timezone: string } | { timezone: string }[] | null } | null
+  } | null
   if (!membership) return { ok: false, error: 'No business found for this account.' }
-
-  const { data: settings } = await supabase
-    .from('business_settings')
-    .select('timezone')
-    .eq('business_id', membership.business_id)
-    .maybeSingle()
+  const settings = one(one(membership.business)?.settings)
 
   return {
     ok: true,

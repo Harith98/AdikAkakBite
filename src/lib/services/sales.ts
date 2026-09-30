@@ -2,7 +2,6 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '@/lib/supabase/database.types'
 import { calculateOrderTotals } from '@/lib/calc/orders'
 import { summarizeSales, type SalesTotals } from '@/lib/calc/sales'
-import { groupBy, selectInChunks } from './db-helpers'
 import { getCompletedOrdersInRange } from './orders'
 
 type Client = SupabaseClient<Database>
@@ -28,16 +27,11 @@ export async function getSalesSummary(supabase: Client, businessId: string, toda
   const rangeStart = weekStart < monthStart ? weekStart : monthStart
 
   const orders = await getCompletedOrdersInRange(supabase, businessId, rangeStart, today)
-  const items = await selectInChunks(
-    orders.map((o) => o.id),
-    (ids) => supabase.from('order_items').select('order_id, quantity, unit_price').in('order_id', ids)
-  )
-  const itemsByOrder = groupBy(items, (i) => i.order_id)
 
   const rows = orders.map((o) => ({
     orderDate: o.order_date,
     total: calculateOrderTotals({
-      items: (itemsByOrder.get(o.id) ?? []).map((i) => ({ quantity: i.quantity, unitPrice: i.unit_price })),
+      items: (o.order_items ?? []).map((i) => ({ quantity: i.quantity, unitPrice: i.unit_price })),
       discount: o.discount,
       deliveryFee: o.delivery_fee,
     }).total,

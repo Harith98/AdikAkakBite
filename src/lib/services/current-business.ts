@@ -1,10 +1,17 @@
 import { cache } from 'react'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
+import { one } from './db-helpers'
 import type { BusinessMemberRole, Database } from '@/lib/supabase/database.types'
 
 type Business = Database['public']['Tables']['businesses']['Row']
 type BusinessSettings = Database['public']['Tables']['business_settings']['Row']
+
+/** Shape of the embedded select below (the hand-written types don't model relationships). */
+interface MembershipWithBusiness {
+  role: BusinessMemberRole
+  business: (Business & { settings: BusinessSettings | BusinessSettings[] | null }) | null
+}
 
 export interface CurrentBusinessContext {
   business: Business
@@ -42,25 +49,28 @@ export const getCurrentBusinessContext = cache(async (): Promise<CurrentBusiness
     redirect('/login')
   }
 
-  const { data: membership } = await supabase
+  // Membership, business and settings in ONE round trip via PostgREST
+  // embedding (business_members → businesses → business_settings). Every
+  // page runs this, so it's the hottest query in the app.
+  const { data } = await supabase
     .from('business_members')
-    .select('business_id, role')
+    .select('role, business:businesses(*, settings:business_settings(*))')
     .eq('user_id', user.id)
     .limit(1)
     .maybeSingle()
+  const membership = data as unknown as MembershipWithBusiness | null
 
   if (!membership) {
     redirect('/onboarding')
   }
 
-  const [{ data: business }, { data: settings }] = await Promise.all([
-    supabase.from('businesses').select('*').eq('id', membership.business_id).single(),
-    supabase.from('business_settings').select('*').eq('business_id', membership.business_id).single(),
-  ])
-
-  if (!business || !settings) {
+  const businessRow = one(membership.business)
+  const settings = one(businessRow?.settings)
+  if (!businessRow || !settings) {
     redirect('/onboarding')
   }
+  const business: Business = { ...businessRow }
+  delete (business as Partial<typeof businessRow>).settings
 
   if (!settings.onboarding_completed) {
     redirect('/onboarding')

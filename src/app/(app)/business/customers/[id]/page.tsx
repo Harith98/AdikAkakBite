@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { getCurrentBusinessContext } from '@/lib/services/current-business'
 import { getCustomerMetrics, type CustomerView } from '@/lib/services/customers'
-import { hydrateOrders } from '@/lib/services/orders'
+import { ORDER_SELECT, toOrderViews, type OrderRowWithRelations } from '@/lib/services/orders'
 import { formatMoney } from '@/lib/constants'
 import { formatDateShort, getBusinessNow } from '@/lib/time'
 import { UUID_PATTERN } from '@/lib/validation/common'
@@ -22,7 +22,7 @@ export default async function CustomerPage({ params }: { params: { id: string } 
     getCustomerMetrics(supabase, business.id, today, params.id),
     supabase
       .from('orders')
-      .select('*')
+      .select(ORDER_SELECT)
       .eq('business_id', business.id)
       .eq('customer_id', params.id)
       .order('order_date', { ascending: false })
@@ -31,7 +31,7 @@ export default async function CustomerPage({ params }: { params: { id: string } 
   const customer = customers.find((c: CustomerView) => c.customerId === params.id)
   if (!customer) notFound()
   if (ordersRes.error) throw new Error(`Could not load orders: ${ordersRes.error.message}`)
-  const orders = await hydrateOrders(supabase, business.id, ordersRes.data ?? [])
+  const orders = toOrderViews((ordersRes.data ?? []) as unknown as OrderRowWithRelations[])
   const money = (n: number) => formatMoney(n, settings.currency)
 
   return (

@@ -1,8 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database, PaymentStatus } from '@/lib/supabase/database.types'
-import { calculateOrderTotals } from '@/lib/calc/orders'
 import { getInventoryStatus, needsReorder } from '@/lib/calc/inventory'
-import { groupBy, selectInChunks } from './db-helpers'
+import { ORDER_SELECT, toOrderViews, type OrderRowWithRelations } from './orders'
 import type { EngineInventoryAlert, EngineOrder } from './recommendation'
 import type { ScheduleBlockLike, TaskLike } from './schedule'
 
@@ -82,7 +81,7 @@ export async function getTodayData(
     fetchTasks(),
     supabase
       .from('orders')
-      .select('*')
+      .select(ORDER_SELECT) // items + customer embedded: no follow-up round trip
       .eq('business_id', businessId)
       .lte('required_date', today)
       .in('status', ['new', 'confirmed', 'preparing', 'ready'])
@@ -96,7 +95,7 @@ export async function getTodayData(
 
   const blockRows = must(blocksRes, 'schedule')
   let taskRows = must(tasksRes, 'tasks')
-  const orderRows = must(ordersRes, 'orders')
+  const orderViews = toOrderViews(must(ordersRes, 'orders') as unknown as OrderRowWithRelations[])
   const inventoryRows = must(inventoryRes, 'inventory')
 
   // Create today's tasks from each block's default tasks the first time the
@@ -134,37 +133,18 @@ export async function getTodayData(
     }
   }
 
-  // Order details (items + customer names), fetched only if there are orders.
-  const orderIds = orderRows.map((o) => o.id)
-  const customerIds = Array.from(new Set(orderRows.map((o) => o.customer_id).filter((id): id is string => id !== null)))
-  const [itemRows, customerRows] = await Promise.all([
-    selectInChunks(orderIds, (ids) => supabase.from('order_items').select('*').in('order_id', ids)),
-    selectInChunks(customerIds, (ids) => supabase.from('customers').select('id, name').in('id', ids)),
-  ])
-  const customerNames = new Map(customerRows.map((c) => [c.id, c.name]))
-  const itemsByOrder = groupBy(itemRows, (i) => i.order_id)
-
-  const orders: TodayOrder[] = orderRows.map((o) => {
-    const items = itemsByOrder.get(o.id) ?? []
-    const totals = calculateOrderTotals({
-      items: items.map((i) => ({ quantity: i.quantity, unitPrice: i.unit_price })),
-      discount: o.discount,
-      deliveryFee: o.delivery_fee,
-      deposit: o.deposit,
-    })
-    return {
-      id: o.id,
-      customerName: o.customer_id ? customerNames.get(o.customer_id) ?? null : null,
-      requiredDate: o.required_date,
-      requiredTime: o.required_time,
-      status: o.status,
-      paymentStatus: o.payment_status,
-      items: items.map((i) => ({ name: i.product_name, quantity: i.quantity })),
-      total: totals.total,
-      balance: totals.balance,
-      notes: o.notes,
-    }
-  })
+  const orders: TodayOrder[] = orderViews.map((o) => ({
+    id: o.id,
+    customerName: o.customerName,
+    requiredDate: o.requiredDate,
+    requiredTime: o.requiredTime,
+    status: o.status,
+    paymentStatus: o.paymentStatus,
+    items: o.items.map((i) => ({ name: i.productName, quantity: i.quantity })),
+    total: o.total,
+    balance: o.balance,
+    notes: o.notes,
+  }))
 
   // Inventory is a small table for a small business, so it is filtered here
   // rather than in SQL (PostgREST can't compare two columns of the same row).

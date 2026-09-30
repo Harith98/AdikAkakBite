@@ -35,9 +35,13 @@ export async function updateSession(request: NextRequest) {
 
   // IMPORTANT: do not remove. This call refreshes the auth token and must
   // run before any route logic that depends on the user's session.
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  //
+  // getClaims() verifies the JWT signature locally (cached JWKS) when the
+  // project uses asymmetric signing keys — no network call per request. On
+  // legacy symmetric (HS256) keys it falls back to getUser(), i.e. exactly
+  // the previous behaviour, so it's never less secure.
+  const { data: claimsData } = await supabase.auth.getClaims()
+  const user = claimsData?.claims?.sub ? { id: claimsData.claims.sub } : null
 
   const path = request.nextUrl.pathname
   const isAuthRoute = path.startsWith('/login') || path.startsWith('/signup')

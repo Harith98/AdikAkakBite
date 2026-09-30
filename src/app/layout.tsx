@@ -1,6 +1,8 @@
 import type { Metadata, Viewport } from 'next'
 import { Fraunces, Inter } from 'next/font/google'
 import './globals.css'
+import { Suspense } from 'react'
+import { NavigationProgress } from '@/components/layout/NavigationProgress'
 import { ServiceWorkerRegistration } from './service-worker-registration'
 
 const fraunces = Fraunces({
@@ -67,6 +69,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" className={`${fraunces.variable} ${inter.variable}`}>
       <body className="font-body">
+        {/* useSearchParams() inside needs a Suspense boundary to keep pages static-renderable. */}
+        <Suspense fallback={null}>
+          <NavigationProgress />
+        </Suspense>
         {children}
         <ServiceWorkerRegistration />
       </body>

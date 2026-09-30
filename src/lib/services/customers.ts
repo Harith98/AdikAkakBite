@@ -1,8 +1,8 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
-import type { Database } from '@/lib/supabase/database.types'
+import type { Database, OrderStatus } from '@/lib/supabase/database.types'
 import { calculateOrderTotals } from '@/lib/calc/orders'
 import { computeCustomerMetrics, type CustomerOrderInput } from '@/lib/calc/customers'
-import { groupBy, selectInChunks } from './db-helpers'
+import { groupBy } from './db-helpers'
 import type { CustomerMetrics } from './types'
 
 type Client = SupabaseClient<Database>
@@ -29,7 +29,8 @@ export async function getCustomerMetrics(
   let customersQuery = supabase.from('customers').select('*').eq('business_id', businessId)
   let ordersQuery = supabase
     .from('orders')
-    .select('id, customer_id, order_date, status, discount, delivery_fee, deposit')
+    // Line items come back embedded, so totals need no second round trip.
+    .select('id, customer_id, order_date, status, discount, delivery_fee, order_items(quantity, unit_price)')
     .eq('business_id', businessId)
   if (customerId) {
     customersQuery = customersQuery.eq('id', customerId)
@@ -42,17 +43,21 @@ export async function getCustomerMetrics(
   if (customersRes.error) throw new Error(`Could not load customers: ${customersRes.error.message}`)
   if (ordersRes.error) throw new Error(`Could not load orders: ${ordersRes.error.message}`)
   const customers = customersRes.data ?? []
-  const orders = ordersRes.data ?? []
+  const orders = (ordersRes.data ?? []) as unknown as {
+    id: string
+    customer_id: string | null
+    order_date: string
+    status: OrderStatus
+    discount: number
+    delivery_fee: number
+    order_items: { quantity: number; unit_price: number }[] | null
+  }[]
 
   // Totals are only needed for completed orders.
-  const completedIds = orders.filter((o) => o.status === 'completed').map((o) => o.id)
-  const items = await selectInChunks(completedIds, (ids) => supabase.from('order_items').select('order_id, quantity, unit_price').in('order_id', ids))
-
-  const itemsByOrder = groupBy(items, (i) => i.order_id)
   const totalByOrder = new Map<string, number>()
   for (const order of orders) {
     if (order.status !== 'completed') continue
-    const lines = (itemsByOrder.get(order.id) ?? []).map((i) => ({ quantity: i.quantity, unitPrice: i.unit_price }))
+    const lines = (order.order_items ?? []).map((i) => ({ quantity: i.quantity, unitPrice: i.unit_price }))
     totalByOrder.set(order.id, calculateOrderTotals({ items: lines, discount: order.discount, deliveryFee: order.delivery_fee }).total)
   }
   const ordersByCustomer = groupBy(orders, (o) => o.customer_id)
