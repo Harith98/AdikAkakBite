@@ -7,6 +7,7 @@ import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { authCallbackUrl } from '@/lib/site-url'
+import { friendlyEmailError, ResendEmailButton } from '@/components/auth/ResendEmailButton'
 
 /** `next` is already validated by page.tsx; `isSetUp` = the business exists (so no self-signup). */
 export function LoginForm({ next, isSetUp }: { next: string; isSetUp: boolean }) {
@@ -18,10 +19,13 @@ export function LoginForm({ next, isSetUp }: { next: string; isSetUp: boolean })
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [magicLinkSent, setMagicLinkSent] = useState(false)
+  // Signed up but never clicked the confirmation email.
+  const [notConfirmed, setNotConfirmed] = useState(false)
 
   async function handlePasswordLogin(e: FormEvent) {
     e.preventDefault()
     setError(null)
+    setNotConfirmed(false)
     setIsSubmitting(true)
 
     const supabase = createClient()
@@ -29,11 +33,33 @@ export function LoginForm({ next, isSetUp }: { next: string; isSetUp: boolean })
 
     setIsSubmitting(false)
     if (signInError) {
+      if (signInError.code === 'email_not_confirmed' || /not confirmed/i.test(signInError.message)) {
+        setNotConfirmed(true)
+        setError('Your email isn’t confirmed yet. Click the link in the confirmation email, or send a new one below.')
+        return
+      }
       setError(signInError.message)
       return
     }
     router.push(next)
     router.refresh()
+  }
+
+  const sendMagicLink = async (): Promise<string | null> => {
+    const { error: otpError } = await createClient().auth.signInWithOtp({
+      email,
+      options: { emailRedirectTo: authCallbackUrl(next), shouldCreateUser: false },
+    })
+    return otpError?.message ?? null
+  }
+
+  const resendConfirmation = async (): Promise<string | null> => {
+    const { error: resendError } = await createClient().auth.resend({
+      type: 'signup',
+      email,
+      options: { emailRedirectTo: authCallbackUrl(next) },
+    })
+    return resendError?.message ?? null
   }
 
   async function handleMagicLink() {
@@ -43,16 +69,10 @@ export function LoginForm({ next, isSetUp }: { next: string; isSetUp: boolean })
     }
     setError(null)
     setIsSubmitting(true)
-
-    const supabase = createClient()
-    const { error: otpError } = await supabase.auth.signInWithOtp({
-      email,
-      options: { emailRedirectTo: authCallbackUrl(next) },
-    })
-
+    const otpError = await sendMagicLink()
     setIsSubmitting(false)
     if (otpError) {
-      setError(otpError.message)
+      setError(friendlyEmailError(otpError))
       return
     }
     setMagicLinkSent(true)
@@ -75,9 +95,15 @@ export function LoginForm({ next, isSetUp }: { next: string; isSetUp: boolean })
 
         <Card>
           {magicLinkSent ? (
-            <p className="text-sm text-ink">
-              Check <strong>{email}</strong> for a sign-in link.
-            </p>
+            <div className="flex flex-col gap-4">
+              <p className="text-sm text-ink">
+                Check <strong>{email}</strong> for a sign-in link. It can take a minute, and sometimes lands in spam.
+              </p>
+              <ResendEmailButton label="Resend sign-in link" onResend={sendMagicLink} />
+              <button type="button" onClick={() => setMagicLinkSent(false)} className="text-sm font-medium text-raspberry">
+                Use a different email
+              </button>
+            </div>
           ) : (
             <form onSubmit={handlePasswordLogin} className="flex flex-col gap-4">
               <label className="flex flex-col gap-1.5 text-sm">
@@ -104,6 +130,9 @@ export function LoginForm({ next, isSetUp }: { next: string; isSetUp: boolean })
               </label>
 
               {error && <p className="text-sm text-clay">{error}</p>}
+              {notConfirmed && (
+                <ResendEmailButton label="Resend confirmation email" onResend={resendConfirmation} startWithCooldown={false} />
+              )}
 
               <Button type="submit" size="lg" disabled={isSubmitting} className="w-full">
                 {isSubmitting ? 'Signing in…' : 'Sign in'}

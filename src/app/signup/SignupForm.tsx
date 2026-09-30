@@ -7,6 +7,7 @@ import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { authCallbackUrl } from '@/lib/site-url'
+import { friendlyEmailError, ResendEmailButton } from '@/components/auth/ResendEmailButton'
 
 /**
  * `next` is either an invite link (joining the team) or /onboarding (the
@@ -45,7 +46,7 @@ export function SignupForm({ next, initialEmail }: { next: string; initialEmail:
 
     setIsSubmitting(false)
     if (signUpError) {
-      setError(signUpError.message)
+      setError(friendlyEmailError(signUpError.message))
       return
     }
 
@@ -71,10 +72,27 @@ export function SignupForm({ next, initialEmail }: { next: string; initialEmail:
 
         <Card>
           {confirmationSent ? (
-            <p className="text-sm text-ink">
-              Check <strong>{email}</strong> to confirm your account. The link in that email brings you straight back
-              {isInvite ? ' to your invite.' : ' to finish setup.'}
-            </p>
+            <div className="flex flex-col gap-4">
+              <p className="text-sm text-ink">
+                Check <strong>{email}</strong> to confirm your account. The link in that email brings you straight back
+                {isInvite ? ' to your invite.' : ' to finish setup.'}
+              </p>
+              <p className="text-xs text-ink-muted">It can take a minute. Check your spam or promotions folder too.</p>
+              <ResendEmailButton
+                label="Resend confirmation email"
+                onResend={async () => {
+                  const { error: resendError } = await createClient().auth.resend({
+                    type: 'signup',
+                    email,
+                    options: { emailRedirectTo: authCallbackUrl(next) },
+                  })
+                  return resendError?.message ?? null
+                }}
+              />
+              <button type="button" onClick={() => setConfirmationSent(false)} className="text-sm font-medium text-raspberry">
+                Wrong email? Go back and fix it
+              </button>
+            </div>
           ) : (
             <form onSubmit={handleSignup} className="flex flex-col gap-4">
               <label className="flex flex-col gap-1.5 text-sm">
