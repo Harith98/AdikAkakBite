@@ -91,3 +91,17 @@ describe('productImagePath', () => {
     expect(productImagePath(null, base)).toBeNull()
   })
 })
+
+describe('sortReadyStock', () => {
+  it('puts what can be sold first, most first, then sold out by name', async () => {
+    const { sortReadyStock } = await import('@/lib/services/products')
+    const sorted = sortReadyStock([
+      { name: 'Tart', readyStock: 0 },
+      { name: 'Brownies', readyStock: 3 },
+      { name: 'Batik', readyStock: 12 },
+      { name: 'Apam', readyStock: -1 },
+      { name: 'Cookies', readyStock: 3 },
+    ])
+    expect(sorted.map((s) => s.name)).toEqual(['Batik', 'Brownies', 'Cookies', 'Apam', 'Tart'])
+  })
+})

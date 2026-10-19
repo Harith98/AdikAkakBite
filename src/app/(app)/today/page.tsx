@@ -8,6 +8,8 @@ import { getBlockCandidates, getBlockProgress, getCurrentBlock, getNextBlock } f
 import { getNextRecommendedTask, getOrderUrgency } from '@/lib/services/recommendation'
 import { getSuggestedPriorities } from '@/lib/services/priorities'
 import { getRecentCloses } from '@/lib/services/sales'
+import { getReadyStock } from '@/lib/services/products'
+import { ReadyStockList } from '@/components/business/ReadyStockList'
 import { Badge } from '@/components/ui/Badge'
 import { Card } from '@/components/ui/Card'
 import { LinkButton } from '@/components/ui/LinkButton'
@@ -35,9 +37,11 @@ export default async function TodayPage() {
 
   // The latest close is a tiny query, so fetch it alongside the main data
   // rather than waiting until we know whether the Closing block is active.
-  const [data, latestClose] = await Promise.all([
+  const [data, latestClose, readyStock] = await Promise.all([
     getTodayData(supabase, business.id, now.isoDate, isWorkingDay),
     isWorkingDay ? getRecentCloses(supabase, business.id, 1) : Promise.resolve([]),
+    // Optional extra: never let it take the Today page down.
+    getReadyStock(supabase, business.id).catch(() => []),
   ])
 
   // ---- Orders, most pressing first (overdue, then by due date/time) ----
@@ -158,6 +162,7 @@ export default async function TodayPage() {
         </div>
 
         <div className="flex flex-col gap-6">
+          <ReadyStockList items={readyStock} limit={6} />
           <PrioritiesCard priorities={priorities} suggestions={suggestions} />
           <AlertsCard alerts={data.inventoryAlerts} />
           <AddTaskForm />

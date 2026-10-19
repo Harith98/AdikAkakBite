@@ -51,6 +51,7 @@ export function OrderForm({
   currency,
   order,
   prefill,
+  today,
 }: {
   products: ProductOption[]
   customers: CustomerOption[]
@@ -58,6 +59,8 @@ export function OrderForm({
   order?: OrderView
   /** Only for new orders; ignored when editing `order`. */
   prefill?: OrderPrefill
+  /** Today in the business timezone; the latest date a past sale can have. */
+  today?: string
 }) {
   const start = order ? undefined : prefill
   const [state, formAction] = useFormState(saveOrder, initialState)
@@ -88,6 +91,7 @@ export function OrderForm({
   const [deliveryFee, setDeliveryFee] = useState(order && order.deliveryFee > 0 ? String(order.deliveryFee) : '')
   const [deposit, setDeposit] = useState(order && order.deposit > 0 ? String(order.deposit) : '')
   const [paidInFull, setPaidInFull] = useState(order?.paymentStatus === 'fully_paid')
+  const [pastSale, setPastSale] = useState(false)
 
   const update = (key: number, patch: Partial<ItemState>) =>
     setItems((prev) => prev.map((i) => (i.key === key ? { ...i, ...patch } : i)))
@@ -255,6 +259,35 @@ export function OrderForm({
         <p className="mt-1 text-xs text-ink-muted">Add a date and time so it shows up on Today when it&apos;s due.</p>
       </fieldset>
 
+      {!order && (
+        <fieldset className="rounded-card border border-ink/10 p-3">
+          <label className="flex items-start gap-2 text-sm text-ink">
+            <input
+              type="checkbox"
+              checked={pastSale}
+              onChange={(e) => {
+                setPastSale(e.target.checked)
+                if (e.target.checked) setPaidInFull(true) // past sales are usually paid; untick if not
+              }}
+              className="mt-0.5 h-4 w-4 shrink-0"
+            />
+            <span>
+              <span className="font-medium">Record a past sale</span>
+              <span className="block text-xs text-ink-muted">
+                Already sold and handed over. Saved as completed on this date, so it counts in that day&apos;s and month&apos;s
+                sales. Ready stock and ingredients aren&apos;t changed.
+              </span>
+            </span>
+          </label>
+          {pastSale && (
+            <label className="mt-3 flex flex-col gap-1 text-xs text-ink-muted">
+              Sale date
+              <input type="date" name="pastSaleDate" required max={today} aria-label="Sale date" className={input} />
+            </label>
+          )}
+        </fieldset>
+      )}
+
       <fieldset className="grid grid-cols-2 gap-2">
         <legend className="mb-1 text-sm font-medium text-ink">Money</legend>
         <label className="flex flex-col gap-1 text-xs text-ink-muted">
@@ -297,7 +330,7 @@ export function OrderForm({
 
       {state.error && <p role="alert" className="text-sm text-clay-dark">{state.error}</p>}
       {state.nonce !== 0 && !state.error && <p className="text-sm text-sage-dark">Saved.</p>}
-      <SubmitButton label={order ? 'Save changes' : 'Create order'} />
+      <SubmitButton label={order ? 'Save changes' : pastSale ? 'Save past sale' : 'Create order'} />
     </form>
   )
 }

@@ -93,3 +93,38 @@ export async function getProductCategories(supabase: Client, businessId: string)
   if (error) return []
   return categorySuggestions((data ?? []) as { category: string | null }[])
 }
+
+export interface ReadyStockItem {
+  id: string
+  name: string
+  imageUrl: string | null
+  readyStock: number
+}
+
+/** Active products whose ready stock is tracked: in stock first (most first), then sold out / short. */
+export async function getReadyStock(supabase: Client, businessId: string): Promise<ReadyStockItem[]> {
+  const { data, error } = await supabase
+    .from('products')
+    .select('id, name, image_url, ready_stock')
+    .eq('business_id', businessId)
+    .eq('is_active', true)
+    .not('ready_stock', 'is', null)
+  if (error) throw new Error(`Could not load ready stock: ${error.message}`)
+  return sortReadyStock(
+    ((data ?? []) as { id: string; name: string; image_url: string | null; ready_stock: number }[]).map((p) => ({
+      id: p.id,
+      name: p.name,
+      imageUrl: p.image_url,
+      readyStock: p.ready_stock,
+    }))
+  )
+}
+
+/** In stock first (most first, then by name), then sold out / short (by name). */
+export function sortReadyStock<T extends { name: string; readyStock: number }>(items: T[]): T[] {
+  return [...items].sort((a, b) => {
+    const aIn = a.readyStock > 0 ? 1 : 0
+    const bIn = b.readyStock > 0 ? 1 : 0
+    return bIn - aIn || (aIn ? b.readyStock - a.readyStock : 0) || a.name.localeCompare(b.name)
+  })
+}

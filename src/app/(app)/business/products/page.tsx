@@ -1,7 +1,8 @@
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { getCurrentBusinessContext } from '@/lib/services/current-business'
-import { getProducts } from '@/lib/services/products'
+import { getProducts, sortReadyStock } from '@/lib/services/products'
+import { ReadyStockList } from '@/components/business/ReadyStockList'
 import { formatMoney, formatPercent } from '@/lib/constants'
 import { readyStockLabel, readyStockState } from '@/lib/calc/products'
 import { categoryChips, filterProducts } from '@/lib/product-filters'
@@ -29,9 +30,11 @@ export default async function ProductsPage({ searchParams }: { searchParams: { c
     return qs ? `/business/products?${qs}` : '/business/products'
   }
 
-  const tracked = products.filter((p) => p.isActive && p.readyStock !== null)
-  const readyUnits = tracked.reduce((sum, p) => sum + Math.max(0, p.readyStock ?? 0), 0)
-  const soldOut = tracked.filter((p) => (p.readyStock ?? 0) <= 0).length
+  const readyStock = sortReadyStock(
+    products
+      .filter((p) => p.isActive && p.readyStock !== null)
+      .map((p) => ({ id: p.id, name: p.name, imageUrl: p.imageUrl, readyStock: p.readyStock ?? 0 }))
+  )
 
   return (
     <div className="flex max-w-2xl flex-col gap-5">
@@ -39,15 +42,11 @@ export default async function ProductsPage({ searchParams }: { searchParams: { c
         <div>
           <Link href="/business" className="text-sm text-ink-muted">← Business</Link>
           <p className="mt-2 font-display text-3xl text-ink">Products</p>
-          {tracked.length > 0 && (
-            <p className="mt-1 text-sm text-ink-muted">
-              {readyUnits} ready across {tracked.length} product{tracked.length === 1 ? '' : 's'}
-              {soldOut > 0 && <span className="font-medium text-clay-dark"> · {soldOut} sold out</span>}
-            </p>
-          )}
         </div>
         <LinkButton href="/business/products/new">Add product</LinkButton>
       </header>
+
+      <ReadyStockList items={readyStock} title="Ready stock" />
 
       {products.length === 0 ? (
         <Card>

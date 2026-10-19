@@ -22,6 +22,7 @@ PostgreSQL via Supabase. Migrations live in `supabase/migrations/`, numbered and
 18. `0018_product_images.sql` — public Storage bucket `product-images` (5 MB limit, JPEG/PNG/WebP) with member-only upload/replace/delete policies via `is_product_image_owner()`. Files live at `<business_id>/<uuid>.jpg`; `products.image_url` holds the public URL. Photos are resized in the browser before upload (`ProductImagePicker`), and replaced/deleted photos are removed from storage by the product actions.
 19. `0019_posting_reminder_preference.sql` — `notification_preferences.posting_reminder` for the 8pm (MYT) posting reminder, sent by Vercel Cron → `/api/cron/posting-reminders` when today's Content checklist is incomplete.
 20. `0020_recipes.sql` — recipes: `products.recipe_yield` (units per batch) and `product_recipe_items` (inventory item + amount per batch, in the item's unit). `use_recipe_ingredients()` logs `usage` transactions; the app calls it when a batch is added to ready stock, and the (replaced) `apply_order_ready_stock()` trigger calls it when an order with made-to-order products completes (reference `order:<id>`), undoing exactly those records if the order leaves completed.
+21. `0021_editable_sale_date.sql` — `set_order_completed_on()` now keeps a `completed_on` given on insert (recording a past sale) and accepts edits on completed orders (correcting the sale date); becoming completed by an update still stamps today; future dates are refused. Past sales don't touch ready stock or ingredients.
 
 ## Team roles
 

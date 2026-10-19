@@ -152,7 +152,7 @@ export function NewOrderPanel({ products, customers, currency, today }: Props) {
       </Card>
 
       <Card>
-        <OrderForm key={formVersion} products={products} customers={customers} currency={currency} prefill={prefill} />
+        <OrderForm key={formVersion} products={products} customers={customers} currency={currency} prefill={prefill} today={today} />
       </Card>
 
       <p className="text-xs text-ink-muted">

@@ -6,6 +6,7 @@ import { getActionContext } from '@/lib/services/action-context'
 import { findOrCreateCustomer } from '@/lib/services/customers'
 import { getBusinessNow } from '@/lib/time'
 import { parseOrderForm } from '@/lib/validation/orders'
+import { isValidISODate } from '@/lib/validation/common'
 import { derivePaymentStatus } from '@/lib/calc/orders'
 import { isPaymentMethod } from '@/lib/receipts'
 import { getOrder } from '@/lib/services/orders'
@@ -96,12 +97,21 @@ export async function saveOrder(_prev: SaveOrderState, formData: FormData): Prom
   }
 
   // ---------------------------------------------------------- create
+  // "Record a past sale": saved straight as completed on that day, so it counts
+  // in that day's / month's sales. It doesn't touch ready stock or ingredients.
+  const today = getBusinessNow(timezone).isoDate
+  const pastSaleDate = String(formData.get('pastSaleDate') ?? '').trim()
+  if (pastSaleDate && (!isValidISODate(pastSaleDate) || pastSaleDate > today)) {
+    return { error: 'Pick a sale date that is today or earlier.', nonce: 0 }
+  }
+
   const newId = crypto.randomUUID()
   const { error: orderError } = await supabase.from('orders').insert({
     id: newId,
     business_id: businessId,
-    order_date: getBusinessNow(timezone).isoDate,
-    status: 'confirmed',
+    order_date: pastSaleDate || today,
+    status: pastSaleDate ? 'completed' : 'confirmed',
+    ...(pastSaleDate ? { completed_on: pastSaleDate } : {}),
     ...fields,
   })
   if (orderError) return { error: orderError.message, nonce: 0 }
@@ -118,11 +128,13 @@ export async function saveOrder(_prev: SaveOrderState, formData: FormData): Prom
     action: 'order_created',
     entity_type: 'order',
     entity_id: newId,
-    metadata: { total: order.totals.total },
+    metadata: { total: order.totals.total, ...(pastSaleDate ? { past_sale_date: pastSaleDate } : {}) },
   })
   revalidatePath('/orders', 'layout')
   revalidatePath('/today')
-  redirect('/orders')
+  revalidatePath('/business', 'layout')
+  // A past sale is already completed (not in the Active list), so open it, e.g. to issue its receipt.
+  redirect(pastSaleDate ? `/orders/${newId}` : '/orders')
 }
 
 export interface IssueReceiptState {
@@ -174,4 +186,41 @@ export async function issueReceipt(orderId: string, _prev: IssueReceiptState, fo
 
   revalidatePath('/orders', 'layout')
   redirect(`/receipt/${orderId}`)
+}
+
+/**
+ * Corrects the sales day of a completed order, e.g. it was handed over
+ * yesterday but only marked completed today. Moves it between days/months in
+ * the sales figures; doesn't touch stock.
+ */
+export async function setSaleDate(orderId: string, date: string): Promise<{ error: string | null }> {
+  if (!UUID.test(orderId)) return { error: 'Invalid order.' }
+  if (!isValidISODate(date)) return { error: 'Pick a valid date.' }
+  const ctx = await getActionContext()
+  if (!ctx.ok) return { error: ctx.error }
+  const { supabase, businessId, userId, timezone } = ctx
+  if (date > getBusinessNow(timezone).isoDate) return { error: 'The sale date can’t be in the future.' }
+
+  const { data, error } = await supabase
+    .from('orders')
+    .update({ completed_on: date })
+    .eq('id', orderId)
+    .eq('business_id', businessId)
+    .eq('status', 'completed')
+    .select('id')
+    .maybeSingle()
+  if (error) return { error: error.message }
+  if (!data) return { error: 'Only completed orders have a sale date.' }
+
+  await supabase.from('business_activity_logs').insert({
+    business_id: businessId,
+    user_id: userId,
+    action: 'sale_date_changed',
+    entity_type: 'order',
+    entity_id: orderId,
+    metadata: { completed_on: date },
+  })
+  revalidatePath('/orders', 'layout')
+  revalidatePath('/business', 'layout')
+  return { error: null }
 }

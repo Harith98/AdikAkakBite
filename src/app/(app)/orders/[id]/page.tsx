@@ -5,13 +5,14 @@ import { getCurrentBusinessContext } from '@/lib/services/current-business'
 import { getOrder, type OrderView } from '@/lib/services/orders'
 import { getProducts, type ProductView } from '@/lib/services/products'
 import { formatMoney } from '@/lib/constants'
-import { formatDateShort, formatTime12 } from '@/lib/time'
+import { formatDateShort, formatTime12, getBusinessNow } from '@/lib/time'
 import { UUID_PATTERN } from '@/lib/validation/common'
 import { Card } from '@/components/ui/Card'
 import { OrderForm } from '@/components/orders/OrderForm'
 import { OrderStatusControls } from '@/components/orders/OrderStatusControls'
 import { OrderStatusBadge, PaymentBadge } from '@/components/orders/StatusBadge'
 import { GenerateReceiptForm } from '@/components/orders/GenerateReceiptForm'
+import { SaleDateEditor } from '@/components/orders/SaleDateEditor'
 import { LinkButton } from '@/components/ui/LinkButton'
 import { formatReceiptNumber } from '@/lib/receipts'
 
@@ -61,6 +62,15 @@ export default async function OrderPage({ params }: { params: { id: string } }) 
             ? `Needed ${formatDateShort(orderData.requiredDate)}${orderData.requiredTime ? ` at ${formatTime12(orderData.requiredTime)}` : ''}`
             : 'No date set'}
         </p>
+        {orderData.status === 'completed' && (
+          <div className="mt-3 border-t border-ink/10 pt-3">
+            <SaleDateEditor
+              orderId={orderData.id}
+              completedOn={orderData.completedOn}
+              today={getBusinessNow(settings.timezone).isoDate}
+            />
+          </div>
+        )}
       </Card>
 
       <OrderStatusControls orderId={orderData.id} status={orderData.status} />

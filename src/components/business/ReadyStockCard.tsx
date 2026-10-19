@@ -81,8 +81,14 @@ export function ReadyStockCard({ productId, initialStock }: { productId: string;
               state === 'in_stock' ? 'text-ink' : 'text-clay-dark'
             )}
           >
-            {stock}
-            <span className="ml-2 font-body text-sm font-medium">{readyStockLabel(stock)}</span>
+            {state === 'in_stock' ? (
+              <>
+                {stock}
+                <span className="ml-2 font-body text-sm font-medium text-ink-muted">ready</span>
+              </>
+            ) : (
+              readyStockLabel(stock)
+            )}
           </p>
           {state === 'short' && (
             <p className="text-sm text-clay-dark">
@@ -97,20 +103,25 @@ export function ReadyStockCard({ productId, initialStock }: { productId: string;
             aria-label="Quantity"
             className={input}
           />
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-2 gap-2">
             <Button type="button" variant="success" onClick={() => run('add')} disabled={busy}>
               + Add batch
-            </Button>
-            <Button type="button" variant="secondary" onClick={() => run('remove')} disabled={busy}>
-              − Remove
             </Button>
             <Button type="button" variant="secondary" onClick={() => run('set')} disabled={busy}>
               Set count
             </Button>
           </div>
-          <p className="text-xs text-ink-muted">
-            Completed orders take items off automatically. Use Remove for anything eaten, given away or spoiled.
-          </p>
+          <ul className="flex flex-col gap-1 text-xs text-ink-muted">
+            <li>
+              <span className="font-medium text-ink">Add batch</span>: you just made more. Adds to the count and takes the
+              recipe&apos;s ingredients out of inventory.
+            </li>
+            <li>
+              <span className="font-medium text-ink">Set count</span>: type how many are actually on hand, e.g. after some
+              were eaten, given away or spoiled. Ingredients aren&apos;t touched.
+            </li>
+            <li>Completed orders take sold items off automatically.</li>
+          </ul>
           <Button type="button" variant="ghost" onClick={() => run('untrack')} disabled={busy} className="self-start text-ink-muted">
             Stop tracking
           </Button>
