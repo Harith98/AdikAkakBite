@@ -3,7 +3,8 @@ import { createClient } from '@/lib/supabase/server'
 import { getCurrentBusinessContext } from '@/lib/services/current-business'
 import { getProducts, type ProductView } from '@/lib/services/products'
 import { Card } from '@/components/ui/Card'
-import { OrderForm } from '@/components/orders/OrderForm'
+import { NewOrderPanel } from '@/components/orders/NewOrderPanel'
+import { getBusinessNow } from '@/lib/time'
 
 export default async function NewOrderPage() {
   const { business, settings } = await getCurrentBusinessContext()
@@ -29,15 +30,14 @@ export default async function NewOrderPage() {
           </p>
         </Card>
       )}
-      <Card>
-        <OrderForm
-          products={products
-            .filter((product: ProductView) => product.isActive)
-            .map((product: ProductView) => ({ id: product.id, name: product.name, price: product.sellingPrice, readyStock: product.readyStock }))}
-          customers={customersRes.data ?? []}
-          currency={settings.currency}
-        />
-      </Card>
+      <NewOrderPanel
+        products={products
+          .filter((product: ProductView) => product.isActive)
+          .map((product: ProductView) => ({ id: product.id, name: product.name, price: product.sellingPrice, readyStock: product.readyStock }))}
+        customers={customersRes.data ?? []}
+        currency={settings.currency}
+        today={getBusinessNow(settings.timezone).isoDate}
+      />
     </div>
   )
 }

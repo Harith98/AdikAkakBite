@@ -23,6 +23,16 @@ export interface CustomerOption {
   phone: string | null
 }
 
+/** Starting values for a new order, e.g. read from a pasted WhatsApp message. */
+export interface OrderPrefill {
+  customerName: string
+  customerPhone: string
+  requiredDate: string
+  requiredTime: string
+  notes: string
+  items: { productId: string; productName: string; quantity: number; unitPrice: number | null }[]
+}
+
 interface ItemState {
   key: number
   productId: string
@@ -40,12 +50,16 @@ export function OrderForm({
   customers,
   currency,
   order,
+  prefill,
 }: {
   products: ProductOption[]
   customers: CustomerOption[]
   currency: string
   order?: OrderView
+  /** Only for new orders; ignored when editing `order`. */
+  prefill?: OrderPrefill
 }) {
+  const start = order ? undefined : prefill
   const [state, formAction] = useFormState(saveOrder, initialState)
   const nextKey = useRef(1)
   const [items, setItems] = useState<ItemState[]>(() =>
@@ -57,11 +71,19 @@ export function OrderForm({
           quantity: String(i.quantity),
           unitPrice: String(i.unitPrice),
         }))
-      : [{ key: nextKey.current++, productId: '', productName: '', quantity: '1', unitPrice: '' }]
+      : start && start.items.length > 0
+        ? start.items.map((i) => ({
+            key: nextKey.current++,
+            productId: i.productId,
+            productName: i.productName,
+            quantity: String(i.quantity),
+            unitPrice: i.unitPrice === null ? '' : String(i.unitPrice),
+          }))
+        : [{ key: nextKey.current++, productId: '', productName: '', quantity: '1', unitPrice: '' }]
   )
   // An existing order with no customer was a walk-in.
-  const [customerName, setCustomerName] = useState(order ? order.customerName ?? 'Walk-in' : '')
-  const [customerPhone, setCustomerPhone] = useState(order?.customerPhone ?? '')
+  const [customerName, setCustomerName] = useState(order ? order.customerName ?? 'Walk-in' : start?.customerName ?? '')
+  const [customerPhone, setCustomerPhone] = useState(order?.customerPhone ?? start?.customerPhone ?? '')
   const [discount, setDiscount] = useState(order && order.discount > 0 ? String(order.discount) : '')
   const [deliveryFee, setDeliveryFee] = useState(order && order.deliveryFee > 0 ? String(order.deliveryFee) : '')
   const [deposit, setDeposit] = useState(order && order.deposit > 0 ? String(order.deposit) : '')
@@ -227,8 +249,8 @@ export function OrderForm({
       <fieldset>
         <legend className="mb-1 text-sm font-medium text-ink">When is it needed?</legend>
         <div className="grid grid-cols-2 gap-2">
-          <input type="date" name="requiredDate" defaultValue={order?.requiredDate ?? ''} aria-label="Required date" className={input} />
-          <input type="time" name="requiredTime" defaultValue={order?.requiredTime?.slice(0, 5) ?? ''} aria-label="Required time" className={input} />
+          <input type="date" name="requiredDate" defaultValue={order?.requiredDate ?? start?.requiredDate ?? ''} aria-label="Required date" className={input} />
+          <input type="time" name="requiredTime" defaultValue={order?.requiredTime?.slice(0, 5) ?? start?.requiredTime ?? ''} aria-label="Required time" className={input} />
         </div>
         <p className="mt-1 text-xs text-ink-muted">Add a date and time so it shows up on Today when it&apos;s due.</p>
       </fieldset>
@@ -270,7 +292,7 @@ export function OrderForm({
 
       <label className="flex flex-col gap-1 text-sm">
         <span className="font-medium text-ink">Notes</span>
-        <textarea name="notes" rows={3} maxLength={500} defaultValue={order?.notes ?? ''} className="rounded-card border border-ink/15 bg-base p-3 text-sm outline-none focus:border-raspberry" />
+        <textarea name="notes" rows={3} maxLength={500} defaultValue={order?.notes ?? start?.notes ?? ''} className="rounded-card border border-ink/15 bg-base p-3 text-sm outline-none focus:border-raspberry" />
       </label>
 
       {state.error && <p role="alert" className="text-sm text-clay-dark">{state.error}</p>}
