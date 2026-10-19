@@ -223,7 +223,9 @@ const UNITS = 'pcs|pc|biji|kotak|box|boxes|bekas|tin|balang|set|tray|loyang|kepi
 const LEADING_QTY = new RegExp(`^(\\d{1,3})\\s*(?:x|×)?\\s*(?:(?:${UNITS})\\b\\s*)?(.+)$`, 'i')
 const TRAILING_X_QTY = new RegExp(`^(.+?)\\s*(?:x|×)\\s*(\\d{1,3})\\s*(?:(?:${UNITS})\\b)?$`, 'i')
 const TRAILING_UNIT_QTY = new RegExp(`^(.+?)\\s+(\\d{1,3})\\s*(?:${UNITS})\\b$`, 'i')
-const BRACKET_QTY = new RegExp(`^(.+?)\\s*[([]\\s*(\\d{1,3})\\s*(?:(?:${UNITS})\\b)?\\s*[)\\]]$`, 'i')
+/** "BROWNIES KLASIK-3", "brownies = 2", "brownies: 2" */
+const DASH_QTY = new RegExp(`^(.+?)\\s*[-–=:]\\s*(\\d{1,3})\\s*(?:(?:${UNITS})\\b)?$`, 'i')
+const BRACKET_QTY =new RegExp(`^(.+?)\\s*[([]\\s*(\\d{1,3})\\s*(?:(?:${UNITS})\\b)?\\s*[)\\]]$`, 'i')
 
 function readItem(raw: string): { name: string; quantity: number } | null {
   let text = stripLead(raw.replace(/^\s*\d{1,2}[.)]\s+/, '')) // "1. Brownies" numbering
@@ -238,6 +240,7 @@ function readItem(raw: string): { name: string; quantity: number } | null {
     [LEADING_QTY, 1, 2],
     [TRAILING_X_QTY, 2, 1],
     [TRAILING_UNIT_QTY, 2, 1],
+    [DASH_QTY, 2, 1],
     [BRACKET_QTY, 2, 1],
   ] as const) {
     const m = text.match(pattern)
@@ -381,7 +384,7 @@ export function parseWhatsAppOrder(message: string, products: ProductForMatching
     : /\b(pick\s*up|pickup|ambil|self|collect)\b/.test(fulfilmentText)
       ? 'pickup'
       : null
-  const address = one('address')
+  const address = one('address')?.replace(/[\s.,;]+$/, '') || null // "…, Penang ." → "…, Penang"
   if (fulfilment === 'cod' && !address) warnings.push('COD but no address given. Ask the customer for it.')
   if (fulfilment === 'cod') warnings.push('COD: add the delivery fee below if you charge one.')
 

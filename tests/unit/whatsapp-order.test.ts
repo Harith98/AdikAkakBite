@@ -54,6 +54,32 @@ describe('parseWhatsAppOrder', () => {
     expect(r.warnings.join(' ')).toMatch(/No phone number/)
   })
 
+  it('reads a real customer message: no spaces after colons, "ITEM-qty", trailing dot on the address', () => {
+    const r = parseWhatsAppOrder(
+      [
+        '📦 ORDER',
+        '',
+        '📌 Nama: Syuhada',
+        '📅 Tarikh:17/10',
+        '🎂 Order:BATIK KLASIK-1,BROWNIES KLASIK-3',
+        '📲 Phone No: 018-2261310',
+        '🚗 Pickup / COD:  COD ',
+        '📍 Alamat (kalau COD): 4865 Mukim 20, Tanah Liat 14000 Bukit Mertajam, Penang .',
+      ].join('\n'),
+      [...products, { id: 'p5', name: 'Kek Batik Klasik', price: 15 }],
+      '2026-10-15'
+    )
+    expect(r.customerName).toBe('Syuhada')
+    expect(r.phone).toBe('018-2261310')
+    expect(r.requiredDate).toBe('2026-10-17')
+    expect(r.fulfilment).toBe('cod')
+    expect(r.notes).toBe('COD — 4865 Mukim 20, Tanah Liat 14000 Bukit Mertajam, Penang')
+    expect(r.items.map((i) => [i.quantity, i.productId])).toEqual([
+      [1, 'p5'],
+      [3, 'p1'],
+    ])
+  })
+
   it('treats the blank template as recognised but empty', () => {
     const r = parseWhatsAppOrder(WHATSAPP_ORDER_TEMPLATE, products, today)
     expect(r.recognised).toBe(true)
