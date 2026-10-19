@@ -46,7 +46,7 @@ export default async function ProductsPage({ searchParams }: { searchParams: { c
         <LinkButton href="/business/products/new">Add product</LinkButton>
       </header>
 
-      <ReadyStockList items={readyStock} title="Ready stock" />
+      <ReadyStockList items={readyStock} title="Ready stock" wide />
 
       {products.length === 0 ? (
         <Card>
