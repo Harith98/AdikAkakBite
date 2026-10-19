@@ -7,6 +7,7 @@ import { calculateProductEconomics } from '@/lib/calc/products'
 import { formatMoney, formatPercent } from '@/lib/constants'
 import { deleteProduct, saveProduct, type SaveProductState } from '@/app/(app)/business/products/actions'
 import type { ProductView } from '@/lib/services/products'
+import { ProductImagePicker } from './ProductImagePicker'
 
 const initialState: SaveProductState = { error: null, nonce: 0 }
 const input = 'h-11 w-full rounded-card border border-ink/15 bg-base px-3 text-sm outline-none focus:border-raspberry'
@@ -14,10 +15,13 @@ const toNumber = (v: string) => Number(v.replace(/[,\s]/g, '')) || 0
 
 export function ProductForm({
   product,
+  businessId,
   currency,
   categories = [],
 }: {
   product?: ProductView
+  /** Photos are stored under this business's folder. */
+  businessId: string
   currency: string
   /** Existing category names, offered as suggestions so spellings stay consistent. */
   categories?: string[]
@@ -27,6 +31,7 @@ export function ProductForm({
   const [ingredient, setIngredient] = useState(product ? String(product.ingredientCost) : '')
   const [packaging, setPackaging] = useState(product ? String(product.packagingCost) : '')
   const [other, setOther] = useState(product ? String(product.otherCost) : '')
+  const [uploading, setUploading] = useState(false)
 
   const economics = calculateProductEconomics({
     sellingPrice: toNumber(price),
@@ -39,6 +44,7 @@ export function ProductForm({
     <div>
       <form action={formAction} className="flex flex-col gap-4">
         {product && <input type="hidden" name="productId" value={product.id} />}
+        <ProductImagePicker businessId={businessId} initialUrl={product?.imageUrl ?? null} onUploadingChange={setUploading} />
         <label className="flex flex-col gap-1 text-sm">
           <span className="font-medium text-ink">Name</span>
           <input name="name" required maxLength={100} defaultValue={product?.name} className={input} />
@@ -90,10 +96,6 @@ export function ProductForm({
           <textarea name="description" rows={2} maxLength={500} defaultValue={product?.description ?? ''} className="rounded-card border border-ink/15 bg-base p-3 text-sm outline-none focus:border-raspberry" />
         </label>
         <label className="flex flex-col gap-1 text-sm">
-          <span className="font-medium text-ink">Image link (optional)</span>
-          <input name="imageUrl" defaultValue={product?.imageUrl ?? ''} placeholder="https://…" className={input} />
-        </label>
-        <label className="flex flex-col gap-1 text-sm">
           <span className="font-medium text-ink">Notes</span>
           <textarea name="notes" rows={2} maxLength={500} defaultValue={product?.notes ?? ''} className="rounded-card border border-ink/15 bg-base p-3 text-sm outline-none focus:border-raspberry" />
         </label>
@@ -104,7 +106,7 @@ export function ProductForm({
 
         {state.error && <p role="alert" className="text-sm text-clay-dark">{state.error}</p>}
         {state.nonce !== 0 && !state.error && <p className="text-sm text-sage-dark">Saved.</p>}
-        <SubmitButton label={product ? 'Save changes' : 'Add product'} />
+        <SubmitButton label={product ? 'Save changes' : 'Add product'} waiting={uploading} />
       </form>
 
       {product && (
@@ -125,11 +127,11 @@ export function ProductForm({
   )
 }
 
-function SubmitButton({ label }: { label: string }) {
+function SubmitButton({ label, waiting }: { label: string; waiting: boolean }) {
   const { pending } = useFormStatus()
   return (
-    <Button type="submit" size="lg" disabled={pending} className="w-full">
-      {pending ? 'Saving…' : label}
+    <Button type="submit" size="lg" disabled={pending || waiting} className="w-full">
+      {pending ? 'Saving…' : waiting ? 'Uploading photo…' : label}
     </Button>
   )
 }

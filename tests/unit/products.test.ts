@@ -79,3 +79,15 @@ describe('ready stock labels', () => {
     expect(readyStockLabel(-2)).toBe('Short by 2')
   })
 })
+
+describe('productImagePath', () => {
+  it('extracts our own storage path and ignores other links', async () => {
+    const { productImagePath } = await import('@/lib/product-images')
+    const base = 'https://abc.supabase.co'
+    const id = '0b6a3f0e-1c2d-4e5f-8a9b-0c1d2e3f4a5b'
+    expect(productImagePath(`${base}/storage/v1/object/public/product-images/${id}/x1.jpg`, base)).toBe(`${id}/x1.jpg`)
+    expect(productImagePath('https://example.com/cake.jpg', base)).toBeNull()
+    expect(productImagePath(`${base}/storage/v1/object/public/product-images/../secret`, base)).toBeNull()
+    expect(productImagePath(null, base)).toBeNull()
+  })
+})

@@ -33,7 +33,7 @@ export function parseProductForm(form: FormSource): ParseResult<ParsedProduct> {
 
   const imageUrl = str(form, 'imageUrl')
   if (imageUrl) {
-    if (imageUrl.length > 500 || !/^https?:\/\//i.test(imageUrl)) return fail('The image link must start with http:// or https://.')
+    if (imageUrl.length > 500 || !/^https?:\/\//i.test(imageUrl)) return fail('The photo couldn’t be saved. Please add it again.')
   }
 
   const sellingPrice = parseMoney(str(form, 'sellingPrice'), 'Selling price', 100_000)

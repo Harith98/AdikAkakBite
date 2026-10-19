@@ -120,9 +120,24 @@ export default async function ProductsPage({ searchParams }: { searchParams: { c
               <Link href={`/business/products/${p.id}`} className="block">
                 <Card className={p.isActive ? 'transition-colors hover:bg-base-soft' : 'opacity-70'}>
                   <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <p className="font-display text-xl text-ink">{p.name}</p>
-                      {p.category && <p className="text-sm text-ink-muted">{p.category}</p>}
+                    <div className="flex min-w-0 items-start gap-3">
+                      {p.imageUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={p.imageUrl}
+                          alt=""
+                          loading="lazy"
+                          className="h-16 w-16 shrink-0 rounded-card bg-base-soft object-cover"
+                        />
+                      ) : (
+                        <span aria-hidden="true" className="flex h-16 w-16 shrink-0 items-center justify-center rounded-card bg-base-soft text-2xl">
+                          🧁
+                        </span>
+                      )}
+                      <div className="min-w-0">
+                        <p className="break-words font-display text-xl text-ink">{p.name}</p>
+                        {p.category && <p className="text-sm text-ink-muted">{p.category}</p>}
+                      </div>
                     </div>
                     <div className="flex shrink-0 flex-col items-end gap-1.5">
                       <p className="text-lg font-medium text-ink">{money(p.sellingPrice)}</p>

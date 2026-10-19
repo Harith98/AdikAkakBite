@@ -15,7 +15,7 @@ export default async function NewProductPage() {
         <p className="mt-2 font-display text-3xl text-ink">Add a product</p>
       </header>
       <Card>
-        <ProductForm currency={settings.currency} categories={categories} />
+        <ProductForm businessId={business.id} currency={settings.currency} categories={categories} />
       </Card>
     </div>
   )

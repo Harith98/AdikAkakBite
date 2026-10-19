@@ -26,7 +26,7 @@ export default async function ProductPage({ params }: { params: { id: string } }
       </header>
       <ReadyStockCard productId={product.id} initialStock={product.readyStock} />
       <Card>
-        <ProductForm product={product} currency={settings.currency} categories={categories} />
+        <ProductForm product={product} businessId={business.id} currency={settings.currency} categories={categories} />
       </Card>
       <p className="text-xs text-ink-muted">
         Changing a cost doesn&apos;t rewrite history — the new cost applies from now, and the old one is kept.

@@ -5,6 +5,7 @@ import { redirect } from 'next/navigation'
 import type { Database } from '@/lib/supabase/database.types'
 import { getActionContext } from '@/lib/services/action-context'
 import { parseProductForm } from '@/lib/validation/products'
+import { PRODUCT_IMAGE_BUCKET, productImagePath } from '@/lib/product-images'
 
 export interface SaveProductState {
   error: string | null
@@ -63,6 +64,14 @@ export async function saveProduct(_prev: SaveProductState, formData: FormData): 
     redirect('/business/products')
   }
 
+  // The old photo, to delete from storage if it's replaced or removed.
+  const { data: before } = await supabase
+    .from('products')
+    .select('image_url')
+    .eq('id', idRaw)
+    .eq('business_id', businessId)
+    .maybeSingle()
+
   const productUpdate: Database['public']['Tables']['products']['Update'] = productFields
   const { data: updated, error } = await supabase.from('products')
     .update(productUpdate)
@@ -72,6 +81,7 @@ export async function saveProduct(_prev: SaveProductState, formData: FormData): 
     .maybeSingle()
   if (error) return { error: error.message, nonce: 0 }
   if (!updated) return { error: 'That product could not be found.', nonce: 0 }
+  if (before?.image_url && before.image_url !== p.imageUrl) await removeProductImage(supabase, before.image_url)
 
   // Only touch cost history if a cost actually changed.
   const { data: costs } = await supabase
@@ -108,8 +118,15 @@ export async function deleteProduct(formData: FormData): Promise<void> {
   if (!UUID.test(id)) return
   const ctx = await getActionContext()
   if (!ctx.ok) throw new Error(ctx.error)
+  const { data: product } = await ctx.supabase
+    .from('products')
+    .select('image_url')
+    .eq('id', id)
+    .eq('business_id', ctx.businessId)
+    .maybeSingle()
   const { error } = await ctx.supabase.from('products').delete().eq('id', id).eq('business_id', ctx.businessId)
   if (error) throw new Error(error.message)
+  if (product?.image_url) await removeProductImage(ctx.supabase, product.image_url)
   revalidatePath('/business', 'layout')
   redirect('/business/products')
 }
@@ -180,4 +197,12 @@ export async function changeReadyStock(productId: string, change: ReadyStockChan
   revalidatePath('/business/products', 'layout')
   revalidatePath('/orders', 'layout')
   return { error: null, readyStock }
+}
+
+/** Deletes a photo from our bucket (best effort; links to other sites are left alone). */
+async function removeProductImage(supabase: any, url: string) {
+  const path = productImagePath(url, process.env.NEXT_PUBLIC_SUPABASE_URL)
+  if (!path) return
+  const { error } = await supabase.storage.from(PRODUCT_IMAGE_BUCKET).remove([path])
+  if (error) console.error('Could not delete the old product photo:', error.message)
 }
