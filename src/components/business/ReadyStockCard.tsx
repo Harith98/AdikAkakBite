@@ -41,7 +41,7 @@ export function ReadyStockCard({ productId, initialStock }: { productId: string;
         ? `Added ${value}. Ingredients for the batch were taken out of inventory.`
         : `Added ${value}.`,
       remove: `Removed ${value}.`,
-      set: `Count set to ${value}.`,
+      set: `Amount set to ${value}.`,
       untrack: 'No longer tracking ready stock.',
     }
     setMessage({ ok: true, text: done[change] })
@@ -92,7 +92,7 @@ export function ReadyStockCard({ productId, initialStock }: { productId: string;
           </p>
           {state === 'short' && (
             <p className="text-sm text-clay-dark">
-              More were sold than were recorded as ready. Count what&apos;s on hand and use Set count to correct it.
+              More were sold than were recorded as ready. Count what&apos;s on hand and use Set amount to correct it.
             </p>
           )}
           <input
@@ -108,7 +108,7 @@ export function ReadyStockCard({ productId, initialStock }: { productId: string;
               + Add batch
             </Button>
             <Button type="button" variant="secondary" onClick={() => run('set')} disabled={busy}>
-              Set count
+              Set amount
             </Button>
           </div>
           <ul className="flex flex-col gap-1 text-xs text-ink-muted">
@@ -117,7 +117,7 @@ export function ReadyStockCard({ productId, initialStock }: { productId: string;
               recipe&apos;s ingredients out of inventory.
             </li>
             <li>
-              <span className="font-medium text-ink">Set count</span>: type how many are actually on hand, e.g. after some
+              <span className="font-medium text-ink">Set amount</span>: type how many are actually on hand, e.g. after some
               were eaten, given away or spoiled. Ingredients aren&apos;t touched.
             </li>
             <li>Completed orders take sold items off automatically.</li>
