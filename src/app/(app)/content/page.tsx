@@ -109,7 +109,7 @@ export default async function ContentPage() {
       </Card>
 
       <p className="text-xs text-ink-muted">
-        Ticks are shared with the whole team. Full content planning (ideas, captions, views and likes) is coming in a later phase.
+        Ticks are shared with the whole team. If anything isn&apos;t ticked by 8pm, you&apos;ll get a reminder (turn it off in Settings → Notifications). Full content planning (ideas, captions, views and likes) is coming in a later phase.
       </p>
     </div>
   )

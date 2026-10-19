@@ -20,6 +20,7 @@ PostgreSQL via Supabase. Migrations live in `supabase/migrations/`, numbered and
 16. `0016_push_notifications.sql` — phone notifications (web push): `push_subscriptions` (one row per device), `notification_preferences` (per person; no row = all on) and `orders.due_reminder_sent_for`. Sent from `src/lib/notifications/` with the service-role key: low stock (inventory actions), schedule changes (schedule actions), and a daily 8am (MYT) "due in 2 days" reminder from Vercel Cron → `/api/cron/order-reminders`.
 17. `0017_product_ready_stock.sql` — `products.ready_stock` (finished units on hand; null = not tracked; may go negative = oversold), `adjust_product_ready_stock()` for atomic +/- and a trigger on `orders` that takes items out of ready stock when an order becomes completed and puts them back if it leaves completed.
 18. `0018_product_images.sql` — public Storage bucket `product-images` (5 MB limit, JPEG/PNG/WebP) with member-only upload/replace/delete policies via `is_product_image_owner()`. Files live at `<business_id>/<uuid>.jpg`; `products.image_url` holds the public URL. Photos are resized in the browser before upload (`ProductImagePicker`), and replaced/deleted photos are removed from storage by the product actions.
+19. `0019_posting_reminder_preference.sql` — `notification_preferences.posting_reminder` for the 8pm (MYT) posting reminder, sent by Vercel Cron → `/api/cron/posting-reminders` when today's Content checklist is incomplete.
 
 ## Team roles
 

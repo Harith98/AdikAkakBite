@@ -5,12 +5,13 @@
 import { needsReorder, type InventoryStatusValue } from '@/lib/calc/inventory'
 import { formatDateShort, formatTime12 } from '@/lib/time'
 
-export type NotificationKind = 'low_stock' | 'order_due' | 'schedule_change'
+export type NotificationKind = 'low_stock' | 'order_due' | 'schedule_change' | 'posting_reminder'
 
 export const NOTIFICATION_KINDS: { key: NotificationKind; label: string; text: string }[] = [
   { key: 'low_stock', label: 'Low stock', text: 'When an item drops to its reorder level or runs out' },
   { key: 'order_due', label: 'Order reminders', text: 'Each morning, for orders due in 2 days' },
   { key: 'schedule_change', label: 'Schedule changes', text: 'When the daily schedule’s times change' },
+  { key: 'posting_reminder', label: 'Posting reminder', text: 'At 8pm, if today’s Instagram, Facebook or WhatsApp post isn’t ticked yet' },
 ]
 
 export interface PushMessage {
@@ -133,4 +134,27 @@ export function scheduleChangeMessage(
 
   const moved = hhmm(before.startTime) !== hhmm(after.startTime) || hhmm(before.endTime) !== hhmm(after.endTime)
   return moved ? { ...base, body: `${after.title} is now ${span(after)} (was ${span(before)}).` } : null
+}
+
+// ---------------------------------------------------------------------------
+// Evening posting reminder (Content page checklist)
+// ---------------------------------------------------------------------------
+
+/**
+ * Null when everything is posted. `streak` = complete days in a row up to
+ * yesterday, i.e. what's lost if today is missed.
+ */
+export function postingReminderMessage(missing: string[], streak: number): PushMessage | null {
+  if (missing.length === 0) return null
+  const list =
+    missing.length === 1 ? missing[0] : `${missing.slice(0, -1).join(', ')} and ${missing[missing.length - 1]}`
+  return {
+    title: streak > 0 ? `🔥 Keep your ${streak}-day posting streak` : 'Time to post today',
+    body:
+      streak > 0
+        ? `Still to post today: ${list}. Tick them off on the Content page once they’re up.`
+        : `Not posted yet today: ${list}. Post on all three to start a streak.`,
+    url: '/content',
+    tag: 'posting-reminder',
+  }
 }

@@ -646,6 +646,7 @@ export interface Database {
           low_stock: boolean
           order_due: boolean
           schedule_change: boolean
+          posting_reminder: boolean
           created_at: string
           updated_at: string
         }
@@ -655,6 +656,7 @@ export interface Database {
           low_stock?: boolean
           order_due?: boolean
           schedule_change?: boolean
+          posting_reminder?: boolean
           created_at?: string
           updated_at?: string
         }

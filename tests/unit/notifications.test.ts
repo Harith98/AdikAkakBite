@@ -88,3 +88,19 @@ describe('scheduleChangeMessage', () => {
     expect(scheduleChangeMessage(null, { ...block, isActive: false })).toBeNull()
   })
 })
+
+describe('postingReminderMessage', () => {
+  it('names what is left and the streak at stake', async () => {
+    const { postingReminderMessage } = await import('@/lib/notifications/messages')
+    const m = postingReminderMessage(['Facebook', 'WhatsApp'], 5)
+    expect(m?.title).toBe('🔥 Keep your 5-day posting streak')
+    expect(m?.body).toContain('Facebook and WhatsApp')
+    expect(m?.url).toBe('/content')
+  })
+
+  it('nudges without a streak, and says nothing once all are posted', async () => {
+    const { postingReminderMessage } = await import('@/lib/notifications/messages')
+    expect(postingReminderMessage(['Instagram', 'Facebook', 'WhatsApp'], 0)?.body).toContain('Instagram, Facebook and WhatsApp')
+    expect(postingReminderMessage([], 3)).toBeNull()
+  })
+})

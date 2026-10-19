@@ -10,7 +10,7 @@ export default async function NotificationsPage() {
   const { userId } = await getCurrentBusinessContext()
   const { data: saved } = await createClient()
     .from('notification_preferences')
-    .select('low_stock, order_due, schedule_change')
+    .select('low_stock, order_due, schedule_change, posting_reminder')
     .eq('user_id', userId)
     .maybeSingle()
 
@@ -19,6 +19,7 @@ export default async function NotificationsPage() {
     low_stock: saved?.low_stock ?? true,
     order_due: saved?.order_due ?? true,
     schedule_change: saved?.schedule_change ?? true,
+    posting_reminder: saved?.posting_reminder ?? true,
   }
   const ready = pushConfigured() && Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY)
 
