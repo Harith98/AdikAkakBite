@@ -18,6 +18,7 @@ PostgreSQL via Supabase. Migrations live in `supabase/migrations/`, numbered and
 14. `0014_member_display_names.sql` — `get_business_members()` also returns each member's own name (`display_name` from their auth user metadata, set at sign-up or in Settings → Your profile) for the Team page.
 15. `0015_order_completed_on.sql` — `orders.completed_on`, the business-local day an order was completed, set by a trigger. Sales totals and the daily close group by it, so an advance order counts on the day it's fulfilled, not the day it was taken. Orders completed earlier are backfilled with their `order_date`.
 16. `0016_push_notifications.sql` — phone notifications (web push): `push_subscriptions` (one row per device), `notification_preferences` (per person; no row = all on) and `orders.due_reminder_sent_for`. Sent from `src/lib/notifications/` with the service-role key: low stock (inventory actions), schedule changes (schedule actions), and a daily 8am (MYT) "due in 2 days" reminder from Vercel Cron → `/api/cron/order-reminders`.
+17. `0017_product_ready_stock.sql` — `products.ready_stock` (finished units on hand; null = not tracked; may go negative = oversold), `adjust_product_ready_stock()` for atomic +/- and a trigger on `orders` that takes items out of ready stock when an order becomes completed and puts them back if it leaves completed.
 
 ## Team roles
 

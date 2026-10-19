@@ -7,12 +7,15 @@ import { calculateOrderTotals } from '@/lib/calc/orders'
 import { formatMoney } from '@/lib/constants'
 import { saveOrder, type SaveOrderState } from '@/app/(app)/orders/actions'
 import type { OrderView } from '@/lib/services/orders'
+import { readyStockLabel } from '@/lib/calc/products'
 import { resolveCustomer, type CustomerMatch } from '@/lib/customer-identity'
 
 export interface ProductOption {
   id: string
   name: string
   price: number
+  /** Finished units on hand, or null when the product isn't stock-tracked. */
+  readyStock?: number | null
 }
 export interface CustomerOption {
   id: string
@@ -163,6 +166,7 @@ export function OrderForm({
                 {products.map((p) => (
                   <option key={p.id} value={p.id}>
                     {p.name} — {formatMoney(p.price, currency)}
+                    {p.readyStock != null ? ` · ${readyStockLabel(p.readyStock)}` : ''}
                   </option>
                 ))}
               </select>

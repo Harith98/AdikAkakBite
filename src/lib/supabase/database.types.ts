@@ -250,6 +250,7 @@ export interface Database {
           image_url: string | null
           is_active: boolean
           notes: string | null
+          ready_stock: number | null
           created_at: string
           updated_at: string
         }
@@ -263,6 +264,7 @@ export interface Database {
           image_url?: string | null
           is_active?: boolean
           notes?: string | null
+          ready_stock?: number | null
           created_at?: string
           updated_at?: string
         }
@@ -698,6 +700,10 @@ export interface Database {
           role: BusinessMemberRole
           joined_at: string
         }[]
+      }
+      adjust_product_ready_stock: {
+        Args: { p_product_id: string; p_change: number }
+        Returns: number | null
       }
       record_inventory_transaction: {
         Args: {

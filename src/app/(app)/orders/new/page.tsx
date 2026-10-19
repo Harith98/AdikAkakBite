@@ -33,7 +33,7 @@ export default async function NewOrderPage() {
         <OrderForm
           products={products
             .filter((product: ProductView) => product.isActive)
-            .map((product: ProductView) => ({ id: product.id, name: product.name, price: product.sellingPrice }))}
+            .map((product: ProductView) => ({ id: product.id, name: product.name, price: product.sellingPrice, readyStock: product.readyStock }))}
           customers={customersRes.data ?? []}
           currency={settings.currency}
         />

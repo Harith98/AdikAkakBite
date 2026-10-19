@@ -34,3 +34,26 @@ export function calculateProductEconomics(input: {
     grossMargin: price > 0 ? round2((grossProfit / price) * 100) : null,
   }
 }
+
+export type ReadyStockState = 'untracked' | 'in_stock' | 'sold_out' | 'short'
+
+/** How a product's ready stock reads: not tracked, some ready, none left, or oversold. */
+export function readyStockState(readyStock: number | null): ReadyStockState {
+  if (readyStock === null) return 'untracked'
+  if (readyStock > 0) return 'in_stock'
+  return readyStock === 0 ? 'sold_out' : 'short'
+}
+
+/** "12 ready" · "Sold out" · "Short by 2" · null when not tracked. */
+export function readyStockLabel(readyStock: number | null): string | null {
+  switch (readyStockState(readyStock)) {
+    case 'in_stock':
+      return `${readyStock} ready`
+    case 'sold_out':
+      return 'Sold out'
+    case 'short':
+      return `Short by ${Math.abs(readyStock ?? 0)}`
+    default:
+      return null
+  }
+}

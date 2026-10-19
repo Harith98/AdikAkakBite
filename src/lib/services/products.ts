@@ -19,6 +19,8 @@ export interface ProductView extends ProductEconomics {
   otherCost: number
   /** id of the cost row currently in effect, if any. */
   currentCostId: string | null
+  /** Finished units on hand; null = not tracked. Can be negative (sold more than recorded). */
+  readyStock: number | null
 }
 
 /**
@@ -49,6 +51,7 @@ function toView(product: ProductRow, cost: CostRow | undefined): ProductView {
     packagingCost,
     otherCost,
     currentCostId: cost?.id ?? null,
+    readyStock: product.ready_stock ?? null,
   }
 }
 

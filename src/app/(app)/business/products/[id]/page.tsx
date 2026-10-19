@@ -6,6 +6,7 @@ import { getProduct } from '@/lib/services/products'
 import { UUID_PATTERN } from '@/lib/validation/common'
 import { Card } from '@/components/ui/Card'
 import { ProductForm } from '@/components/business/ProductForm'
+import { ReadyStockCard } from '@/components/business/ReadyStockCard'
 
 export default async function ProductPage({ params }: { params: { id: string } }) {
   if (!UUID_PATTERN.test(params.id)) notFound()
@@ -19,6 +20,7 @@ export default async function ProductPage({ params }: { params: { id: string } }
         <Link href="/business/products" className="text-sm text-ink-muted">← Products</Link>
         <p className="mt-2 font-display text-3xl text-ink">{product.name}</p>
       </header>
+      <ReadyStockCard productId={product.id} initialStock={product.readyStock} />
       <Card>
         <ProductForm product={product} currency={settings.currency} />
       </Card>

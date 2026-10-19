@@ -113,3 +113,71 @@ export async function deleteProduct(formData: FormData): Promise<void> {
   revalidatePath('/business', 'layout')
   redirect('/business/products')
 }
+
+export type ReadyStockChange = 'add' | 'remove' | 'set' | 'untrack'
+
+export interface ReadyStockResult {
+  error: string | null
+  readyStock: number | null
+}
+
+const MAX_STOCK = 100_000
+
+/**
+ * Changes a product's ready stock: add a fresh batch, remove some (eaten,
+ * given away, spoiled), set the exact count after counting, or stop tracking.
+ * Sold items come off automatically when an order is completed (migration 0017).
+ */
+export async function changeReadyStock(productId: string, change: ReadyStockChange, quantity: number): Promise<ReadyStockResult> {
+  if (!UUID.test(productId)) return { error: 'Invalid product.', readyStock: null }
+  if (!['add', 'remove', 'set', 'untrack'].includes(change)) return { error: 'Invalid change.', readyStock: null }
+  if (change !== 'untrack' && (!Number.isInteger(quantity) || quantity < 0 || quantity > MAX_STOCK)) {
+    return { error: 'Enter a whole number.', readyStock: null }
+  }
+  if ((change === 'add' || change === 'remove') && quantity === 0) return { error: 'Enter how many.', readyStock: null }
+
+  const ctx = await getActionContext()
+  if (!ctx.ok) return { error: ctx.error, readyStock: null }
+  const { supabase, businessId, userId } = ctx
+
+  // Make sure it's this business's product before touching it.
+  const { data: product, error: findError } = await supabase
+    .from('products')
+    .select('id, name, ready_stock')
+    .eq('id', productId)
+    .eq('business_id', businessId)
+    .maybeSingle()
+  if (findError) return { error: findError.message, readyStock: null }
+  if (!product) return { error: 'That product could not be found.', readyStock: null }
+
+  let readyStock: number | null
+  if (change === 'add' || change === 'remove') {
+    const { data, error } = await supabase.rpc('adjust_product_ready_stock', {
+      p_product_id: productId,
+      p_change: change === 'add' ? quantity : -quantity,
+    })
+    if (error) return { error: error.message, readyStock: null }
+    readyStock = (data as number | null) ?? null
+  } else {
+    readyStock = change === 'set' ? quantity : null
+    const { error } = await supabase
+      .from('products')
+      .update({ ready_stock: readyStock })
+      .eq('id', productId)
+      .eq('business_id', businessId)
+    if (error) return { error: error.message, readyStock: null }
+  }
+
+  await supabase.from('business_activity_logs').insert({
+    business_id: businessId,
+    user_id: userId,
+    action: 'ready_stock_changed',
+    entity_type: 'product',
+    entity_id: productId,
+    metadata: { change, quantity, before: product.ready_stock, after: readyStock },
+  })
+
+  revalidatePath('/business/products', 'layout')
+  revalidatePath('/orders', 'layout')
+  return { error: null, readyStock }
+}

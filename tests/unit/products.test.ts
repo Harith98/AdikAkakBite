@@ -68,3 +68,14 @@ describe('parseProductForm', () => {
     expect(r.ok && r.value.isActive === false).toBe(true)
   })
 })
+
+describe('ready stock labels', () => {
+  it('reads untracked, in stock, sold out and oversold', async () => {
+    const { readyStockLabel, readyStockState } = await import('@/lib/calc/products')
+    expect(readyStockState(null)).toBe('untracked')
+    expect(readyStockLabel(null)).toBeNull()
+    expect(readyStockLabel(12)).toBe('12 ready')
+    expect(readyStockLabel(0)).toBe('Sold out')
+    expect(readyStockLabel(-2)).toBe('Short by 2')
+  })
+})
