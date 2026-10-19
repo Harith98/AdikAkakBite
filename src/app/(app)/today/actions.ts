@@ -5,6 +5,7 @@ import type { OrderStatus, TaskCategory, TaskStatus } from '@/lib/supabase/datab
 import { TASK_CATEGORY_OPTIONS } from '@/lib/constants'
 import { getActionContext } from '@/lib/services/action-context'
 import { getBusinessNow } from '@/lib/time'
+import { alertNewlyLowStock, snapshotStock } from '@/lib/notifications/low-stock'
 
 export interface ActionResult {
   error: string | null
@@ -75,6 +76,10 @@ export async function setOrderStatus(orderId: string, status: OrderStatus): Prom
   if (!ctx.ok) return { error: ctx.error }
   const { supabase, businessId, userId } = ctx
 
+  // Completing a made-to-order product uses its recipe's ingredients (trigger,
+  // migration 0020); compare stock before and after to send low-stock alerts.
+  const stockBefore = status === 'completed' ? await snapshotStock(supabase, businessId) : null
+
   const { data, error } = await supabase
     .from('orders')
     .update({ status })
@@ -104,8 +109,11 @@ export async function setOrderStatus(orderId: string, status: OrderStatus): Prom
     metadata: { status },
   })
 
+  if (stockBefore) await alertNewlyLowStock(businessId, stockBefore, await snapshotStock(supabase, businessId))
+
   revalidatePath('/today')
   revalidatePath('/orders', 'layout')
+  revalidatePath('/business', 'layout')
   return { error: null }
 }
 

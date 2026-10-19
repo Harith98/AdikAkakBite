@@ -21,6 +21,7 @@ PostgreSQL via Supabase. Migrations live in `supabase/migrations/`, numbered and
 17. `0017_product_ready_stock.sql` — `products.ready_stock` (finished units on hand; null = not tracked; may go negative = oversold), `adjust_product_ready_stock()` for atomic +/- and a trigger on `orders` that takes items out of ready stock when an order becomes completed and puts them back if it leaves completed.
 18. `0018_product_images.sql` — public Storage bucket `product-images` (5 MB limit, JPEG/PNG/WebP) with member-only upload/replace/delete policies via `is_product_image_owner()`. Files live at `<business_id>/<uuid>.jpg`; `products.image_url` holds the public URL. Photos are resized in the browser before upload (`ProductImagePicker`), and replaced/deleted photos are removed from storage by the product actions.
 19. `0019_posting_reminder_preference.sql` — `notification_preferences.posting_reminder` for the 8pm (MYT) posting reminder, sent by Vercel Cron → `/api/cron/posting-reminders` when today's Content checklist is incomplete.
+20. `0020_recipes.sql` — recipes: `products.recipe_yield` (units per batch) and `product_recipe_items` (inventory item + amount per batch, in the item's unit). `use_recipe_ingredients()` logs `usage` transactions; the app calls it when a batch is added to ready stock, and the (replaced) `apply_order_ready_stock()` trigger calls it when an order with made-to-order products completes (reference `order:<id>`), undoing exactly those records if the order leaves completed.
 
 ## Team roles
 

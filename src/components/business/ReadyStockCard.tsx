@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import clsx from '@/lib/clsx'
 import { readyStockLabel, readyStockState } from '@/lib/calc/products'
-import { changeReadyStock, type ReadyStockChange } from '@/app/(app)/business/products/actions'
+import { changeReadyStock, type ReadyStockChange, type ReadyStockResult } from '@/app/(app)/business/products/actions'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 
@@ -25,7 +25,7 @@ export function ReadyStockCard({ productId, initialStock }: { productId: string;
     if (change === 'untrack' && !window.confirm('Stop tracking ready stock for this product? Orders won’t change its count anymore.')) return
     setBusy(true)
     setMessage(null)
-    const result = await changeReadyStock(productId, change, value).catch(() => ({
+    const result: ReadyStockResult = await changeReadyStock(productId, change, value).catch(() => ({
       error: 'Could not save. Check your connection.',
       readyStock: null,
     }))
@@ -37,7 +37,9 @@ export function ReadyStockCard({ productId, initialStock }: { productId: string;
     setStock(result.readyStock)
     setQuantity('')
     const done: Record<ReadyStockChange, string> = {
-      add: `Added ${value}.`,
+      add: result.ingredientsUsed
+        ? `Added ${value}. Ingredients for the batch were taken out of inventory.`
+        : `Added ${value}.`,
       remove: `Removed ${value}.`,
       set: `Count set to ${value}.`,
       untrack: 'No longer tracking ready stock.',

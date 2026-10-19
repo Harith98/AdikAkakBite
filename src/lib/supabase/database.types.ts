@@ -251,6 +251,7 @@ export interface Database {
           is_active: boolean
           notes: string | null
           ready_stock: number | null
+          recipe_yield: number
           created_at: string
           updated_at: string
         }
@@ -265,6 +266,7 @@ export interface Database {
           is_active?: boolean
           notes?: string | null
           ready_stock?: number | null
+          recipe_yield?: number
           created_at?: string
           updated_at?: string
         }
@@ -613,6 +615,26 @@ export interface Database {
         Update: Partial<Database['public']['Tables']['business_invitations']['Insert']>
         Relationships: []
       }
+      product_recipe_items: {
+        Row: {
+          id: string
+          product_id: string
+          inventory_item_id: string
+          quantity: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          product_id: string
+          inventory_item_id: string
+          quantity: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: Partial<Database['public']['Tables']['product_recipe_items']['Insert']>
+        Relationships: []
+      }
       push_subscriptions: {
         Row: {
           id: string
@@ -702,6 +724,10 @@ export interface Database {
           role: BusinessMemberRole
           joined_at: string
         }[]
+      }
+      use_recipe_ingredients: {
+        Args: { p_product_id: string; p_units: number; p_reference: string; p_date: string }
+        Returns: number
       }
       adjust_product_ready_stock: {
         Args: { p_product_id: string; p_change: number }
