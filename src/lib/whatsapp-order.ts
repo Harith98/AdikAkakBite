@@ -35,7 +35,12 @@ export interface ProductForMatching {
   id: string
   name: string
   price: number
+  /** Helps tell apart products with the same name ("Chocolate" in Brownies vs Indulgence). */
+  category?: string | null
 }
+
+/** "4″ Chocolate (Brownies)": the name people see when two products share a name. */
+const displayName = (p: ProductForMatching) => (p.category ? `${p.name} (${p.category})` : p.name)
 
 export type ItemMatch = 'matched' | 'ambiguous' | 'unmatched'
 
@@ -301,14 +306,15 @@ const MATCH_THRESHOLD = 0.6
 
 export function matchProduct(text: string, products: ProductForMatching[]): Pick<ParsedItem, 'match' | 'productId' | 'productName' | 'unitPrice' | 'candidates'> {
   const scored = products
-    .map((p) => ({ p, score: matchScore(text, p.name) }))
+    // The category counts too, so "brownies chocolate" picks Chocolate in Brownies over Chocolate in Indulgence.
+    .map((p) => ({ p, score: Math.max(matchScore(text, p.name), p.category ? matchScore(text, `${p.name} ${p.category}`) : 0) }))
     .filter((s) => s.score >= MATCH_THRESHOLD)
     .sort((a, b) => b.score - a.score)
   const best = scored[0]
   if (!best) return { match: 'unmatched', productId: null, productName: text, unitPrice: null, candidates: [] }
   const tied = scored.filter((s) => best.score - s.score < 0.05)
   if (tied.length > 1) {
-    return { match: 'ambiguous', productId: null, productName: text, unitPrice: null, candidates: tied.map((s) => s.p.name) }
+    return { match: 'ambiguous', productId: null, productName: text, unitPrice: null, candidates: tied.map((s) => displayName(s.p)) }
   }
   return { match: 'matched', productId: best.p.id, productName: best.p.name, unitPrice: best.p.price, candidates: [] }
 }

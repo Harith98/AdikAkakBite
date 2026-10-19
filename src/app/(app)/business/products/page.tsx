@@ -33,7 +33,7 @@ export default async function ProductsPage({ searchParams }: { searchParams: { c
   const readyStock = sortReadyStock(
     products
       .filter((p) => p.isActive && p.readyStock !== null)
-      .map((p) => ({ id: p.id, name: p.name, imageUrl: p.imageUrl, readyStock: p.readyStock ?? 0 }))
+      .map((p) => ({ id: p.id, name: p.name, category: p.category, imageUrl: p.imageUrl, readyStock: p.readyStock ?? 0 }))
   )
 
   return (

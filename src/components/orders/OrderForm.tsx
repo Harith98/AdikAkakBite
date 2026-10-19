@@ -14,6 +14,8 @@ export interface ProductOption {
   id: string
   name: string
   price: number
+  /** Shown beside the name so products with the same name can be told apart. */
+  category?: string | null
   /** Finished units on hand, or null when the product isn't stock-tracked. */
   readyStock?: number | null
 }
@@ -191,7 +193,8 @@ export function OrderForm({
                 <option value="">Custom item</option>
                 {products.map((p) => (
                   <option key={p.id} value={p.id}>
-                    {p.name} — {formatMoney(p.price, currency)}
+                    {p.name}
+                    {p.category ? ` (${p.category})` : ''} — {formatMoney(p.price, currency)}
                     {p.readyStock != null ? ` · ${readyStockLabel(p.readyStock)}` : ''}
                   </option>
                 ))}

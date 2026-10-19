@@ -126,6 +126,24 @@ describe('readTime', () => {
   })
 })
 
+describe('matchProduct with same-named products', () => {
+  const sameName = [
+    { id: 'b', name: '4″ Chocolate', price: 25, category: 'Brownies' },
+    { id: 'i', name: '4″ Chocolate', price: 30, category: 'Indulgence' },
+  ]
+
+  it('uses the category to pick the right one', () => {
+    expect(matchProduct('brownies chocolate', sameName).productId).toBe('b')
+    expect(matchProduct('4 inch chocolate indulgence', sameName).productId).toBe('i')
+  })
+
+  it('asks, naming the categories, when the customer gives no hint', () => {
+    const m = matchProduct('chocolate', sameName)
+    expect(m.match).toBe('ambiguous')
+    expect(m.candidates).toEqual(['4″ Chocolate (Brownies)', '4″ Chocolate (Indulgence)'])
+  })
+})
+
 describe('matchProduct', () => {
   it('forgives small typos and plurals', () => {
     expect(matchProduct('brownis klasik', products).productId).toBe('p1')

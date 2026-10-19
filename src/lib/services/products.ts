@@ -97,6 +97,8 @@ export async function getProductCategories(supabase: Client, businessId: string)
 export interface ReadyStockItem {
   id: string
   name: string
+  /** Shown under the name, so two products with the same name can be told apart. */
+  category: string | null
   imageUrl: string | null
   readyStock: number
 }
@@ -105,15 +107,16 @@ export interface ReadyStockItem {
 export async function getReadyStock(supabase: Client, businessId: string): Promise<ReadyStockItem[]> {
   const { data, error } = await supabase
     .from('products')
-    .select('id, name, image_url, ready_stock')
+    .select('id, name, category, image_url, ready_stock')
     .eq('business_id', businessId)
     .eq('is_active', true)
     .not('ready_stock', 'is', null)
   if (error) throw new Error(`Could not load ready stock: ${error.message}`)
   return sortReadyStock(
-    ((data ?? []) as { id: string; name: string; image_url: string | null; ready_stock: number }[]).map((p) => ({
+    ((data ?? []) as { id: string; name: string; category: string | null; image_url: string | null; ready_stock: number }[]).map((p) => ({
       id: p.id,
       name: p.name,
+      category: p.category,
       imageUrl: p.image_url,
       readyStock: p.ready_stock,
     }))

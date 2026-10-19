@@ -107,7 +107,7 @@ export default async function OrderPage({ params }: { params: { id: string } }) 
         <p className="mb-4 text-xs font-medium uppercase tracking-wide text-ink-faint">Edit order</p>
         <OrderForm
           order={orderData}
-          products={products.map((product: ProductView) => ({ id: product.id, name: product.isActive ? product.name : `${product.name} (inactive)`, price: product.sellingPrice, readyStock: product.readyStock }))}
+          products={products.map((product: ProductView) => ({ id: product.id, name: product.isActive ? product.name : `${product.name} (inactive)`, price: product.sellingPrice, category: product.category, readyStock: product.readyStock }))}
           customers={customersRes.data ?? []}
           currency={settings.currency}
         />
