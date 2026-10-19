@@ -1,5 +1,6 @@
 import type { Database } from '@/lib/supabase/database.types'
 import { calculateProductEconomics, type ProductEconomics } from '@/lib/calc/products'
+import { categorySuggestions } from '@/lib/product-filters'
 
 type Client = any
 type ProductRow = Database['public']['Tables']['products']['Row']
@@ -84,4 +85,11 @@ export async function getProduct(supabase: Client, businessId: string, productId
   if (!data) return null
   if (costError) throw new Error(`Could not load the product's costs: ${costError.message}`)
   return toView(data, pickCurrentCost(costs ?? []))
+}
+
+/** Existing category names (one spelling each), to suggest in the product form. */
+export async function getProductCategories(supabase: Client, businessId: string): Promise<string[]> {
+  const { data, error } = await supabase.from('products').select('category').eq('business_id', businessId).not('category', 'is', null)
+  if (error) return []
+  return categorySuggestions((data ?? []) as { category: string | null }[])
 }

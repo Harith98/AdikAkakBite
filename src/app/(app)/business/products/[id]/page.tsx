@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { getCurrentBusinessContext } from '@/lib/services/current-business'
-import { getProduct } from '@/lib/services/products'
+import { getProduct, getProductCategories } from '@/lib/services/products'
 import { UUID_PATTERN } from '@/lib/validation/common'
 import { Card } from '@/components/ui/Card'
 import { ProductForm } from '@/components/business/ProductForm'
@@ -11,7 +11,11 @@ import { ReadyStockCard } from '@/components/business/ReadyStockCard'
 export default async function ProductPage({ params }: { params: { id: string } }) {
   if (!UUID_PATTERN.test(params.id)) notFound()
   const { business, settings } = await getCurrentBusinessContext()
-  const product = await getProduct(createClient(), business.id, params.id)
+  const supabase = createClient()
+  const [product, categories] = await Promise.all([
+    getProduct(supabase, business.id, params.id),
+    getProductCategories(supabase, business.id),
+  ])
   if (!product) notFound()
 
   return (
@@ -22,7 +26,7 @@ export default async function ProductPage({ params }: { params: { id: string } }
       </header>
       <ReadyStockCard productId={product.id} initialStock={product.readyStock} />
       <Card>
-        <ProductForm product={product} currency={settings.currency} />
+        <ProductForm product={product} currency={settings.currency} categories={categories} />
       </Card>
       <p className="text-xs text-ink-muted">
         Changing a cost doesn&apos;t rewrite history — the new cost applies from now, and the old one is kept.

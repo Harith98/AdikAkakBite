@@ -12,7 +12,16 @@ const initialState: SaveProductState = { error: null, nonce: 0 }
 const input = 'h-11 w-full rounded-card border border-ink/15 bg-base px-3 text-sm outline-none focus:border-raspberry'
 const toNumber = (v: string) => Number(v.replace(/[,\s]/g, '')) || 0
 
-export function ProductForm({ product, currency }: { product?: ProductView; currency: string }) {
+export function ProductForm({
+  product,
+  currency,
+  categories = [],
+}: {
+  product?: ProductView
+  currency: string
+  /** Existing category names, offered as suggestions so spellings stay consistent. */
+  categories?: string[]
+}) {
   const [state, formAction] = useFormState(saveProduct, initialState)
   const [price, setPrice] = useState(product ? String(product.sellingPrice) : '')
   const [ingredient, setIngredient] = useState(product ? String(product.ingredientCost) : '')
@@ -36,7 +45,12 @@ export function ProductForm({ product, currency }: { product?: ProductView; curr
         </label>
         <label className="flex flex-col gap-1 text-sm">
           <span className="font-medium text-ink">Category</span>
-          <input name="category" maxLength={50} defaultValue={product?.category ?? ''} placeholder="e.g. Brownies" className={input} />
+          <input name="category" list="product-categories" maxLength={50} defaultValue={product?.category ?? ''} placeholder="e.g. Brownies" className={input} />
+          <datalist id="product-categories">
+            {categories.map((c) => (
+              <option key={c} value={c} />
+            ))}
+          </datalist>
         </label>
         <label className="flex flex-col gap-1 text-sm">
           <span className="font-medium text-ink">Selling price</span>
