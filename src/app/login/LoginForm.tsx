@@ -10,11 +10,12 @@ import { authCallbackUrl } from '@/lib/site-url'
 import { friendlyEmailError, ResendEmailButton } from '@/components/auth/ResendEmailButton'
 
 /** `next` is already validated by page.tsx; `isSetUp` = the business exists (so no self-signup). */
-export function LoginForm({ next, isSetUp }: { next: string; isSetUp: boolean }) {
+export function LoginForm({ next, isSetUp, businessName }: { next: string; isSetUp: boolean; businessName: string }) {
   const router = useRouter()
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [magicLinkSent, setMagicLinkSent] = useState(false)
@@ -78,21 +79,30 @@ export function LoginForm({ next, isSetUp }: { next: string; isSetUp: boolean })
   }
 
   return (
-    <div className="flex min-h-dvh items-center justify-center bg-base px-4 py-10">
-      <div className="w-full max-w-sm">
-        <div className="mb-8 text-center">
-          <div className="mb-4 flex justify-center">
-            <img
-              src="/icons/iconAdik192x192.png"
-              alt="AdikAkak App icon"
-              className="h-24 w-24 object-contain drop-shadow-sm"
-            />
-          </div>
-          <p className="font-display text-3xl text-ink">AdikAkak App</p>
-          <p className="mt-1 text-sm text-ink-muted">Your dessert business control centre</p>
+    <div className="relative flex min-h-dvh items-center justify-center overflow-hidden bg-base px-4 py-10">
+      {/* Same warm wash and floating treats as the customer menu. */}
+      <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 h-96 bg-gradient-to-b from-raspberry-soft via-amber-soft/60 to-base" />
+      <span aria-hidden="true" className="pointer-events-none absolute left-6 top-12 rotate-[-12deg] text-3xl opacity-50">🧁</span>
+      <span aria-hidden="true" className="pointer-events-none absolute right-8 top-28 rotate-12 text-2xl opacity-40">🍰</span>
+      <span aria-hidden="true" className="pointer-events-none absolute bottom-16 left-10 rotate-6 text-2xl opacity-30">🍫</span>
+
+      <div className="relative w-full max-w-sm">
+        <div className="mb-6 flex flex-col items-center text-center">
+          <span className="h-24 w-24 overflow-hidden rounded-[26px] bg-white shadow-card ring-4 ring-white/70">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/icons/iconAdik512x512.png?v=2" alt={`${businessName} logo`} className="h-full w-full object-contain p-1" />
+          </span>
+          <p className="mt-4 font-display text-3xl leading-tight text-ink">{businessName}</p>
+          <p className="mt-1 text-sm text-ink-muted">Semanis Senyuman Kamu 💕</p>
         </div>
 
-        <Card>
+        <Card className="!p-6">
+          {!magicLinkSent && (
+            <div className="mb-5">
+              <p className="font-display text-2xl text-ink">Welcome back 👋</p>
+              <p className="mt-0.5 text-sm text-ink-muted">Sign in to run the shop.</p>
+            </div>
+          )}
           {magicLinkSent ? (
             <div className="flex flex-col gap-4">
               <p className="text-sm text-ink">
@@ -113,7 +123,8 @@ export function LoginForm({ next, isSetUp }: { next: string; isSetUp: boolean })
                   autoComplete="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="h-11 rounded-card border border-ink/15 bg-base px-3 text-ink outline-none focus:border-raspberry"
+                  placeholder="you@example.com"
+                  className="h-12 w-full rounded-card border border-ink/15 bg-white px-3 text-ink outline-none transition-colors focus:border-raspberry focus:ring-2 focus:ring-raspberry/15"
                 />
               </label>
               <label className="flex flex-col gap-1.5 text-sm">
@@ -123,17 +134,32 @@ export function LoginForm({ next, isSetUp }: { next: string; isSetUp: boolean })
                     Forgot password?
                   </Link>
                 </span>
-                <input
-                  type="password"
-                  required
-                  autoComplete="current-password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="h-11 rounded-card border border-ink/15 bg-base px-3 text-ink outline-none focus:border-raspberry"
-                />
+                <span className="relative block">
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    required
+                    autoComplete="current-password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="h-12 w-full rounded-card border border-ink/15 bg-white pl-3 pr-12 text-ink outline-none transition-colors focus:border-raspberry focus:ring-2 focus:ring-raspberry/15"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((v) => !v)}
+                    aria-label={showPassword ? 'Hide password' : 'Show password'}
+                    aria-pressed={showPassword}
+                    className="absolute inset-y-0 right-0 flex w-12 items-center justify-center text-ink-muted hover:text-ink"
+                  >
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      <path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z" />
+                      <circle cx="12" cy="12" r="3" />
+                      {showPassword && <path d="M4 4l16 16" />}
+                    </svg>
+                  </button>
+                </span>
               </label>
 
-              {error && <p className="text-sm text-clay">{error}</p>}
+              {error && <p role="alert" className="text-sm text-clay-dark">{error}</p>}
               {notConfirmed && (
                 <ResendEmailButton label="Resend confirmation email" onResend={resendConfirmation} startWithCooldown={false} />
               )}
