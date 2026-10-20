@@ -3,6 +3,7 @@
 import { useFormState, useFormStatus } from 'react-dom'
 import { Button } from '@/components/ui/Button'
 import { updateBusinessDetails, type BusinessDetailsState } from '@/app/(app)/settings/actions'
+import { socialHandle } from '@/lib/social'
 
 const initialState: BusinessDetailsState = { error: null, nonce: 0 }
 const input = 'h-11 w-full rounded-card border border-ink/15 bg-base px-3 text-sm outline-none focus:border-raspberry'
@@ -16,7 +17,16 @@ export interface BusinessDetails {
   address: string | null
   registrationNumber: string | null
   receiptFooter: string | null
+  instagramUrl?: string | null
+  facebookUrl?: string | null
+  tiktokUrl?: string | null
 }
+
+const SOCIAL = [
+  { name: 'instagram', label: 'Instagram', key: 'instagramUrl', placeholder: '@adikakakbites' },
+  { name: 'facebook', label: 'Facebook', key: 'facebookUrl', placeholder: 'facebook.com/adikakakbites' },
+  { name: 'tiktok', label: 'TikTok', key: 'tiktokUrl', placeholder: '@adikakakbites' },
+] as const
 
 export function BusinessDetailsForm({ details }: { details: BusinessDetails }) {
   const [state, formAction] = useFormState(updateBusinessDetails, initialState)
@@ -61,6 +71,27 @@ export function BusinessDetailsForm({ details }: { details: BusinessDetails }) {
         />
         <span className="text-xs text-ink-faint">Printed at the bottom of every receipt.</span>
       </label>
+      <fieldset className="mt-2 flex flex-col gap-3 border-t border-ink/10 pt-4">
+        <legend className="sr-only">Social media</legend>
+        <p className="text-sm font-medium text-ink">Social media</p>
+        <p className="-mt-2 text-xs text-ink-faint">Shown as buttons on your customer menu. Type your @handle or paste the link.</p>
+        {(details.instagramUrl || details.facebookUrl || details.tiktokUrl) && <input type="hidden" name="hadSocial" value="1" />}
+        {SOCIAL.map((s) => (
+          <label key={s.name} className="flex flex-col gap-1 text-sm">
+            <span className="text-ink-muted">{s.label}</span>
+            <input
+              name={s.name}
+              maxLength={200}
+              defaultValue={socialHandle(details[s.key]) || ''}
+              placeholder={s.placeholder}
+              autoCapitalize="none"
+              autoCorrect="off"
+              spellCheck={false}
+              className={input}
+            />
+          </label>
+        ))}
+      </fieldset>
       {state.error && <p role="alert" className="text-sm text-clay-dark">{state.error}</p>}
       {state.nonce !== 0 && !state.error && <p className="text-sm text-sage-dark">Saved.</p>}
       <SubmitButton />

@@ -16,6 +16,10 @@ interface PublicMenu {
   phone: string | null
   menu_pdf_url: string | null
   menu_pdf_updated_at: string | null
+  /** Added in migration 0027; absent before it's applied. */
+  instagram_url?: string | null
+  facebook_url?: string | null
+  tiktok_url?: string | null
 }
 
 async function loadMenu(): Promise<PublicMenu | null> {
@@ -35,6 +39,49 @@ async function loadMenu(): Promise<PublicMenu | null> {
 export default async function MenuPage() {
   const menu = await loadMenu()
   const whatsapp = toWhatsAppNumber(menu?.phone)
+  // Follow-us buttons: only the ones the shop has set (Settings → Business & receipt details).
+  const socials = [
+    menu?.instagram_url && {
+      label: 'Instagram',
+      href: menu.instagram_url,
+      background: 'linear-gradient(45deg, #F58529, #DD2A7B 55%, #8134AF)',
+      icon: (
+        <g fill="none" stroke="#fff" strokeWidth="1.9">
+          <rect x="4" y="4" width="16" height="16" rx="4.5" />
+          <circle cx="12" cy="12" r="3.8" />
+          <circle cx="17" cy="7" r="0.7" fill="#fff" stroke="none" />
+        </g>
+      ),
+    },
+    menu?.facebook_url && {
+      label: 'Facebook',
+      href: menu.facebook_url,
+      background: '#1877F2',
+      icon: <path fill="#fff" d="M13.4 21v-7.5h2.5l.4-2.9h-2.9V8.7c0-.85.24-1.43 1.46-1.43h1.56V4.66c-.27-.04-1.2-.12-2.27-.12-2.24 0-3.78 1.37-3.78 3.89v2.17H7.8v2.9h2.53V21z" />,
+    },
+    menu?.tiktok_url && {
+      label: 'TikTok',
+      href: menu.tiktok_url,
+      background: '#111111',
+      icon: (
+        <path
+          fill="#fff"
+          d="M16.6 5.8a4.3 4.3 0 0 1-1-2.8h-3.1v12.4a2.6 2.6 0 1 1-1.8-2.5V9.7a5.7 5.7 0 1 0 4.9 5.7V9.1a7.3 7.3 0 0 0 4.3 1.4V7.4a4.3 4.3 0 0 1-3.3-1.6z"
+        />
+      ),
+    },
+    whatsapp && {
+      label: 'WhatsApp',
+      href: `https://wa.me/${whatsapp}`,
+      background: '#25D366',
+      icon: (
+        <path
+          fill="#fff"
+          d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2zm0 18.2a8.2 8.2 0 0 1-4.2-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1l-.8 1c-.1.2-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.3-.4.2-.4.7-1.3.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3 3 3 0 0 0-.9 2.2c0 1.3.9 2.5 1 2.7.1.2 1.8 2.8 4.4 3.9 1.6.7 2.3.8 3.1.6.5-.1 1.5-.6 1.7-1.2.2-.6.2-1.1.2-1.2-.1-.1-.3-.2-.5-.3z"
+        />
+      ),
+    },
+  ].filter((s): s is { label: string; href: string; background: string; icon: JSX.Element } => Boolean(s))
   const name = menu?.name ?? 'Our menu'
   const updated = menu?.menu_pdf_updated_at
     ? new Date(menu.menu_pdf_updated_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
@@ -55,7 +102,7 @@ export default async function MenuPage() {
             <img src="/icons/iconAdik512x512.png?v=2" alt={`${name} logo`} className="h-full w-full object-contain p-1" />
           </span>
           <h1 className="mt-4 font-display text-4xl leading-tight text-ink">{name}</h1>
-          <p className="mt-1 text-sm text-ink-muted">Homemade desserts, made to order</p>
+          <p className="mt-1 text-sm text-ink-muted">Dari dapur kami, terus ke tangan anda</p>
           <ul className="mt-4 flex flex-wrap justify-center gap-2 text-xs font-medium">
             <li className="rounded-pill bg-white/80 px-3 py-1.5 text-raspberry-dark shadow-card">🧁 Freshly made</li>
             <li className="rounded-pill bg-white/80 px-3 py-1.5 text-amber-dark shadow-card">📅 Preorder</li>
@@ -120,7 +167,36 @@ export default async function MenuPage() {
           </ul>
         </section>
 
-        <footer className="pt-2 text-center text-xs text-ink-faint">Made with 🧁 by {name}</footer>
+        <footer className="flex flex-col items-center gap-4 pt-2 text-center">
+          {socials.length > 0 && (
+            <div className="flex flex-col items-center gap-3">
+              <p className="font-display text-lg text-ink">Ikuti kami</p>
+              <ul className="flex flex-wrap justify-center gap-3">
+                {socials.map((s) => (
+                  <li key={s.label}>
+                    <a
+                      href={s.href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      aria-label={s.label}
+                      title={s.label}
+                      className="flex h-12 w-12 items-center justify-center rounded-pill shadow-card transition-transform hover:-translate-y-0.5 active:scale-95"
+                      style={{ background: s.background }}
+                    >
+                      <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true">
+                        {s.icon}
+                      </svg>
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+          <p className="text-sm text-ink-muted">Terima kasih kerana menyokong perniagaan kecil kami 💕</p>
+          <p className="text-xs text-ink-faint">
+            © {new Date().getFullYear()} {name}
+          </p>
+        </footer>
       </div>
     </div>
   )

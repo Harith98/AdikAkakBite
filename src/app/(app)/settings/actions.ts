@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase/server'
 import { getActionContext } from '@/lib/services/action-context'
 import { canManageBusiness } from '@/lib/team'
 import { str } from '@/lib/validation/common'
+import { normalizeSocialLink } from '@/lib/social'
 import { AVATAR_BUCKET, avatarFilePath, readAvatarUrl } from '@/lib/avatars'
 
 export async function signOut() {
@@ -39,6 +40,18 @@ export async function updateBusinessDetails(_prev: BusinessDetailsState, formDat
   }
   if (values.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(values.email)) return fail('Enter a valid email address.')
 
+  // Social pages for the customer menu: "@handle" or a link, stored as clean https links.
+  const social: Partial<Record<'instagram_url' | 'facebook_url' | 'tiktok_url', string | null>> = {}
+  for (const platform of ['instagram', 'facebook', 'tiktok'] as const) {
+    const raw = str(formData, platform)
+    if (raw.length > 200) return fail('One of the social links is too long.')
+    const result = normalizeSocialLink(platform, raw)
+    if (!result.ok) return fail(result.error)
+    social[`${platform}_url`] = result.url
+  }
+  // Only sent when there's something to save or clear, so details still save before migration 0027.
+  const sendSocial = Object.values(social).some(Boolean) || formData.get('hadSocial') === '1'
+
   const ctx = await getActionContext()
   if (!ctx.ok) return fail(ctx.error)
   if (!canManageBusiness(ctx.role)) return fail('Only owners and admins can change business details.')
@@ -53,6 +66,7 @@ export async function updateBusinessDetails(_prev: BusinessDetailsState, formDat
       address: values.address || null,
       registration_number: values.registrationNumber || null,
       receipt_footer: values.receiptFooter || null,
+      ...(sendSocial ? social : {}),
     })
     .eq('id', ctx.businessId)
     .select('id')

@@ -31,6 +31,9 @@ export default async function BusinessDetailsPage() {
               address: business.address,
               registrationNumber: business.registration_number,
               receiptFooter: business.receipt_footer,
+              instagramUrl: business.instagram_url ?? null,
+              facebookUrl: business.facebook_url ?? null,
+              tiktokUrl: business.tiktok_url ?? null,
             }}
           />
         ) : (

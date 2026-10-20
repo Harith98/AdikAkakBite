@@ -67,6 +67,9 @@ export interface Database {
           receipt_footer: string | null
           menu_pdf_url: string | null
           menu_pdf_updated_at: string | null
+          instagram_url: string | null
+          facebook_url: string | null
+          tiktok_url: string | null
           created_at: string
           updated_at: string
         }
@@ -81,6 +84,9 @@ export interface Database {
           receipt_footer?: string | null
           menu_pdf_url?: string | null
           menu_pdf_updated_at?: string | null
+          instagram_url?: string | null
+          facebook_url?: string | null
+          tiktok_url?: string | null
           created_at?: string
           updated_at?: string
         }
