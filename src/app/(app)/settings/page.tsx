@@ -8,6 +8,12 @@ import { Avatar } from '@/components/ui/Avatar'
 import { canManageBusiness, ROLE_LABELS } from '@/lib/team'
 import { signOut } from './actions'
 
+/** How Settings is grouped: the business (shop and team), and the app (alerts, data, health). */
+const GROUPS: { title: string; hrefs: string[] }[] = [
+  { title: 'Business', hrefs: ['/settings/business', '/settings/menu', '/settings/team', '/settings/schedule'] },
+  { title: 'App', hrefs: ['/settings/notifications', '/settings/export', '/settings/system'] },
+]
+
 interface SettingsRow {
   href: string
   title: string
@@ -142,8 +148,13 @@ export default async function SettingsPage() {
         </Card>
       </Link>
 
-      <Group title="Business" rows={businessRows} />
-      <Group title="App" rows={appRows} />
+      {GROUPS.map((group) => {
+        // Rows a person can't use (e.g. staff and Export) aren't defined, so a group may end up empty and is skipped.
+        const rows = group.hrefs
+          .map((href) => [...businessRows, ...appRows].find((row) => row.href === href))
+          .filter((row): row is SettingsRow => row !== undefined)
+        return rows.length > 0 ? <Group key={group.title} title={group.title} rows={rows} /> : null
+      })}
 
       <form action={signOut}>
         <Button type="submit" variant="secondary" className="w-full">

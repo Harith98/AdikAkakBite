@@ -29,7 +29,8 @@ export const metadata: Metadata = {
       { url: '/icons/iconAdik-32x32.png', sizes: '32x32', type: 'image/png' },
       { url: '/icons/iconAdik192x192.png', sizes: '192x192', type: 'image/png' },
     ],
-    apple: '/icons/iconAdik-180x180.png',
+    // ?v=2: new, larger artwork (Oct 2026); the query makes phones fetch it instead of a cached copy.
+    apple: '/icons/iconAdik-180x180.png?v=2',
   },
   openGraph: {
     title: 'AdikAkak Bite — Business Control Centre',

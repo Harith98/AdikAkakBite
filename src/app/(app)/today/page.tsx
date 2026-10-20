@@ -102,11 +102,10 @@ export default async function TodayPage() {
         <span aria-hidden="true" className="pointer-events-none absolute -bottom-12 right-16 h-24 w-24 rounded-full bg-white/30" />
 
         <div className="relative flex items-center gap-4">
-          {/* The icon has wide white margins and the characters sit above its middle (about 41% down),
-              so it's zoomed 1.4× and nudged down 8.6% to centre the duck and penguin in the tile. */}
+          {/* The icon is already cropped close to the duck and penguin, so it simply fills the tile. */}
           <span className="h-14 w-14 shrink-0 overflow-hidden rounded-card bg-white shadow-card">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/icons/iconAdik512x512.png" alt="" className="h-full w-full object-cover [transform:scale(1.4)_translateY(8.6%)]" />
+            <img src="/icons/iconAdik512x512.png?v=2" alt="" className="h-full w-full object-contain p-0.5" />
           </span>
           <div className="min-w-0">
             <p className="font-display text-2xl leading-tight text-ink sm:text-3xl">
