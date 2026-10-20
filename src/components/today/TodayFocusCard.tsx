@@ -8,6 +8,8 @@ import { addTask, savePriority, setTaskStatus, type AddTaskState } from '@/app/(
 import type { TaskStatus } from '@/lib/supabase/database.types'
 import type { PrioritySuggestion } from '@/lib/services/priorities'
 import { Card } from '@/components/ui/Card'
+import { EmptyState } from '@/components/ui/EmptyState'
+import { SectionLabel } from '@/components/ui/SectionLabel'
 
 export interface PriorityTask {
   id: string
@@ -65,7 +67,7 @@ export function TodayFocusCard({ priorities, suggestions }: { priorities: Priori
   return (
     <Card>
       <div className="flex items-baseline justify-between gap-3">
-        <p className="text-xs font-medium uppercase tracking-wide text-ink-faint">Today&apos;s priorities</p>
+        <SectionLabel icon="🎯">Today&apos;s priorities</SectionLabel>
         {sorted.length > 0 && (
           <p className={clsx('text-sm', done === sorted.length ? 'font-medium text-sage-dark' : 'text-ink-muted')}>
             {done === sorted.length ? 'All done 🎉' : `${done} of ${sorted.length} done`}
@@ -74,7 +76,7 @@ export function TodayFocusCard({ priorities, suggestions }: { priorities: Priori
       </div>
 
       {sorted.length === 0 ? (
-        <p className="mt-2 text-sm text-ink-muted">Pick up to three things that matter most today. Star a task below, or tap a suggestion.</p>
+        <EmptyState compact emoji="🎯" title="What matters most today?" text="Pick up to three. Star a task below, or tap a suggestion." />
       ) : (
         <ol className="mt-2 flex flex-col">
           {sorted.map((task) => {

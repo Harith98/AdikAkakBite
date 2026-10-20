@@ -9,6 +9,7 @@ import { categoryChips, filterProducts } from '@/lib/product-filters'
 import clsx from '@/lib/clsx'
 import { Badge } from '@/components/ui/Badge'
 import { Card } from '@/components/ui/Card'
+import { EmptyState } from '@/components/ui/EmptyState'
 import { LinkButton } from '@/components/ui/LinkButton'
 
 export default async function ProductsPage({ searchParams }: { searchParams: { category?: string; q?: string } }) {
@@ -48,9 +49,12 @@ export default async function ProductsPage({ searchParams }: { searchParams: { c
 
       {products.length === 0 ? (
         <Card>
-          <p className="text-sm text-ink-muted">
-            No products yet. Add what you sell, with what it costs you to make, and the app works out your profit and margin.
-          </p>
+          <EmptyState
+            emoji="🍰"
+            title="No products yet"
+            text="Add what you sell and what it costs to make. The app works out your profit and margin."
+            action={{ href: '/business/products/new', label: 'Add your first product' }}
+          />
         </Card>
       ) : (
         <>

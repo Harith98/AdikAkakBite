@@ -2,6 +2,7 @@ import Link from 'next/link'
 import clsx from '@/lib/clsx'
 import type { ReadyStockItem } from '@/lib/services/products'
 import { Card } from '@/components/ui/Card'
+import { SectionLabel } from '@/components/ui/SectionLabel'
 import { ReadyStockStepper } from './ReadyStockStepper'
 
 /**
@@ -16,7 +17,7 @@ export function ReadyStockStrip({ items }: { items: ReadyStockItem[] }) {
   return (
     <Card className="!px-0 pb-4">
       <div className="flex items-baseline justify-between gap-3 px-5">
-        <p className="text-xs font-medium uppercase tracking-wide text-ink-faint">Ready to sell</p>
+        <SectionLabel icon="🧁">Ready to sell</SectionLabel>
         <p className="text-sm text-ink-muted">
           <span className="font-display text-lg text-ink">{units}</span> ready
           {items.length > inStock.length && <span className="text-clay-dark"> · {items.length - inStock.length} sold out</span>}

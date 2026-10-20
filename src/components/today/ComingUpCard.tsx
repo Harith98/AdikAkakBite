@@ -3,6 +3,8 @@ import { upcomingByDay } from '@/lib/order-groups'
 import { formatTime12 } from '@/lib/time'
 import type { OrderView } from '@/lib/services/orders'
 import { Card } from '@/components/ui/Card'
+import { EmptyState } from '@/components/ui/EmptyState'
+import { SectionLabel } from '@/components/ui/SectionLabel'
 
 interface Props {
   orders: OrderView[]
@@ -19,7 +21,7 @@ export function ComingUpCard({ orders, today, money, days = 7 }: Props) {
   return (
     <Card>
       <div className="flex items-baseline justify-between gap-3">
-        <p className="text-xs font-medium uppercase tracking-wide text-ink-faint">Coming up · next {days} days</p>
+        <SectionLabel icon="📅">Coming up · next {days} days</SectionLabel>
         {count > 0 && (
           <Link href="/orders" className="text-sm text-ink-muted">
             {count} order{count === 1 ? '' : 's'} →
@@ -28,7 +30,13 @@ export function ComingUpCard({ orders, today, money, days = 7 }: Props) {
       </div>
 
       {byDay.length === 0 ? (
-        <p className="mt-2 text-sm text-ink-muted">Nothing booked for the next {days} days.</p>
+        <EmptyState
+          compact
+          emoji="☕"
+          title="Nothing booked yet"
+          text={`No orders in the next ${days} days. A good time to post and share your menu!`}
+          action={{ href: '/content', label: 'Post today' }}
+        />
       ) : (
         <div className="mt-3 flex flex-col gap-3">
           {byDay.map((day) => (

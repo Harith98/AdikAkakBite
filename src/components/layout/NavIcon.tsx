@@ -17,9 +17,11 @@ export function NavIcon({ name, active }: NavIconProps) {
     width: 22,
     height: 22,
     viewBox: '0 0 24 24',
-    fill: 'none',
+    // Active: a soft tint inside the outline, so the current tab reads as "selected".
+    fill: active ? 'currentColor' : 'none',
+    fillOpacity: active ? 0.18 : undefined,
     stroke: 'currentColor',
-    strokeWidth,
+    strokeWidth: active ? 2 : strokeWidth,
     strokeLinecap: 'round' as const,
     strokeLinejoin: 'round' as const,
     'aria-hidden': true,

@@ -1,5 +1,7 @@
 import clsx from '@/lib/clsx'
 import { Card } from '@/components/ui/Card'
+import { EmptyState } from '@/components/ui/EmptyState'
+import { SectionLabel } from '@/components/ui/SectionLabel'
 import { ProgressBar } from '@/components/ui/ProgressBar'
 import { formatTime12 } from '@/lib/time'
 import type { RecommendedTask } from '@/lib/services/types'
@@ -35,7 +37,7 @@ export function CurrentActivity({ time, block, blockTasks, progress, focusTask, 
 
   return (
     <Card className={clsx('!border-l-4', style.stripe)}>
-      <p className="text-xs font-medium uppercase tracking-wide text-ink-faint">Right now · {formatTime12(time)}</p>
+      <SectionLabel icon="⏱️">Right now · {formatTime12(time)}</SectionLabel>
 
       {block ? (
         <div className="mt-3">
@@ -53,7 +55,7 @@ export function CurrentActivity({ time, block, blockTasks, progress, focusTask, 
           {progress && <ProgressBar className="mt-4" percent={progress.percent} label={progress.label} />}
         </div>
       ) : (
-        <p className="mt-2 font-display text-2xl text-ink">Nothing scheduled right now</p>
+        <EmptyState compact emoji="🌿" title="Nothing scheduled right now" text="Free time. Check what's coming up, or take a breather." />
       )}
 
       {deprioritized && (
@@ -76,7 +78,7 @@ export function CurrentActivity({ time, block, blockTasks, progress, focusTask, 
           ))}
         </ul>
       ) : (
-        block && <p className="mt-3 text-sm text-ink-muted">No tasks in this block.</p>
+        block && <p className="mt-3 text-sm text-ink-muted">No tasks in this block. Enjoy it ☕</p>
       )}
 
       {tasks.length > 0 && open === 0 && <p className="mt-2 text-sm font-medium text-sage-dark">✓ All done for this block</p>}

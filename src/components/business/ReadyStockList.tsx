@@ -3,6 +3,7 @@ import clsx from '@/lib/clsx'
 import { readyStockLabel } from '@/lib/calc/products'
 import type { ReadyStockItem } from '@/lib/services/products'
 import { Card } from '@/components/ui/Card'
+import { SectionLabel } from '@/components/ui/SectionLabel'
 import { ReadyStockStepper } from './ReadyStockStepper'
 
 interface Props {
@@ -24,7 +25,7 @@ export function ReadyStockList({ items, title = 'Ready to sell', limit, wide = f
   return (
     <Card>
       <div className="flex items-baseline justify-between gap-3">
-        <p className="text-xs font-medium uppercase tracking-wide text-ink-faint">{title}</p>
+        <SectionLabel icon="🧁">{title}</SectionLabel>
         <p className="text-sm text-ink-muted">
           {units} ready
           {items.length > inStock.length && (

@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/server'
 import { getCurrentBusinessContext } from '@/lib/services/current-business'
 import { getInventoryItems } from '@/lib/services/inventory'
 import { Card } from '@/components/ui/Card'
+import { EmptyState } from '@/components/ui/EmptyState'
 import { LinkButton } from '@/components/ui/LinkButton'
 import { InventoryStatusBadge } from '@/components/business/InventoryStatusBadge'
 
@@ -31,10 +32,12 @@ export default async function InventoryPage() {
 
       {items.length === 0 ? (
         <Card>
-          <p className="text-sm text-ink-muted">
-            No inventory items yet. Add your ingredients and packaging with a reorder level, and this page
-            will flag anything running low.
-          </p>
+          <EmptyState
+            emoji="📦"
+            title="No ingredients yet"
+            text="Add your ingredients and packaging with a reorder level, and you'll be told before anything runs low."
+            action={{ href: '/business/inventory/new', label: 'Add an item' }}
+          />
         </Card>
       ) : (
         <ul className="flex flex-col gap-3">

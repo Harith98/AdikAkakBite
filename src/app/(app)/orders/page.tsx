@@ -8,6 +8,7 @@ import { formatDateShort, formatTime12, getBusinessNow } from '@/lib/time'
 import { groupOrdersByDue } from '@/lib/order-groups'
 import clsx from '@/lib/clsx'
 import { Card } from '@/components/ui/Card'
+import { EmptyState } from '@/components/ui/EmptyState'
 import { LinkButton } from '@/components/ui/LinkButton'
 import { OrderStatusBadge, PaymentBadge } from '@/components/orders/StatusBadge'
 
@@ -55,10 +56,16 @@ export default async function OrdersPage({ searchParams }: { searchParams: { sta
 
       {orders.length === 0 ? (
         <Card>
-          <p className="text-sm text-ink-muted">
-            {filter === 'active' ? 'No active orders right now.' : 'Nothing here yet.'}{' '}
-            {filter === 'active' && <Link href="/orders/new" className="font-medium text-raspberry-dark">Add an order</Link>}
-          </p>
+          {filter === 'active' ? (
+            <EmptyState
+              emoji="🧁"
+              title="No active orders"
+              text="New orders show up here. Paste one from WhatsApp, or share your menu to get some."
+              action={{ href: '/orders/new', label: 'Add an order' }}
+            />
+          ) : (
+            <EmptyState emoji="🗂️" title="Nothing here yet" text="Orders will appear here once they reach this stage." />
+          )}
         </Card>
       ) : (
         <div className="flex flex-col gap-6">

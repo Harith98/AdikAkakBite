@@ -4,6 +4,8 @@ import { percentChange, shiftMonth } from '@/lib/calc/sales'
 import { formatDateShort } from '@/lib/time'
 import type { MonthSalesReport } from '@/lib/services/sales'
 import { Card } from '@/components/ui/Card'
+import { EmptyState } from '@/components/ui/EmptyState'
+import { SectionLabel } from '@/components/ui/SectionLabel'
 
 interface Props {
   report: MonthSalesReport
@@ -31,7 +33,7 @@ export function MonthlyReport({ report, currentMonth, money }: Props) {
           ‹
         </Link>
         <div className="text-center">
-          <p className="text-xs font-medium uppercase tracking-wide text-ink-faint">Monthly report</p>
+          <SectionLabel icon="📊" className="justify-center">Monthly report</SectionLabel>
           <p className="font-display text-xl text-ink">{monthLabel(month)}</p>
         </div>
         {isCurrent ? (
@@ -93,7 +95,7 @@ export function MonthlyReport({ report, currentMonth, money }: Props) {
 
           {topProducts.length > 0 && (
             <div className="mt-5">
-              <p className="text-xs font-medium uppercase tracking-wide text-ink-faint">Best sellers</p>
+              <SectionLabel icon="🏆">Best sellers</SectionLabel>
               <ol className="mt-2 flex flex-col gap-2 text-sm">
                 {topProducts.map((p, index) => (
                   <li key={p.name} className="flex items-center justify-between gap-3">
@@ -117,7 +119,7 @@ export function MonthlyReport({ report, currentMonth, money }: Props) {
           )}
         </>
       ) : (
-        <p className="mt-4 text-center text-sm text-ink-muted">No completed orders this month{isCurrent ? ' yet' : ''}.</p>
+        <EmptyState compact className="mt-2" emoji="📭" title={`No completed orders${isCurrent ? ' yet' : ''}`} text="Sales show up here once orders are completed." />
       )}
 
       <p className="mt-4 text-xs text-ink-muted">
