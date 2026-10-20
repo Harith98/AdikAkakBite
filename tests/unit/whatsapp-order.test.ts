@@ -150,3 +150,50 @@ describe('matchProduct', () => {
     expect(matchProduct('nutela brownie', products).productId).toBe('p2')
   })
 })
+
+describe('sizes', () => {
+  it('tells 6″ and 8″ apart', () => {
+    const sized = [
+      { id: 's6', name: 'Chocolate 6″', price: 40, category: 'Batik Cake Indulgence' },
+      { id: 's8', name: 'Chocolate 8″', price: 60, category: 'Batik Cake Indulgence' },
+    ]
+    expect(matchProduct('chocolate 8 inch', sized).productId).toBe('s8')
+    expect(matchProduct('Chocolate 6″', sized).productId).toBe('s6')
+  })
+})
+
+describe('buildWhatsAppOrderMessage', () => {
+  it('fills the template so pasting it back reads every field', async () => {
+    const { buildWhatsAppOrderMessage } = await import('@/lib/whatsapp-order')
+    const message = buildWhatsAppOrderMessage({
+      name: 'Aisyah',
+      date: '2026-10-25',
+      time: '15:30',
+      order: '2 Brownies Klasik\n1 kek batik',
+      phone: '012-345 6789',
+      fulfilment: 'cod',
+      address: 'No 5, Jalan Mawar, Shah Alam',
+    })
+    expect(message.startsWith('📦 ORDER\n\n📌 Nama: Aisyah\n📅 Tarikh: 25/10/2026, 3.30pm\n🎂 Order:\n- 2 Brownies Klasik\n- 1 kek batik')).toBe(true)
+
+    const r = parseWhatsAppOrder(message, products, today)
+    expect(r.customerName).toBe('Aisyah')
+    expect(r.requiredDate).toBe('2026-10-25')
+    expect(r.requiredTime).toBe('15:30')
+    expect(r.phone).toBe('012-345 6789')
+    expect(r.fulfilment).toBe('cod')
+    expect(r.address).toBe('No 5, Jalan Mawar, Shah Alam')
+    expect(r.items.map((i) => [i.quantity, i.productId])).toEqual([
+      [2, 'p1'],
+      [1, 'p3'],
+    ])
+  })
+
+  it('puts a single item on the Order line, and a dash for the address on pickup', async () => {
+    const { buildWhatsAppOrderMessage } = await import('@/lib/whatsapp-order')
+    const message = buildWhatsAppOrderMessage({ name: 'Ali', date: '2026-10-21', order: '1 cheese tart', phone: '0123456789', fulfilment: 'pickup' })
+    expect(message).toContain('🎂 Order: 1 cheese tart')
+    expect(message).toContain('📍 Alamat (kalau COD): -')
+    expect(parseWhatsAppOrder(message, products, today).fulfilment).toBe('pickup')
+  })
+})

@@ -78,6 +78,7 @@ export const EXPECTED_MIGRATIONS: { id: string; file: string; purpose: string }[
   { id: '0020', file: '0020_recipes.sql', purpose: 'Recipes' },
   { id: '0021', file: '0021_editable_sale_date.sql', purpose: 'Past sales and sale dates' },
   { id: '0022', file: '0022_system_status.sql', purpose: 'This status page' },
+  { id: '0023', file: '0023_menu_catalogue.sql', purpose: 'Customer menu and catalogue' },
 ]
 
 /** The ones not applied yet, oldest first. */

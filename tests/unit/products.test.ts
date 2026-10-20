@@ -105,3 +105,14 @@ describe('sortReadyStock', () => {
     expect(sorted.map((s) => s.name)).toEqual(['Batik', 'Brownies', 'Cookies', 'Apam', 'Tart'])
   })
 })
+
+describe('catalogueFilePath', () => {
+  it('only accepts PDFs in our catalogue bucket', async () => {
+    const { catalogueFilePath } = await import('@/lib/catalogue')
+    const base = 'https://abc.supabase.co'
+    const id = '0b6a3f0e-1c2d-4e5f-8a9b-0c1d2e3f4a5b'
+    expect(catalogueFilePath(`${base}/storage/v1/object/public/catalogue/${id}/menu-1.pdf`, base)).toBe(`${id}/menu-1.pdf`)
+    expect(catalogueFilePath(`${base}/storage/v1/object/public/product-images/${id}/a.jpg`, base)).toBeNull()
+    expect(catalogueFilePath('https://example.com/menu.pdf', base)).toBeNull()
+  })
+})

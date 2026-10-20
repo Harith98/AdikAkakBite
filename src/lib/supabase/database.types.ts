@@ -65,6 +65,8 @@ export interface Database {
           address: string | null
           registration_number: string | null
           receipt_footer: string | null
+          menu_pdf_url: string | null
+          menu_pdf_updated_at: string | null
           created_at: string
           updated_at: string
         }
@@ -77,6 +79,8 @@ export interface Database {
           address?: string | null
           registration_number?: string | null
           receipt_footer?: string | null
+          menu_pdf_url?: string | null
+          menu_pdf_updated_at?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -688,6 +692,10 @@ export interface Database {
     }
     Views: { [_ in never]: never }
     Functions: {
+      get_public_menu: {
+        Args: Record<string, never>
+        Returns: unknown
+      }
       app_system_status: {
         Args: Record<string, never>
         Returns: unknown

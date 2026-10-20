@@ -49,6 +49,8 @@ export default async function SystemStatusPage() {
     createServiceRoleClient()?.from('push_subscriptions').select('id', { count: 'exact', head: true }) ?? Promise.resolve(null),
   ])
   const status = statusRes.error ? null : (statusRes.data as unknown as SystemStatus)
+  // Migrations after 0022 are detected here (0022's function only knows the ones before it).
+  if (status) status.migrations['0023'] = !(await supabase.rpc('get_public_menu')).error
   const lastRun = (action: string) => (cronRes.data ?? []).find((r) => r.action === action)?.created_at ?? null
   const devices = devicesRes && !devicesRes.error ? devicesRes.count ?? 0 : null
 

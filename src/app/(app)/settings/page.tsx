@@ -49,6 +49,18 @@ export default async function SettingsPage() {
     ...(manager
       ? [
           {
+            href: '/settings/menu',
+            title: 'Customer menu',
+            text: business.menu_pdf_url ? 'Catalogue PDF and order link' : 'Upload your catalogue PDF',
+            tone: 'bg-amber-soft text-amber-dark',
+            icon: (
+              <>
+                <path d="M6 3h9l4 4v14H6z" />
+                <path d="M15 3v4h4M9 12h7M9 16h5" />
+              </>
+            ),
+          },
+          {
             href: '/settings/schedule',
             title: 'Daily schedule',
             text: 'Blocks and tasks that shape your day',

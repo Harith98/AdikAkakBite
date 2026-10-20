@@ -265,7 +265,8 @@ const tokens = (s: string) =>
     .normalize('NFKD')
     .replace(/[^\p{L}\p{N}\s]/gu, ' ')
     .split(/\s+/)
-    .filter((w) => w.length > 1)
+    // Single letters are noise, but single digits are sizes ("6″" vs "8″").
+    .filter((w) => w.length > 1 || /\d/.test(w))
 
 /** Edit distance, for small typos ("brownis", "nutela"). */
 function editDistance(a: string, b: string): number {
@@ -416,4 +417,50 @@ export function parseWhatsAppOrder(message: string, products: ProductForMatching
     notes,
     warnings,
   }
+}
+
+// ---------------------------------------------------------------------------
+// Writing the template (the customer menu's order form)
+// ---------------------------------------------------------------------------
+
+export interface WhatsAppOrderFields {
+  name: string
+  /** YYYY-MM-DD */
+  date: string
+  /** HH:MM, optional */
+  time?: string
+  /** What they're ordering, in their own words (one item per line is fine). */
+  order: string
+  phone: string
+  fulfilment: 'pickup' | 'cod'
+  address?: string
+}
+
+/** "2026-10-25" + "15:00" → "25/10/2026, 3pm": a form the template reader understands. */
+function templateDate(iso: string, time?: string): string {
+  const [y, m, d] = iso.split('-')
+  const date = `${Number(d)}/${Number(m)}/${y}`
+  if (!time) return date
+  const [hh, mm] = time.split(':').map(Number)
+  const hour = hh ?? 0
+  return `${date}, ${hour % 12 || 12}${mm ? `.${String(mm).padStart(2, '0')}` : ''}${hour < 12 ? 'am' : 'pm'}`
+}
+
+/** The shop's template, filled in, exactly as WHATSAPP_ORDER_TEMPLATE lays it out. */
+export function buildWhatsAppOrderMessage(fields: WhatsAppOrderFields): string {
+  const order = fields.order
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean)
+  return [
+    '📦 ORDER',
+    '',
+    `📌 Nama: ${fields.name.trim()}`,
+    `📅 Tarikh: ${templateDate(fields.date, fields.time)}`,
+    // One item: on the label's line. Several: one per line under it (the reader handles both).
+    order.length <= 1 ? `🎂 Order: ${order[0] ?? ''}` : ['🎂 Order:', ...order.map((l) => `- ${l.replace(/^[-•*]\s*/, '')}`)].join('\n'),
+    `📲 Phone No: ${fields.phone.trim()}`,
+    `🚗 Pickup / COD: ${fields.fulfilment === 'cod' ? 'COD' : 'Pickup'}`,
+    `📍 Alamat (kalau COD): ${fields.fulfilment === 'cod' ? (fields.address ?? '').trim() : '-'}`,
+  ].join('\n')
 }
