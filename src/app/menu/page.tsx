@@ -102,7 +102,7 @@ export default async function MenuPage() {
             <img src="/icons/iconAdik512x512.png?v=2" alt={`${name} logo`} className="h-full w-full object-contain p-1" />
           </span>
           <h1 className="mt-4 font-display text-4xl leading-tight text-ink">{name}</h1>
-          <p className="mt-1 text-sm text-ink-muted">Dari dapur kami, terus ke tangan anda</p>
+          <p className="mt-1 text-sm text-ink-muted">Semanis Senyuman Kamu 💕</p>
           <ul className="mt-4 flex flex-wrap justify-center gap-2 text-xs font-medium">
             <li className="rounded-pill bg-white/80 px-3 py-1.5 text-raspberry-dark shadow-card">🧁 Freshly made</li>
             <li className="rounded-pill bg-white/80 px-3 py-1.5 text-amber-dark shadow-card">📅 Preorder</li>
@@ -167,32 +167,36 @@ export default async function MenuPage() {
           </ul>
         </section>
 
-        <footer className="flex flex-col items-center gap-4 pt-2 text-center">
-          {socials.length > 0 && (
-            <div className="flex flex-col items-center gap-3">
-              <p className="font-display text-lg text-ink">Ikuti kami</p>
-              <ul className="flex flex-wrap justify-center gap-3">
-                {socials.map((s) => (
-                  <li key={s.label}>
-                    <a
-                      href={s.href}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      aria-label={s.label}
-                      title={s.label}
-                      className="flex h-12 w-12 items-center justify-center rounded-pill shadow-card transition-transform hover:-translate-y-0.5 active:scale-95"
-                      style={{ background: s.background }}
-                    >
-                      <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true">
+        {socials.length > 0 && (
+          <section className="rounded-card border border-raspberry/15 bg-base-card p-5 shadow-card">
+            <p className="flex items-center gap-2 font-display text-lg text-ink">
+              <span aria-hidden="true">💕</span> Ikuti kami
+            </p>
+            <p className="mt-0.5 text-sm text-ink-muted">New flavours, slots and promos first.</p>
+            <ul className="mt-4 grid grid-cols-2 gap-2">
+              {socials.map((s) => (
+                <li key={s.label}>
+                  <a
+                    href={s.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2.5 rounded-pill border border-ink/10 bg-white py-1.5 pl-1.5 pr-4 text-sm font-medium text-ink transition-transform hover:border-ink/20 active:scale-[0.97]"
+                  >
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-pill" style={{ background: s.background }}>
+                      <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
                         {s.icon}
                       </svg>
-                    </a>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-          <p className="text-sm text-ink-muted">Terima kasih kerana menyokong perniagaan kecil kami 💕</p>
+                    </span>
+                    {s.label}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+
+        <footer className="flex flex-col items-center gap-1 border-t border-ink/10 pt-6 text-center">
+          <p className="font-display text-base italic text-ink-muted">Terima kasih kerana menyokong perniagaan kecil kami 💕</p>
           <p className="text-xs text-ink-faint">
             © {new Date().getFullYear()} {name}
           </p>
