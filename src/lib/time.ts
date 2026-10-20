@@ -1,8 +1,14 @@
+import { isValidTimeZone } from '@/lib/constants'
+
+const FALLBACK_TIMEZONE = 'Asia/Kuala_Lumpur'
+
 /**
  * Business-timezone helpers. `now` is injectable so behaviour can be tested
  * at exact moments (e.g. just before midnight) without fake timers.
  */
-export function getBusinessNow(timezone: string, now: Date = new Date()) {
+export function getBusinessNow(timezoneInput: string, now: Date = new Date()) {
+  // An unknown timezone would throw and take the page down; fall back to the shop's home timezone.
+  const timezone = isValidTimeZone(timezoneInput) ? timezoneInput : FALLBACK_TIMEZONE
   // hourCycle 'h23' guarantees 00:00–23:59 (hour12:false can yield "24:05" in some engines).
   const time = new Intl.DateTimeFormat('en-GB', {
     timeZone: timezone,

@@ -5,6 +5,7 @@ import { formatTime12 } from '@/lib/time'
 import type { RecommendedTask } from '@/lib/services/types'
 import type { BlockProgress, ScheduleBlockLike, TaskLike } from '@/lib/services/schedule'
 import { TaskRow } from './TaskRow'
+import { categoryStyle } from '@/lib/category-style'
 
 interface CurrentActivityProps {
   time: string
@@ -29,19 +30,27 @@ export function CurrentActivity({ time, block, blockTasks, progress, focusTask, 
   const tasks = outside ? [outside, ...blockTasks] : blockTasks
   const open = tasks.filter((t) => t.status !== 'completed' && t.status !== 'skipped').length
 
+  const style = categoryStyle(block?.category, block?.title)
+  const next = nextBlock ? categoryStyle(nextBlock.category, nextBlock.title) : null
+
   return (
-    <Card>
+    <Card className={clsx('!border-l-4', style.stripe)}>
       <p className="text-xs font-medium uppercase tracking-wide text-ink-faint">Right now · {formatTime12(time)}</p>
 
       {block ? (
-        <div className="mt-2">
-          <div className="flex flex-wrap items-baseline justify-between gap-x-3">
-            <p className="font-display text-2xl text-ink">{block.title}</p>
-            <p className="text-sm text-ink-muted">
-              {formatTime12(block.startTime)} – {formatTime12(block.endTime)}
-            </p>
+        <div className="mt-3">
+          <div className="flex items-center gap-3">
+            <span aria-hidden="true" className={clsx('flex h-12 w-12 shrink-0 items-center justify-center rounded-card text-2xl', style.soft)}>
+              {style.emoji}
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="font-display text-2xl leading-tight text-ink">{block.title}</p>
+              <p className={clsx('text-sm font-medium', style.text)}>
+                {formatTime12(block.startTime)} – {formatTime12(block.endTime)}
+              </p>
+            </div>
           </div>
-          {progress && <ProgressBar className="mt-3" percent={progress.percent} label={progress.label} />}
+          {progress && <ProgressBar className="mt-4" percent={progress.percent} label={progress.label} />}
         </div>
       ) : (
         <p className="mt-2 font-display text-2xl text-ink">Nothing scheduled right now</p>
@@ -72,9 +81,12 @@ export function CurrentActivity({ time, block, blockTasks, progress, focusTask, 
 
       {tasks.length > 0 && open === 0 && <p className="mt-2 text-sm font-medium text-sage-dark">✓ All done for this block</p>}
 
-      {nextBlock && (
-        <p className="mt-3 text-xs text-ink-faint">
-          Then: {nextBlock.title} at {formatTime12(nextBlock.startTime)}
+      {nextBlock && next && (
+        <p className="mt-4 flex items-center gap-2 border-t border-ink/5 pt-3 text-xs text-ink-muted">
+          <span aria-hidden="true" className={clsx('flex h-6 w-6 items-center justify-center rounded-pill text-sm', next.soft)}>
+            {next.emoji}
+          </span>
+          Then <span className="font-medium text-ink">{nextBlock.title}</span> at {formatTime12(nextBlock.startTime)}
         </p>
       )}
     </Card>

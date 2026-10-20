@@ -35,3 +35,16 @@ describe('time formatting', () => {
     expect(formatDuration(-5)).toBe('0 min')
   })
 })
+
+describe('invalid timezones', () => {
+  it('fall back instead of throwing', async () => {
+    const { getBusinessNow } = await import('@/lib/time')
+    const { isValidTimeZone } = await import('@/lib/constants')
+    expect(isValidTimeZone('Asia/Kuala_Lumpur')).toBe(true)
+    expect(isValidTimeZone('Asia/Kuala Lumpur')).toBe(false)
+    expect(isValidTimeZone('')).toBe(false)
+    const at = new Date('2026-10-20T16:30:00Z') // 00:30 on the 21st in Malaysia
+    expect(getBusinessNow('Not/AZone', at).isoDate).toBe('2026-10-21')
+    expect(getBusinessNow('', at).time).toBe('00:30')
+  })
+})

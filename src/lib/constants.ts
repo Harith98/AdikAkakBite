@@ -1,7 +1,31 @@
-export const DEFAULT_CURRENCY =
-  process.env.NEXT_PUBLIC_DEFAULT_CURRENCY ?? 'MYR'
-export const DEFAULT_TIMEZONE =
-  process.env.NEXT_PUBLIC_DEFAULT_TIMEZONE ?? 'Asia/Kuala_Lumpur'
+/** True if the browser/server accepts it as an IANA timezone, e.g. "Asia/Kuala_Lumpur". */
+export function isValidTimeZone(value: string | null | undefined): value is string {
+  if (!value) return false
+  try {
+    new Intl.DateTimeFormat('en-GB', { timeZone: value })
+    return true
+  } catch {
+    return false
+  }
+}
+
+/** True if it's a currency code Intl can format, e.g. "MYR". */
+export function isValidCurrency(value: string | null | undefined): value is string {
+  if (!value || !/^[A-Z]{3}$/.test(value)) return false
+  try {
+    new Intl.NumberFormat('en-MY', { style: 'currency', currency: value })
+    return true
+  } catch {
+    return false
+  }
+}
+
+// The env values are optional overrides. A blank or mistyped one (e.g. "Asia/Kuala Lumpur")
+// falls back to the default instead of crashing every page that formats a date or price.
+const envCurrency = process.env.NEXT_PUBLIC_DEFAULT_CURRENCY?.trim().toUpperCase()
+const envTimeZone = process.env.NEXT_PUBLIC_DEFAULT_TIMEZONE?.trim()
+export const DEFAULT_CURRENCY = isValidCurrency(envCurrency) ? envCurrency : 'MYR'
+export const DEFAULT_TIMEZONE = isValidTimeZone(envTimeZone) ? envTimeZone : 'Asia/Kuala_Lumpur'
 
 export const NAV_ITEMS = [
   { href: '/today', label: 'Today', icon: 'today' },

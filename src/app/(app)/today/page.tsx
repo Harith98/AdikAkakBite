@@ -13,8 +13,7 @@ import { getUpcomingOrders } from '@/lib/services/orders'
 import { formatMoney } from '@/lib/constants'
 import { addDaysISO } from '@/lib/time'
 import { ComingUpCard } from '@/components/today/ComingUpCard'
-import { ReadyStockList } from '@/components/business/ReadyStockList'
-import { Badge } from '@/components/ui/Badge'
+import { ReadyStockStrip } from '@/components/business/ReadyStockStrip'
 import { Card } from '@/components/ui/Card'
 import { LinkButton } from '@/components/ui/LinkButton'
 import { AlertsCard } from '@/components/today/AlertsCard'
@@ -97,20 +96,40 @@ export default async function TodayPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <header>
-        <p className="font-display text-3xl text-ink">
-          {greeting(now.time)}, {greetName}! 👋
-        </p>
-        <p className="mt-1 text-sm text-ink-muted">
-          {now.dateLabel} · <LiveClock timezone={settings.timezone} initialTime={formatTime12(now.time)} />
-        </p>
-        <div className="mt-3 flex flex-wrap gap-2">
-          <Badge tone={isOpen ? 'sage' : 'neutral'}>{isOpen ? '🟢 Open' : '⚪ Closed'}</Badge>
+      <header className="relative overflow-hidden rounded-card bg-gradient-to-br from-raspberry-soft via-base-soft to-amber-soft p-5 shadow-card">
+        {/* soft decorative circles */}
+        <span aria-hidden="true" className="pointer-events-none absolute -right-8 -top-10 h-32 w-32 rounded-full bg-white/40" />
+        <span aria-hidden="true" className="pointer-events-none absolute -bottom-12 right-16 h-24 w-24 rounded-full bg-white/30" />
+
+        <div className="relative flex items-center gap-4">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/icons/iconAdik192x192.png" alt="" className="h-14 w-14 shrink-0 rounded-card bg-white/70 object-contain p-1 shadow-card" />
+          <div className="min-w-0">
+            <p className="font-display text-2xl leading-tight text-ink sm:text-3xl">
+              {greeting(now.time)}, {greetName}! 👋
+            </p>
+            <p className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-ink-muted">
+              <span>
+                {now.dateLabel} · <LiveClock timezone={settings.timezone} initialTime={formatTime12(now.time)} />
+              </span>
+              <span
+                className={clsx(
+                  'inline-flex items-center gap-1.5 rounded-pill px-2.5 py-0.5 text-xs font-medium',
+                  isOpen ? 'bg-sage-dark text-white' : 'bg-white/70 text-ink-muted'
+                )}
+              >
+                <span aria-hidden="true" className={clsx('h-1.5 w-1.5 rounded-full', isOpen ? 'animate-pulse bg-white' : 'bg-ink-faint')} />
+                {isOpen ? 'Open' : 'Closed'}
+              </span>
+            </p>
+          </div>
         </div>
-        <div className="mt-4 grid grid-cols-3 gap-3">
-          <Stat label="Orders due today" value={String(ordersToday)} />
-          <Stat label="Tasks so far" value={tasksSoFar.length > 0 ? `${tasksDone}/${tasksSoFar.length}` : '—'} />
+
+        <div className="relative mt-4 grid grid-cols-3 gap-2">
+          <Stat emoji="🧾" label="Orders today" value={String(ordersToday)} href="/orders" />
+          <Stat emoji="✅" label="Tasks so far" value={tasksSoFar.length > 0 ? `${tasksDone}/${tasksSoFar.length}` : '—'} />
           <Stat
+            emoji="📦"
             label="Low stock"
             value={String(data.inventoryAlerts.length)}
             href="/business/inventory"
@@ -174,7 +193,7 @@ export default async function TodayPage() {
         </div>
 
         <div className="flex flex-col gap-6">
-          <ReadyStockList items={readyStock} limit={6} />
+          <ReadyStockStrip items={readyStock} />
           <TodayFocusCard priorities={priorities} suggestions={suggestions} />
           <AlertsCard alerts={data.inventoryAlerts} />
         </div>
@@ -183,19 +202,24 @@ export default async function TodayPage() {
   )
 }
 
-function Stat({ label, value, href, alert }: { label: string; value: string; href?: string; alert?: boolean }) {
+function Stat({ emoji, label, value, href, alert }: { emoji: string; label: string; value: string; href?: string; alert?: boolean }) {
   const body = (
     <>
-      <p className={clsx('font-display text-2xl', alert ? 'text-clay-dark' : 'text-ink')}>{value}</p>
-      <p className={clsx('mt-0.5 text-xs', alert ? 'font-medium text-clay-dark' : 'text-ink-muted')}>{label}</p>
+      <span className="flex items-center justify-between gap-1">
+        <span aria-hidden="true" className="text-base leading-none">
+          {emoji}
+        </span>
+        <span className={clsx('font-display text-2xl leading-none', alert ? 'text-clay-dark' : 'text-ink')}>{value}</span>
+      </span>
+      <span className={clsx('mt-1.5 block text-[11px] leading-tight', alert ? 'font-medium text-clay-dark' : 'text-ink-muted')}>{label}</span>
     </>
   )
   const className = clsx(
-    'block rounded-card p-3 shadow-card',
-    alert ? 'bg-clay-soft ring-1 ring-clay/30' : 'bg-base-card'
+    'block rounded-card px-3 py-2.5 backdrop-blur',
+    alert ? 'bg-clay-soft ring-1 ring-clay/40' : 'bg-white/70'
   )
-  return href && alert ? (
-    <Link href={href} className={clsx(className, 'transition-colors hover:bg-clay-soft/70')}>
+  return href ? (
+    <Link href={href} className={clsx(className, 'transition-transform active:scale-[0.97]')}>
       {body}
     </Link>
   ) : (
