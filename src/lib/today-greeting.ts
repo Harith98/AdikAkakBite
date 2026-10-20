@@ -43,7 +43,6 @@ const QUIET_LINES = [
   'A good day to try a new flavour ✨',
   'Every order is someone’s happy moment 🎉',
   'Bake it till you make it 🍰',
-  'Quiet now. Perfect time to post on Instagram 📸',
   'Sweet things take time ⏳',
 ]
 

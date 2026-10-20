@@ -7,7 +7,6 @@ import { formatTime12, getBusinessNow } from '@/lib/time'
 import { getBlockCandidates, getBlockProgress, getCurrentBlock, getNextBlock } from '@/lib/services/schedule'
 import { getNextRecommendedTask, getOrderUrgency } from '@/lib/services/recommendation'
 import { getSuggestedPriorities } from '@/lib/services/priorities'
-import { getRecentCloses } from '@/lib/services/sales'
 import { getReadyStock } from '@/lib/services/products'
 import { getUpcomingOrders } from '@/lib/services/orders'
 import { formatMoney } from '@/lib/constants'
@@ -40,11 +39,8 @@ export default async function TodayPage() {
     now.time >= settings.working_hours_start.slice(0, 5) &&
     now.time < settings.working_hours_end.slice(0, 5)
 
-  // The latest close is a tiny query, so fetch it alongside the main data
-  // rather than waiting until we know whether the Closing block is active.
-  const [data, latestClose, readyStock, upcoming] = await Promise.all([
+  const [data, readyStock, upcoming] = await Promise.all([
     getTodayData(supabase, business.id, now.isoDate, isWorkingDay),
-    isWorkingDay ? getRecentCloses(supabase, business.id, 1) : Promise.resolve([]),
     // Optional extras: never let them take the Today page down.
     getReadyStock(supabase, business.id).catch(() => []),
     getUpcomingOrders(supabase, business.id, now.isoDate, addDaysISO(now.isoDate, UPCOMING_DAYS)).catch(() => []),
@@ -90,10 +86,6 @@ export default async function TodayPage() {
   )
   const tasksDone = tasksSoFar.filter((t) => t.status === 'completed' || t.status === 'skipped').length
   const ordersToday = data.orders.filter((o) => o.requiredDate === now.isoDate).length
-
-  // Nudge toward the daily close once Closing is the active block (spec §8/§61), unless already done.
-  const isClosingBlock = block?.title.toLowerCase() === 'closing'
-  const closedToday = latestClose.some((c) => c.review_date === now.isoDate)
 
   // ---- Header personality: time-of-day greeting + one line about the day ----
   const part = dayPart(now.time)
@@ -204,22 +196,6 @@ export default async function TodayPage() {
           ) : null}
 
           <ComingUpCard orders={upcoming} today={now.isoDate} days={UPCOMING_DAYS} money={(n) => formatMoney(n, settings.currency)} />
-
-          {isWorkingDay && isClosingBlock && (
-            <Card className={closedToday ? 'border border-sage/40' : 'border-2 border-raspberry'}>
-              <p className="text-xs font-medium uppercase tracking-wide text-ink-faint">
-                {closedToday ? "Today's close is saved" : 'Wrap up the day'}
-              </p>
-              <p className="mt-1 text-sm text-ink-muted">
-                {closedToday
-                  ? 'You can still update the waste value or notes if anything changes.'
-                  : 'Record any waste for today — revenue and orders are saved automatically.'}
-              </p>
-              <LinkButton href="/business/sales" className="mt-3">
-                {closedToday ? 'Review close' : 'Close today'}
-              </LinkButton>
-            </Card>
-          )}
 
           {!isWorkingDay && (
             <Card>

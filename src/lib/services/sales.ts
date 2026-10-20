@@ -62,41 +62,6 @@ function mondayOf(isoDate: string): string {
   return date.toISOString().slice(0, 10)
 }
 
-export interface DailyCloseInput {
-  reviewDate: string
-  revenue: number
-  ordersCount: number
-  wasteValue: number
-  notes: string | null
-}
-
-/** Upserts the day's closing record (spec §8 Closing block, §61). Revenue/orders are a snapshot for the record — the live dashboard above always recomputes from orders, never from this table. */
-export async function saveDailyClose(supabase: Client, businessId: string, input: DailyCloseInput) {
-  const { error } = await supabase.from('daily_reviews').upsert(
-    {
-      business_id: businessId,
-      review_date: input.reviewDate,
-      revenue: input.revenue,
-      orders_count: input.ordersCount,
-      waste_value: input.wasteValue,
-      unfinished_tasks_note: input.notes,
-    },
-    { onConflict: 'business_id,review_date' }
-  )
-  if (error) throw new Error(`Could not save the daily close: ${error.message}`)
-}
-
-export async function getRecentCloses(supabase: Client, businessId: string, limit = 14) {
-  const { data, error } = await supabase
-    .from('daily_reviews')
-    .select('*')
-    .eq('business_id', businessId)
-    .order('review_date', { ascending: false })
-    .limit(limit)
-  if (error) throw new Error(`Could not load past closes: ${error.message}`)
-  return data ?? []
-}
-
 export interface MonthSalesReport extends MonthReport {
   month: string
   previous: SalesTotals
