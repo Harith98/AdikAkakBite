@@ -6,7 +6,7 @@ import { SectionLabel } from '@/components/ui/SectionLabel'
 import { ReadyStockStepper } from './ReadyStockStepper'
 
 /**
- * Today's "Ready to sell": a swipeable row of photo cards, each with − count +.
+ * Today's "Ready stock": a swipeable row of photo cards, each with − count +.
  * Tap the photo or name to open the product.
  */
 export function ReadyStockStrip({ items }: { items: ReadyStockItem[] }) {
@@ -17,7 +17,7 @@ export function ReadyStockStrip({ items }: { items: ReadyStockItem[] }) {
   return (
     <Card className="!px-0 pb-4">
       <div className="flex items-baseline justify-between gap-3 px-5">
-        <SectionLabel icon="🧁">Ready to sell</SectionLabel>
+        <SectionLabel icon="🧁">Ready stock</SectionLabel>
         <p className="text-sm text-ink-muted">
           <span className="font-display text-lg text-ink">{units}</span> ready
           {items.length > inStock.length && <span className="text-clay-dark"> · {items.length - inStock.length} sold out</span>}

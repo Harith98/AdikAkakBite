@@ -16,7 +16,7 @@ interface Props {
 }
 
 /** What's baked and ready to sell right now. One row per product: tap the name to open it, or − / + to adjust. */
-export function ReadyStockList({ items, title = 'Ready to sell', limit, wide = false }: Props) {
+export function ReadyStockList({ items, title = 'Ready stock', limit, wide = false }: Props) {
   if (items.length === 0) return null
   const inStock = items.filter((i) => i.readyStock > 0)
   const units = inStock.reduce((sum, i) => sum + i.readyStock, 0)

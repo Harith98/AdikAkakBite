@@ -4,30 +4,37 @@ import { useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { AVATAR_BUCKET, AVATAR_SIZE } from '@/lib/avatars'
-import { resizeToJpeg } from '@/lib/resize-image'
+import { AvatarCropper } from './AvatarCropper'
 import { updateMyAvatar } from '@/app/(app)/settings/actions'
 import { Avatar } from '@/components/ui/Avatar'
 import { Button } from '@/components/ui/Button'
 
-/** Your own profile photo: take or choose one (cropped to a square), change or remove it. */
+/** Your own profile photo: take or choose one, position it in the circle, change or remove it. */
 export function AvatarPicker({ userId, name, initialUrl }: { userId: string; name: string; initialUrl: string | null }) {
   const router = useRouter()
   const fileInput = useRef<HTMLInputElement>(null)
   const [url, setUrl] = useState(initialUrl)
   const [busy, setBusy] = useState(false)
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null)
+  /** The photo being cropped, while the crop window is open. */
+  const [cropping, setCropping] = useState<File | null>(null)
 
-  async function choose(file: File | undefined) {
+  function choose(file: File | undefined) {
     if (fileInput.current) fileInput.current.value = '' // allow picking the same file again
     if (!file) return
     if (!file.type.startsWith('image/')) {
       setMessage({ ok: false, text: 'Please choose a photo.' })
       return
     }
+    setMessage(null)
+    setCropping(file) // → crop window → upload(blob)
+  }
+
+  async function upload(blob: Blob) {
+    setCropping(null)
     setBusy(true)
     setMessage(null)
     try {
-      const blob = await resizeToJpeg(file, { maxSize: AVATAR_SIZE, square: true })
       const supabase = createClient()
       const path = `${userId}/${crypto.randomUUID()}.jpg`
       const { error } = await supabase.storage
@@ -72,6 +79,9 @@ export function AvatarPicker({ userId, name, initialUrl }: { userId: string; nam
   return (
     <div className="flex items-center gap-4">
       <input ref={fileInput} type="file" accept="image/*" className="hidden" onChange={(e) => choose(e.target.files?.[0])} />
+      {cropping && (
+        <AvatarCropper file={cropping} outputSize={AVATAR_SIZE} onCancel={() => setCropping(null)} onConfirm={upload} />
+      )}
       <button
         type="button"
         onClick={() => fileInput.current?.click()}

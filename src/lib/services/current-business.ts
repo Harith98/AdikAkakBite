@@ -64,13 +64,22 @@ export const getCurrentBusinessContext = cache(async (): Promise<CurrentBusiness
   // Membership, business and settings in ONE round trip via PostgREST
   // embedding (business_members → businesses → business_settings). Every
   // page runs this, so it's the hottest query in the app.
-  const { data } = await supabase
-    .from('business_members')
-    .select('role, business:businesses(*, settings:business_settings(*))')
-    .eq('user_id', user.id)
-    .limit(1)
-    .maybeSingle()
+  //
+  // In parallel (so it adds no wait): the person's CURRENT profile. The
+  // session cookie holds a copy of their metadata from when its token was
+  // issued (refreshed about hourly), so a name or photo changed on another
+  // device would otherwise show stale here for up to an hour.
+  const [{ data }, fresh] = await Promise.all([
+    supabase
+      .from('business_members')
+      .select('role, business:businesses(*, settings:business_settings(*))')
+      .eq('user_id', user.id)
+      .limit(1)
+      .maybeSingle(),
+    supabase.auth.getUser().catch(() => null),
+  ])
   const membership = data as unknown as MembershipWithBusiness | null
+  const metadata = fresh?.data.user?.user_metadata ?? user.user_metadata
 
   if (!membership) {
     // Not on the team. /no-access forwards to first-time setup if the
@@ -95,8 +104,8 @@ export const getCurrentBusinessContext = cache(async (): Promise<CurrentBusiness
     userId: user.id,
     userEmail: user.email ?? null,
     role: membership.role,
-    displayName: readDisplayName(user.user_metadata),
-    avatarUrl: readAvatarUrl(user.user_metadata),
+    displayName: readDisplayName(metadata),
+    avatarUrl: readAvatarUrl(metadata),
   }
 })
 
