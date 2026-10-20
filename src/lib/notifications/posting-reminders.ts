@@ -8,6 +8,7 @@
  * all three are ticked.
  */
 import { createServiceRoleClient } from '@/lib/supabase/server'
+import { CRON_ACTIONS } from '@/lib/system-status'
 import { addDaysISO, getBusinessNow } from '@/lib/time'
 import { DEFAULT_TIMEZONE } from '@/lib/constants'
 import { CHECKLIST_PLATFORMS, PLATFORM_LABELS, postingStreak } from '@/lib/content'
@@ -36,6 +37,8 @@ export async function runPostingReminders(): Promise<PostingReminderResult> {
   const result: PostingReminderResult = { businesses: 0, reminded: 0, devicesReached: 0 }
   for (const business of businesses ?? []) {
     result.businesses++
+    // "Last ran" for Settings → System status.
+    await admin.from('business_activity_logs').insert({ business_id: business.business_id, action: CRON_ACTIONS.postingReminders, entity_type: 'system' })
     const today = getBusinessNow(business.timezone || DEFAULT_TIMEZONE).isoDate
     const days = Array.from({ length: STREAK_LOOKBACK_DAYS }, (_, i) => addDaysISO(today, -i)) // newest first
 

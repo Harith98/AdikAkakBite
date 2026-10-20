@@ -77,6 +77,22 @@ export default async function SettingsPage() {
         </>
       ),
     },
+    ...(role === 'owner'
+      ? [
+          {
+            href: '/settings/system',
+            title: 'System status',
+            text: 'Supabase & Vercel limits, setup checks, fixes',
+            tone: 'bg-ink/5 text-ink-muted',
+            icon: (
+              <>
+                <rect x="3" y="4" width="18" height="12" rx="2" />
+                <path d="M8 20h8M12 16v4M7 10h2l1.5-2.5L13 12l1.5-2H17" />
+              </>
+            ),
+          },
+        ]
+      : []),
   ]
 
   return (

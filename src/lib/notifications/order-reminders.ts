@@ -9,6 +9,7 @@
  * being skipped.
  */
 import { createServiceRoleClient } from '@/lib/supabase/server'
+import { CRON_ACTIONS } from '@/lib/system-status'
 import { ORDER_SELECT, toOrderViews, type OrderRowWithRelations } from '@/lib/services/orders'
 import { addDaysISO, daysBetweenISO, getBusinessNow } from '@/lib/time'
 import { DEFAULT_TIMEZONE } from '@/lib/constants'
@@ -64,6 +65,8 @@ export async function runOrderReminders(): Promise<ReminderRunResult> {
       today
     )
     result.businesses++
+    // "Last ran" for Settings → System status.
+    await admin.from('business_activity_logs').insert({ business_id: business.business_id, action: CRON_ACTIONS.orderReminders, entity_type: 'system' })
     if (due.length === 0) continue
 
     const dueOrders: DueOrder[] = due.map((o) => ({

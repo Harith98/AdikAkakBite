@@ -688,6 +688,10 @@ export interface Database {
     }
     Views: { [_ in never]: never }
     Functions: {
+      app_system_status: {
+        Args: Record<string, never>
+        Returns: unknown
+      }
       get_invitation: {
         Args: { p_token: string }
         Returns: {
