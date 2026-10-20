@@ -170,10 +170,9 @@ export default async function MenuPage() {
         {socials.length > 0 && (
           <section className="rounded-card border border-raspberry/15 bg-base-card p-5 shadow-card">
             <p className="flex items-center gap-2 font-display text-lg text-ink">
-              <span aria-hidden="true">💕</span> Ikuti kami
+              <span aria-hidden="true">📱</span> Follow Us
             </p>
-            <p className="mt-0.5 text-sm text-ink-muted">New flavours, slots and promos first.</p>
-            <ul className="mt-4 grid grid-cols-2 gap-2">
+            <ul className="mt-3 grid grid-cols-2 gap-2">
               {socials.map((s) => (
                 <li key={s.label}>
                   <a
