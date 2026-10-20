@@ -4,7 +4,6 @@ import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { canManageBusiness, ROLE_LABELS } from '@/lib/team'
 import { BusinessDetailsForm } from '@/components/settings/BusinessDetailsForm'
-import { ProfileForm } from '@/components/settings/ProfileForm'
 import { signOut } from './actions'
 
 const WEEKDAY_LABELS: Record<number, string> = {
@@ -33,12 +32,26 @@ export default async function SettingsPage() {
         <p className="mt-1 text-sm text-ink-muted">Your business details and preferences</p>
       </header>
 
-      <Card>
-        <p className="mb-3 text-xs font-medium uppercase tracking-wide text-ink-faint">Your profile</p>
-        <ProfileForm displayName={displayName} email={userEmail} />
-      </Card>
-
-      <NavCard href="/settings/account" title="Email & password" text="Change the email or password you sign in with" />
+      {/* Who's signed in; name, email and password are edited on the account page. */}
+      <Link href="/settings/account" className="block">
+        <Card className="flex items-center gap-4 transition-colors hover:bg-base-soft">
+          <span
+            aria-hidden="true"
+            className="flex h-12 w-12 shrink-0 items-center justify-center rounded-pill bg-raspberry-soft font-display text-xl text-raspberry-dark"
+          >
+            {(displayName ?? userEmail ?? '?').trim().charAt(0).toUpperCase()}
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block truncate text-sm font-medium text-ink">{displayName ?? 'Add your name'}</span>
+            <span className="block truncate text-sm text-ink-muted">
+              {ROLE_LABELS[role]}
+              {userEmail ? ` · ${userEmail}` : ''}
+            </span>
+            <span className="block text-xs text-ink-faint">Your account: name, email and password</span>
+          </span>
+          <span aria-hidden="true" className="text-ink-faint">→</span>
+        </Card>
+      </Link>
 
       <NavCard
         href="/settings/notifications"
@@ -58,7 +71,6 @@ export default async function SettingsPage() {
             value={`${settings.working_hours_start.slice(0, 5)} – ${settings.working_hours_end.slice(0, 5)}`}
           />
           <Row label="Working days" value={workingDaysLabel} />
-          <Row label="Your role" value={ROLE_LABELS[role]} />
         </dl>
       </Card>
 

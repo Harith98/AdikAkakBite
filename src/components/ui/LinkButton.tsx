@@ -15,7 +15,8 @@ export function LinkButton({ href, children, variant = 'primary', className }: L
     <Link
       href={href}
       className={clsx(
-        'inline-flex h-11 items-center justify-center rounded-pill px-5 text-sm font-medium transition-colors',
+        // nowrap + shrink-0: a header button never squeezes onto two lines beside a long title
+        'inline-flex h-11 shrink-0 items-center justify-center whitespace-nowrap rounded-pill px-5 text-sm font-medium transition-colors',
         variant === 'primary'
           ? 'bg-raspberry text-white hover:bg-raspberry-dark'
           : 'border border-ink/10 bg-base-soft text-ink hover:bg-amber-soft',
