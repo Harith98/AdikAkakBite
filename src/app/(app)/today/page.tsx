@@ -13,11 +13,10 @@ import { ReadyStockList } from '@/components/business/ReadyStockList'
 import { Badge } from '@/components/ui/Badge'
 import { Card } from '@/components/ui/Card'
 import { LinkButton } from '@/components/ui/LinkButton'
-import { AddTaskForm } from '@/components/today/AddTaskForm'
 import { AlertsCard } from '@/components/today/AlertsCard'
 import { CurrentActivity } from '@/components/today/CurrentActivity'
 import { OrderCard } from '@/components/today/OrderCard'
-import { PrioritiesCard } from '@/components/today/PrioritiesCard'
+import { TodayFocusCard } from '@/components/today/TodayFocusCard'
 import { LiveClock } from '@/components/today/LiveClock'
 
 const MAX_ORDER_CARDS = 3
@@ -163,9 +162,8 @@ export default async function TodayPage() {
 
         <div className="flex flex-col gap-6">
           <ReadyStockList items={readyStock} limit={6} />
-          <PrioritiesCard priorities={priorities} suggestions={suggestions} />
+          <TodayFocusCard priorities={priorities} suggestions={suggestions} />
           <AlertsCard alerts={data.inventoryAlerts} />
-          <AddTaskForm />
         </div>
       </div>
     </div>

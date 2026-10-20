@@ -117,11 +117,14 @@ export async function setOrderStatus(orderId: string, status: OrderStatus): Prom
   return { error: null }
 }
 
-/** Quick-add a manual task for today. */
+/**
+ * Quick-add a manual task for today. With "Priority" ticked it becomes one of
+ * today's three priorities (high priority, next free rank).
+ */
 export async function addTask(_prev: AddTaskState, formData: FormData): Promise<AddTaskState> {
   const title = String(formData.get('title') ?? '').trim()
   const category = String(formData.get('category') ?? 'business')
-  const priority = String(formData.get('priority') ?? '0') === '2' ? 2 : 0
+  const asPriority = formData.get('asPriority') === 'on'
 
   if (!title) return { error: 'Give the task a name.', nonce: 0 }
   if (title.length > MAX_TITLE) return { error: `Keep the name under ${MAX_TITLE} characters.`, nonce: 0 }
@@ -129,16 +132,33 @@ export async function addTask(_prev: AddTaskState, formData: FormData): Promise<
 
   const ctx = await getActionContext()
   if (!ctx.ok) return { error: ctx.error, nonce: 0 }
+  const today = getBusinessNow(ctx.timezone).isoDate
+
+  let rank: number | null = null
+  if (asPriority) {
+    const { data: taken, error: rankError } = await ctx.supabase
+      .from('tasks')
+      .select('daily_priority_rank')
+      .eq('business_id', ctx.businessId)
+      .eq('scheduled_date', today)
+      .not('daily_priority_rank', 'is', null)
+    if (rankError) return { error: rankError.message, nonce: 0 }
+    const used = new Set((taken ?? []).map((t: { daily_priority_rank: number | null }) => t.daily_priority_rank))
+    rank = [1, 2, 3].find((r) => !used.has(r)) ?? null
+    if (rank === null) return { error: 'You already have 3 priorities today. Tick one off or remove one first.', nonce: 0 }
+  }
 
   const { error } = await ctx.supabase.from('tasks').insert({
     business_id: ctx.businessId,
     title,
     category: category as TaskCategory,
-    priority,
-    scheduled_date: getBusinessNow(ctx.timezone).isoDate,
+    priority: asPriority ? 2 : 0,
+    daily_priority_rank: rank,
+    scheduled_date: today,
     source: 'manual',
   })
-  if (error) return { error: error.message, nonce: 0 }
+  // The unique index on (day, rank) catches two people adding a priority at the same moment.
+  if (error) return { error: error.code === '23505' ? 'Someone just added a priority. Try again.' : error.message, nonce: 0 }
 
   revalidatePath('/today')
   return { error: null, nonce: Date.now() }
