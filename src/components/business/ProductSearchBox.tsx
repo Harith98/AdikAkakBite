@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 
 /** Search as you type: updates ?q= shortly after typing stops, keeping the other filters. */
-export function ProductSearchBox({ initial }: { initial: string }) {
+export function ProductSearchBox({ initial, placeholder = 'Search products' }: { initial: string; placeholder?: string }) {
   const router = useRouter()
   const pathname = usePathname()
   const params = useSearchParams()
@@ -28,7 +28,7 @@ export function ProductSearchBox({ initial }: { initial: string }) {
 
   return (
     <label className="relative block">
-      <span className="sr-only">Search products</span>
+      <span className="sr-only">{placeholder}</span>
       <svg
         width="18"
         height="18"
@@ -47,7 +47,7 @@ export function ProductSearchBox({ initial }: { initial: string }) {
         type="search"
         value={value}
         onChange={(e) => update(e.target.value)}
-        placeholder="Search products"
+        placeholder={placeholder}
         enterKeyHint="search"
         className="h-11 w-full rounded-pill border border-ink/15 bg-white pl-10 pr-4 text-sm outline-none transition-colors focus:border-raspberry focus:ring-2 focus:ring-raspberry/15"
       />
