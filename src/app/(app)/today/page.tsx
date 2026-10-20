@@ -138,6 +138,11 @@ export default async function TodayPage() {
         </div>
       </header>
 
+      {/* Phones: what's ready to sell comes first, right under the greeting. */}
+      <div className="md:hidden">
+        <ReadyStockStrip items={readyStock} />
+      </div>
+
       <div className="flex flex-col gap-6 md:grid md:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)] md:items-start">
         <div className="flex flex-col gap-6">
           {orderRows.length > 0 && (
@@ -193,7 +198,10 @@ export default async function TodayPage() {
         </div>
 
         <div className="flex flex-col gap-6">
-          <ReadyStockStrip items={readyStock} />
+          {/* Wider screens: in the side column. Phones get it at the top instead (above). */}
+          <div className="hidden md:block">
+            <ReadyStockStrip items={readyStock} />
+          </div>
           <TodayFocusCard priorities={priorities} suggestions={suggestions} />
           <AlertsCard alerts={data.inventoryAlerts} />
         </div>
