@@ -50,7 +50,7 @@ export async function getRecentTransactions(
 
 /**
  * Logs a transaction and updates the item's stock in one atomic step
- * (migration 0007's record_inventory_transaction), so two transactions
+ * (the record_inventory_transaction database function), so two transactions
  * logged at the same moment can't race and silently drop one of them.
  */
 export async function recordInventoryTransaction(

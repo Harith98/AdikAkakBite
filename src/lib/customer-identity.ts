@@ -8,7 +8,7 @@
  * country-code form ("6012…"). "012-345 6789", "+60 12-345 6789" and
  * "0060123456789" all give "60123456789".
  *
- * MUST match the generated column customers.phone_key (migration 0012).
+ * MUST match the generated column customers.phone_key (supabase/schema.sql).
  */
 export function normalizePhone(phone: string | null | undefined, countryCode = '60'): string | null {
   const digits = (phone ?? '').replace(/\D/g, '')

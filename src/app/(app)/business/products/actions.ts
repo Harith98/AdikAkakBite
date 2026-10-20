@@ -44,7 +44,7 @@ export async function saveProduct(_prev: SaveProductState, formData: FormData): 
     is_active: p.isActive,
     notes: p.notes,
     // Sent only when there's something to save (or clear), so products still save
-    // before migration 0026 adds the column.
+    // on a database that doesn't have the column yet.
     ...(p.nicknames.length > 0 || formData.get('hadNicknames') === '1' ? { nicknames: p.nicknames } : {}),
   }
   const costFields = { ingredient_cost: p.ingredientCost, packaging_cost: p.packagingCost, other_cost: p.otherCost }
@@ -152,7 +152,7 @@ const MAX_STOCK = 100_000
 /**
  * Changes a product's ready stock: add a fresh batch, remove some (eaten,
  * given away, spoiled), set the exact count after counting, or stop tracking.
- * Sold items come off automatically when an order is completed (migration 0017).
+ * Sold items come off automatically when an order is completed (trigger on orders).
  */
 export async function changeReadyStock(productId: string, change: ReadyStockChange, quantity: number): Promise<ReadyStockResult> {
   if (!UUID.test(productId)) return { error: 'Invalid product.', readyStock: null }
@@ -186,7 +186,7 @@ export async function changeReadyStock(productId: string, change: ReadyStockChan
     if (error) return { error: error.message, readyStock: null }
     readyStock = (data as number | null) ?? null
 
-    // A new batch was made: its ingredients come out of inventory (recipe, migration 0020).
+    // A new batch was made: its ingredients come out of inventory (use_recipe_ingredients).
     // Removing ready stock gives nothing back: those ingredients were already used.
     if (change === 'add') {
       const before = await snapshotStock(supabase, businessId)
@@ -236,7 +236,7 @@ async function removeProductImage(supabase: any, url: string) {
 }
 
 // ---------------------------------------------------------------------------
-// Recipes (migration 0020)
+// Recipes (product_recipe_items)
 // ---------------------------------------------------------------------------
 
 export interface RecipeLineInput {

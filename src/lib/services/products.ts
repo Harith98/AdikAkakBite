@@ -15,7 +15,7 @@ export interface ProductView extends ProductEconomics {
   imageUrl: string | null
   isActive: boolean
   notes: string | null
-  /** Other names customers use (migration 0026; empty before it). */
+  /** Other names customers use (empty on a database without the column). */
   nicknames: string[]
   ingredientCost: number
   packagingCost: number

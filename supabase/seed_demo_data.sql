@@ -1,7 +1,7 @@
 -- ============================================================================
 -- seed_demo_data.sql — OPTIONAL demo data (spec §49)
 --
--- This is NOT run automatically by migrations. Run it manually only if you
+-- This is NOT run automatically by schema.sql. Run it manually only if you
 -- want sample products/orders to explore the app with. Every row's `notes`
 -- field is prefixed "[DEMO]" so the app's "Delete demo data" action
 -- (Settings) can find and remove them by that marker.

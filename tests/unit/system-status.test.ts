@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { cronLevel, formatBytes, missingMigrations, supabaseProjectRef, usageLevel } from '@/lib/system-status'
+import { cronLevel, formatBytes, schemaCheck, SCHEMA_VERSION, supabaseProjectRef, usageLevel } from '@/lib/system-status'
 
 describe('system status helpers', () => {
   it('grades usage against a limit', () => {
@@ -23,9 +23,11 @@ describe('system status helpers', () => {
     expect(cronLevel(null, now)).toBe('warn')
   })
 
-  it('lists migrations that are missing', () => {
-    const applied = Object.fromEntries(['0008', '0009', '0010', '0011', '0012', '0013', '0014', '0015', '0016'].map((id) => [id, true]))
-    expect(missingMigrations(applied).map((m) => m.id)).toEqual(['0017', '0018', '0019', '0020', '0021', '0022', '0023', '0024', '0025', '0026', '0027', '0028'])
+  it('checks the database version', () => {
+    expect(schemaCheck(SCHEMA_VERSION).level).toBe('ok')
+    expect(schemaCheck(SCHEMA_VERSION + 1).level).toBe('ok')
+    expect(schemaCheck(SCHEMA_VERSION - 1).level).toBe('critical')
+    expect(schemaCheck(null).level).toBe('critical')
   })
 
   it('reads the Supabase project ref from its URL', () => {

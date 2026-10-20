@@ -76,8 +76,8 @@ export async function setOrderStatus(orderId: string, status: OrderStatus): Prom
   if (!ctx.ok) return { error: ctx.error }
   const { supabase, businessId, userId } = ctx
 
-  // Completing a made-to-order product uses its recipe's ingredients (trigger,
-  // migration 0020); compare stock before and after to send low-stock alerts.
+  // Completing a made-to-order product uses its recipe's ingredients (order
+  // trigger); compare stock before and after to send low-stock alerts.
   const stockBefore = status === 'completed' ? await snapshotStock(supabase, businessId) : null
 
   const { data, error } = await supabase

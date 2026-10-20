@@ -41,7 +41,7 @@ It runs entirely on free plans, uses **no AI and no paid services**, and install
 | 📸 | **Content** | Daily posting checklist for Instagram, Facebook and WhatsApp, with a 🔥 streak |
 | 🔔 | **Notifications** | Web push for low stock, orders due in 2 days, schedule changes and the 8pm posting reminder |
 | 👩‍🍳 | **Team** | Owner, admin and staff roles; the owner creates staff logins directly (no invite emails) |
-| 🩺 | **System status** | Supabase usage against free-plan limits, missing migrations, key checks, daily-job health |
+| 🩺 | **System status** | Supabase usage against free-plan limits, database version, key checks, daily-job health |
 
 ## 🧱 How it's built
 
@@ -88,11 +88,11 @@ npm run dev                  # http://localhost:3000
 ```
 
 1. **Create a free [Supabase](https://supabase.com) project.**
-2. **Run every file in [`supabase/migrations/`](supabase/migrations) in order** (`0001` → `0023`) in the Supabase SQL Editor, or `supabase db push` if you use the CLI.
+2. **Run [`supabase/schema.sql`](supabase/schema.sql) once** in the Supabase SQL Editor. One file sets up the whole database.
 3. **Fill in `.env.local`,** then open the app, sign up, and complete first-time setup. This creates the business and a starter daily schedule.
 4. *(Optional)* **[`supabase/seed_demo_data.sql`](supabase/seed_demo_data.sql)** adds sample products, stock and customers tagged `[DEMO]`.
 
-> 💡 After the app is running, **Settings → System status** tells you exactly which migrations or keys are still missing.
+> 💡 After the app is running, **Settings → System status** tells you if the database needs an update or a key is missing.
 
 ### Environment variables
 
@@ -135,7 +135,8 @@ src/
    ├─ services/       data access + the Today recommendation engine
    ├─ notifications/  push wording, sending, daily reminders
    └─ whatsapp-order.ts   the template reader & writer
-supabase/migrations/  0001 → 0023, applied in order
+supabase/schema.sql   the whole database, in one file
+supabase/updates/     changes to an existing database, one file each
 tests/unit/           Vitest suites
 ```
 
@@ -149,10 +150,10 @@ The service worker only registers in production builds (`npm run build && npm st
 ## 🚢 Deploying
 
 1. Import the repo into **Vercel** and add the environment variables above.
-2. **Run any new migration in Supabase before deploying code that needs it.**
+2. **Run any new file in `supabase/updates/` in Supabase before deploying code that needs it.**
 3. Vercel picks up the daily cron jobs from [`vercel.json`](vercel.json) automatically.
 
-More in [`docs/deployment.md`](docs/deployment.md), and the full schema history is in [`docs/database.md`](docs/database.md).
+More in [`docs/deployment.md`](docs/deployment.md), and how the database is set up and changed is in [`docs/database.md`](docs/database.md).
 
 ## 🔐 Security in one breath
 

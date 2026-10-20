@@ -49,7 +49,7 @@ export async function updateBusinessDetails(_prev: BusinessDetailsState, formDat
     if (!result.ok) return fail(result.error)
     social[`${platform}_url`] = result.url
   }
-  // Only sent when there's something to save or clear, so details still save before migrations 0027/0028.
+  // Only sent when there's something to save or clear, so details still save on a database without these columns yet.
   const { threads_url, ...older } = social
   const sendSocial = Object.values(older).some(Boolean) || formData.get('hadSocial') === '1'
   const sendThreads = Boolean(threads_url) || formData.get('hadThreads') === '1'

@@ -61,34 +61,25 @@ export function cronLevel(lastRunIso: string | null, now: Date = new Date()): Le
   return hours <= 26 ? 'ok' : hours <= 50 ? 'warn' : 'critical'
 }
 
-/** Migrations the app expects, with what each one is for (shown when one is missing). */
-export const EXPECTED_MIGRATIONS: { id: string; file: string; purpose: string }[] = [
-  { id: '0008', file: '0008_member_admin_role.sql', purpose: 'Admin role' },
-  { id: '0009', file: '0009_team_invitations.sql', purpose: 'Team roles and permissions' },
-  { id: '0010', file: '0010_transfer_ownership.sql', purpose: 'Transfer ownership' },
-  { id: '0011', file: '0011_receipts.sql', purpose: 'Receipts' },
-  { id: '0012', file: '0012_customer_phone_key.sql', purpose: 'Phone-first customers' },
-  { id: '0013', file: '0013_single_business.sql', purpose: 'Single business setup' },
-  { id: '0014', file: '0014_member_display_names.sql', purpose: 'Team member names' },
-  { id: '0015', file: '0015_order_completed_on.sql', purpose: 'Sales by completion day' },
-  { id: '0016', file: '0016_push_notifications.sql', purpose: 'Phone notifications' },
-  { id: '0017', file: '0017_product_ready_stock.sql', purpose: 'Ready stock' },
-  { id: '0018', file: '0018_product_images.sql', purpose: 'Product photos' },
-  { id: '0019', file: '0019_posting_reminder_preference.sql', purpose: 'Posting reminder' },
-  { id: '0020', file: '0020_recipes.sql', purpose: 'Recipes' },
-  { id: '0021', file: '0021_editable_sale_date.sql', purpose: 'Past sales and sale dates' },
-  { id: '0022', file: '0022_system_status.sql', purpose: 'This status page' },
-  { id: '0023', file: '0023_menu_catalogue.sql', purpose: 'Customer menu and catalogue' },
-  { id: '0024', file: '0024_profile_photos.sql', purpose: 'Profile photos' },
-  { id: '0025', file: '0025_member_avatars.sql', purpose: 'Team photos' },
-  { id: '0026', file: '0026_product_nicknames.sql', purpose: 'Product nicknames' },
-  { id: '0027', file: '0027_social_links.sql', purpose: 'Social links on the menu' },
-  { id: '0028', file: '0028_threads_link.sql', purpose: 'Threads link on the menu' },
-]
+/**
+ * The database version this code expects. supabase/schema.sql sets up this
+ * version; each file in supabase/updates/ raises it by one (schema_version()).
+ * Bump it together with the update file that needs it.
+ */
+export const SCHEMA_VERSION = 1
 
-/** The ones not applied yet, oldest first. */
-export function missingMigrations(applied: Record<string, boolean> | null | undefined) {
-  return EXPECTED_MIGRATIONS.filter((m) => !applied?.[m.id])
+/** What Settings → System says about the database version (null = schema_version() isn't there yet). */
+export function schemaCheck(version: number | null): { level: Level; detail: string } {
+  if (version === null) {
+    return { level: 'critical', detail: 'Not up to date: run the files in supabase/updates/ (oldest first) in the Supabase SQL Editor.' }
+  }
+  if (version < SCHEMA_VERSION) {
+    return {
+      level: 'critical',
+      detail: `Version ${version}, but this app needs ${SCHEMA_VERSION}: run the newer files in supabase/updates/ (oldest first) in the Supabase SQL Editor.`,
+    }
+  }
+  return { level: 'ok', detail: `Up to date (version ${version})` }
 }
 
 /** "abcdefghijklmnopqrst" from "https://abcdefghijklmnopqrst.supabase.co". */

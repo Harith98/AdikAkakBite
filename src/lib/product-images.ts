@@ -1,4 +1,4 @@
-/** Supabase Storage bucket for product photos (migration 0018). */
+/** Supabase Storage bucket for product photos (see supabase/schema.sql). */
 export const PRODUCT_IMAGE_BUCKET = 'product-images'
 
 /** Longest side of an uploaded photo, in pixels. Big enough for a phone screen, small enough to load fast. */

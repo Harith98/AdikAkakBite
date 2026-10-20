@@ -1,6 +1,6 @@
 import type { BusinessMemberRole } from '@/lib/supabase/database.types'
 
-// Mirrors the SQL helpers in migration 0009 (can_manage_business /
+// Mirrors the SQL helpers in supabase/schema.sql (can_manage_business /
 // can_manage_role). The database enforces these rules; this copy only decides
 // which buttons the UI shows, so a mismatch fails safe (a hidden button, or a
 // refused write) rather than granting access.

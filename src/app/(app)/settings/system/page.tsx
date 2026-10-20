@@ -7,8 +7,8 @@ import {
   CRON_ACTIONS,
   cronLevel,
   formatBytes,
-  missingMigrations,
   PLAN_LIMITS,
+  schemaCheck,
   supabaseProjectRef,
   usageLevel,
   type Level,
@@ -24,7 +24,6 @@ interface SystemStatus {
   storage_files: number
   auth_users: number
   rows: Record<string, number>
-  migrations: Record<string, boolean>
 }
 
 const LEVEL_STYLE: Record<Level, { icon: string; text: string; bar: string }> = {
@@ -38,8 +37,9 @@ export default async function SystemStatusPage() {
   if (role !== 'owner') redirect('/settings')
   const supabase = createClient()
 
-  const [statusRes, cronRes, devicesRes] = await Promise.all([
+  const [statusRes, versionRes, cronRes, devicesRes] = await Promise.all([
     supabase.rpc('app_system_status'),
+    supabase.rpc('schema_version'),
     supabase
       .from('business_activity_logs')
       .select('action, created_at')
@@ -50,32 +50,13 @@ export default async function SystemStatusPage() {
     createServiceRoleClient()?.from('push_subscriptions').select('id', { count: 'exact', head: true }) ?? Promise.resolve(null),
   ])
   const status = statusRes.error ? null : (statusRes.data as unknown as SystemStatus)
-  // Migrations after 0022 are detected here (0022's function only knows the ones before it).
-  if (status) {
-    status.migrations['0023'] = !(await supabase.rpc('get_public_menu')).error
-    const admin = createServiceRoleClient()
-    status.migrations['0024'] = admin ? !(await admin.storage.getBucket('avatars')).error : false
-    const members = await supabase.rpc('get_business_members', { p_business_id: business.id })
-    status.migrations['0025'] = !members.error && (members.data ?? []).some((m) => 'avatar_url' in m)
-    status.migrations['0026'] = !(await supabase.from('products').select('nicknames').limit(1)).error
-    status.migrations['0027'] = !(await supabase.from('businesses').select('instagram_url').limit(1)).error
-    status.migrations['0028'] = !(await supabase.from('businesses').select('threads_url').limit(1)).error
-  }
   const lastRun = (action: string) => (cronRes.data ?? []).find((r) => r.action === action)?.created_at ?? null
   const devices = devicesRes && !devicesRes.error ? devicesRes.count ?? 0 : null
 
   // ---- Health checks: everything here is yes/no; secret values are never shown ----
-  const missing = status ? missingMigrations(status.migrations) : []
+  const schema = schemaCheck(versionRes.error ? null : Number(versionRes.data))
   const checks: { label: string; level: Level; detail: string }[] = [
-    {
-      label: 'Database migrations',
-      level: !status ? 'critical' : missing.length === 0 ? 'ok' : 'critical',
-      detail: !status
-        ? 'Run 0022_system_status.sql in the Supabase SQL Editor to see the full status.'
-        : missing.length === 0
-          ? 'All applied'
-          : `Not applied: ${missing.map((m) => `${m.id} (${m.purpose})`).join(', ')}. Run them in order in the Supabase SQL Editor.`,
-    },
+    { label: 'Database', ...schema },
     {
       label: 'Admin key (SUPABASE_SERVICE_ROLE_KEY)',
       level: process.env.SUPABASE_SERVICE_ROLE_KEY ? 'ok' : 'critical',
@@ -166,7 +147,7 @@ export default async function SystemStatusPage() {
             </p>
           </div>
         ) : (
-          <p className="mt-3 text-sm text-ink-muted">Run migration 0022 to see database and storage usage here.</p>
+          <p className="mt-3 text-sm text-ink-muted">Usage shows here once the database is up to date (see the check above).</p>
         )}
       </Card>
 
@@ -245,7 +226,7 @@ const TROUBLESHOOTING = [
   },
   {
     problem: 'A page shows an error after an update',
-    fix: 'Usually a database migration wasn’t run. The checks at the top of this page list any that are missing; run them in order in the Supabase SQL Editor.',
+    fix: 'Usually a database update wasn’t run. The Database check at the top of this page says so; run the newer files in supabase/updates/ in the Supabase SQL Editor.',
   },
   {
     problem: 'Phone notifications stopped arriving',

@@ -1,35 +1,39 @@
 # Database
 
-PostgreSQL via Supabase. Migrations live in `supabase/migrations/`, numbered and meant to be applied in order:
+PostgreSQL via Supabase. The whole schema is one file: [`supabase/schema.sql`](../supabase/schema.sql).
 
-1. `0001_init_schema.sql` — tables, enum types, the `updated_at` trigger
-2. `0002_indexes.sql` — indexes
-3. `0003_rls_policies.sql` — Row Level Security
-4. `0004_onboarding_membership_policy.sql` — lets a new business's first owner add themselves (bootstrapping)
-5. `0005_task_priorities_and_ordering.sql` — `tasks.daily_priority_rank`, `tasks.sort_order`, and the unique indexes that make daily task creation idempotent
-6. `0006_customer_name_index.sql` — index for finding a customer by name when creating an order
-7. `0007_inventory_transactions_rpc.sql` — `record_inventory_transaction()`, an atomic stock-update function
-8. `0008_member_admin_role.sql` — adds the `admin` member role (own file: a new enum value can't be used in the transaction that adds it)
-9. `0009_team_invitations.sql` — `business_invitations`, role-aware membership policies (replaces 0003's "any member can manage members"), owner/admin-only writes to settings and the schedule, and the `get_invitation` / `accept_business_invitation` / `get_business_members` functions
-10. `0010_transfer_ownership.sql` — `transfer_business_ownership()`: the owner hands ownership to an existing member and becomes an admin, atomically
-11. `0011_receipts.sql` — business contact fields (phone, email, address, registration number, receipt message), `orders.receipt_number` / `receipt_issued_at` / `payment_method`, and `issue_order_receipt()`, which assigns per-business sequential receipt numbers under an advisory lock. Numbers are never reused or changed once issued.
-12. `0012_customer_phone_key.sql` — `customers.phone_key`, a generated, normalised phone number (indexed) used to identify customers phone-first. Must stay in sync with `normalizePhone()` in `src/lib/customer-identity.ts`.
-13. `0013_single_business.sql` — makes the deployment single-business: `businesses` can hold at most one row, only the first account may create it (while none exists), and `app_is_set_up()` tells the sign-in/sign-up pages whether first-time setup is still open. After setup, people join only by invitation; signed-in non-members see `/no-access`.
-14. `0014_member_display_names.sql` — `get_business_members()` also returns each member's own name (`display_name` from their auth user metadata, set at sign-up or in Settings → Your profile) for the Team page.
-15. `0015_order_completed_on.sql` — `orders.completed_on`, the business-local day an order was completed, set by a trigger. Sales totals and the daily close group by it, so an advance order counts on the day it's fulfilled, not the day it was taken. Orders completed earlier are backfilled with their `order_date`.
-16. `0016_push_notifications.sql` — phone notifications (web push): `push_subscriptions` (one row per device), `notification_preferences` (per person; no row = all on) and `orders.due_reminder_sent_for`. Sent from `src/lib/notifications/` with the service-role key: low stock (inventory actions), schedule changes (schedule actions), and a daily 8am (MYT) "due in 2 days" reminder from Vercel Cron → `/api/cron/order-reminders`.
-17. `0017_product_ready_stock.sql` — `products.ready_stock` (finished units on hand; null = not tracked; may go negative = oversold), `adjust_product_ready_stock()` for atomic +/- and a trigger on `orders` that takes items out of ready stock when an order becomes completed and puts them back if it leaves completed.
-18. `0018_product_images.sql` — public Storage bucket `product-images` (5 MB limit, JPEG/PNG/WebP) with member-only upload/replace/delete policies via `is_product_image_owner()`. Files live at `<business_id>/<uuid>.jpg`; `products.image_url` holds the public URL. Photos are resized in the browser before upload (`ProductImagePicker`), and replaced/deleted photos are removed from storage by the product actions.
-19. `0019_posting_reminder_preference.sql` — `notification_preferences.posting_reminder` for the 8pm (MYT) posting reminder, sent by Vercel Cron → `/api/cron/posting-reminders` when today's Content checklist is incomplete.
-20. `0020_recipes.sql` — recipes: `products.recipe_yield` (units per batch) and `product_recipe_items` (inventory item + amount per batch, in the item's unit). `use_recipe_ingredients()` logs `usage` transactions; the app calls it when a batch is added to ready stock, and the (replaced) `apply_order_ready_stock()` trigger calls it when an order with made-to-order products completes (reference `order:<id>`), undoing exactly those records if the order leaves completed.
-21. `0021_editable_sale_date.sql` — `set_order_completed_on()` now keeps a `completed_on` given on insert (recording a past sale) and accepts edits on completed orders (correcting the sale date); becoming completed by an update still stamps today; future dates are refused. Past sales don't touch ready stock or ingredients.
-22. `0022_system_status.sql` — `app_system_status()` (owner only, SECURITY DEFINER): database and product-photo storage size, login count, row counts and a marker per migration (0008–0022), for Settings → System status. The daily cron jobs also log `cron_order_reminders` / `cron_posting_reminders` to `business_activity_logs` so that page can show when they last ran.
-23. `0023_menu_catalogue.sql` — customer menu (`/menu`, public): `businesses.menu_pdf_url` / `menu_pdf_updated_at`, a public Storage bucket `catalogue` (PDF only, 50 MB, owner/admin upload/delete via `can_manage_catalogue_file()`), and `get_public_menu()` (anon-callable; returns only business name, phone and the catalogue link). The menu's order form only opens WhatsApp with the order template; nothing is stored.
-24. `0024_profile_photos.sql` — public Storage bucket `avatars` (2 MB, images) where each person can upload/delete only in their own `<user id>/` folder. The photo's URL lives in their auth metadata (`avatar_url`), beside `display_name`; photos are cropped to a 400px square in the browser.
-25. `0025_member_avatars.sql` — `get_business_members()` also returns each member's `avatar_url` (https only) so the Team page shows everyone's photo.
-26. `0026_product_nicknames.sql` — `products.nicknames` (text[], up to 10): other names customers use, matched by the WhatsApp paste reader; an exact nickname wins over partial name matches.
-27. `0027_social_links.sql` — `businesses.instagram_url` / `facebook_url` / `tiktok_url` (clean https links; "@handle" is converted when saving), returned by `get_public_menu()` for the menu's follow-us buttons.
-28. `0028_threads_link.sql` — `businesses.threads_url`, also returned by `get_public_menu()`.
+## Setting up a new database
+
+Create a Supabase project, open **SQL Editor**, paste `supabase/schema.sql` and run it. That creates everything: types, tables, indexes, functions, triggers, Row Level Security and the three storage buckets (`product-images`, `catalogue`, `avatars`). Then start the app, sign up and finish first-time setup, which creates the business and its starter schedule.
+
+Never run `schema.sql` on a database that's already set up: it creates tables and fails on the first one that exists.
+
+## Changing the database later
+
+Every change is made in **two places**, in the same commit:
+
+1. **`supabase/schema.sql`** — edit it so it still describes the whole database as it is now (a new column goes in its `create table`, a changed function replaces the old one). A new setup always runs just this file.
+2. **A new file in `supabase/updates/`**, named `YYYY-MM-DD_what_it_does.sql`, that makes the same change to an existing database (`add column if not exists`, `create or replace function`, …). Write it so running it twice is harmless. Its last change bumps `schema_version()` by one.
+
+Then raise `SCHEMA_VERSION` in `src/lib/system-status.ts` to the same number. Settings → System compares the two and says when the live database is behind, so run the update file in the SQL Editor **before** deploying the code that needs it.
+
+The file `2026-10-20_single_schema_file.sql` is the one that moved the live database from the old numbered migrations (0001–0028, still in git history) onto `schema.sql`, at version 1.
+
+## What's in it
+
+| Area | Tables / functions |
+|---|---|
+| The shop and its people | `businesses` (one row only: `businesses_single_row`), `business_members` (owner / admin / staff), `business_settings`, `business_invitations`. Each person's own name and photo live in their auth metadata; `get_business_members()` returns them for the Team page. |
+| Daily work | `schedule_blocks` (the editable daily schedule), `tasks` (`daily_priority_rank` for today's three priorities; `uq_tasks_schedule_materialization` makes creating each day's tasks idempotent) |
+| Orders and customers | `orders`, `order_items` (name and price snapshotted), `customers` (`phone_key`: a generated, normalised phone that must match `normalizePhone()` in `src/lib/customer-identity.ts`) |
+| Sales | Computed live from completed orders, grouped by `orders.completed_on` (set by `set_order_completed_on()`: today when an order becomes completed, or the date given when recording a past sale; never in the future). `daily_reviews` holds waste from older daily closes. `sales` is unused. |
+| Receipts | `orders.receipt_number` / `receipt_issued_at` / `payment_method`; `issue_order_receipt()` hands out per-business sequential numbers under an advisory lock, never reused. |
+| Products | `products` (`ready_stock`: null = not tracked; `recipe_yield`; `nicknames` for the WhatsApp paste reader), `product_costs` (cost history), `product_recipe_items`. `adjust_product_ready_stock()` does atomic +/-. |
+| Inventory | `inventory_items`, `inventory_transactions`. `record_inventory_transaction()` logs a transaction and updates stock atomically; `use_recipe_ingredients()` logs recipe usage. |
+| Order trigger | `apply_order_ready_stock()`: when an order becomes completed, tracked products leave ready stock and made-to-order products use their recipe ingredients (reference `order:<id>`); leaving completed undoes both. Recording a past sale touches neither. |
+| Notifications | `push_subscriptions` (one per device), `notification_preferences` (no row = all on), `orders.due_reminder_sent_for`. Sent by the server with the service-role key. |
+| Customer menu | `businesses.menu_pdf_url` and the social links; `get_public_menu()` is the only thing `/menu` reads (anon-callable, public info only). |
+| Other | `content_items`, `goals`, `business_activity_logs` (append-only; the daily jobs log here too), `app_system_status()` and `schema_version()` for Settings → System. |
 
 ## Team roles
 
@@ -39,7 +43,7 @@ PostgreSQL via Supabase. Migrations live in `supabase/migrations/`, numbered and
 | `admin` | Business settings, daily schedule, inviting/re-roling/removing staff. |
 | `staff` | Day-to-day work: Today, orders, products, inventory, customers, sales. |
 
-Enforced in SQL by `can_manage_business()` and `can_manage_role()`; `src/lib/team.ts` mirrors the same rules only to decide which controls the UI shows. Team members are added by an owner/admin in Settings → Team, which creates their login directly through the Supabase admin API (server-only `SUPABASE_SERVICE_ROLE_KEY`): no email, account pre-confirmed, a temporary password they must change at first sign-in (`must_change_password` user metadata). Removing a member also deletes their login. The `business_invitations` table and invite functions from 0009 are no longer used by the app.
+Enforced in SQL by `can_manage_business()` and `can_manage_role()`; `src/lib/team.ts` mirrors the same rules only to decide which controls the UI shows. Team members are added by an owner/admin in Settings → Team, which creates their login directly through the Supabase admin API (server-only `SUPABASE_SERVICE_ROLE_KEY`): no email, account pre-confirmed, a temporary password they must change at first sign-in (`must_change_password` user metadata). Removing a member also deletes their login. The `business_invitations` table and invite functions are no longer used by the app.
 
 ## Conventions
 
@@ -85,4 +89,4 @@ Two tables (`product_costs`, `order_items`) have no `business_id` column of thei
 npm run db:types
 ```
 
-This overwrites the file with an accurate, generated version from your actual schema — always re-run it after changing a migration.
+This overwrites the file with an accurate, generated version from your actual schema. Re-run it after changing the database.

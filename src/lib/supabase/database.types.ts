@@ -1,4 +1,4 @@
-// This file mirrors supabase/migrations/*.sql by hand for Phase 1.
+// This file mirrors supabase/schema.sql by hand.
 // Once your Supabase project is live, regenerate it from the real schema with:
 //   npm run db:types
 // and this file will be overwritten with a generated (and guaranteed
@@ -231,7 +231,7 @@ export interface Database {
           business_id: string
           name: string
           phone: string | null
-          /** Generated from phone (migration 0012); read-only. */
+          /** Generated from phone; read-only. */
           phone_key: string | null
           email: string | null
           notes: string | null
@@ -710,6 +710,10 @@ export interface Database {
         Args: Record<string, never>
         Returns: unknown
       }
+      schema_version: {
+        Args: Record<string, never>
+        Returns: number
+      }
       get_invitation: {
         Args: { p_token: string }
         Returns: {
@@ -741,9 +745,9 @@ export interface Database {
           member_id: string
           user_id: string
           email: string
-          /** Added in migration 0014; absent (undefined) before it's applied. */
+          /** The person's own name (auth metadata). */
           display_name?: string | null
-          /** Added in migration 0025; absent (undefined) before it's applied. */
+          /** The person's photo (auth metadata, https only). */
           avatar_url?: string | null
           role: BusinessMemberRole
           joined_at: string

@@ -1,4 +1,4 @@
-/** Supabase Storage bucket for the customer menu's PDF catalogue (migration 0023). */
+/** Supabase Storage bucket for the customer menu's PDF catalogue (see supabase/schema.sql). */
 export const CATALOGUE_BUCKET = 'catalogue'
 
 /** Matches the bucket's limit (the Supabase free plan's per-file maximum). */

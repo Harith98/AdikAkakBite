@@ -6,7 +6,7 @@ import type { Database } from '@/lib/supabase/database.types'
  *
  * Only the very first account (before setup) may create the business; after
  * that, people join by invitation. Fails CLOSED — if the check itself errors
- * (e.g. migration 0013 not applied yet), treat the app as set up, so an error
+ * (e.g. app_is_set_up() missing), treat the app as set up, so an error
  * can never re-open business creation.
  */
 export async function isAppSetUp(supabase: SupabaseClient<Database>): Promise<boolean> {

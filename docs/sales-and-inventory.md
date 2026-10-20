@@ -3,7 +3,7 @@
 ## Sales — live, not stored
 Business → Sales shows Today / This week / This month revenue, order count and average order value,
 computed **live** from completed orders every time the page loads (`getSalesSummary`). Nothing is cached in
-the `sales` table — that table exists in the schema (migration 0001) but is deliberately left unused for now,
+the `sales` table — that table exists in the schema but is deliberately left unused for now,
 so there is exactly one source of truth for revenue. If a business ever grows large enough that recomputing
 this on every page load is slow, `sales` is where a materialized daily rollup would go — the page's return
 shape would not need to change.
@@ -36,7 +36,7 @@ expiry and notes are a plain update. Quantity only moves through a **logged tran
 | Waste | `current_quantity -= quantity` |
 | Adjustment | `current_quantity = quantity` (corrects a stock count to a known value) |
 
-This is enforced by a Postgres function, `record_inventory_transaction` (migration 0007), which locks the
+This is enforced by a Postgres function, `record_inventory_transaction`, which locks the
 item row, computes the new quantity, inserts the transaction, and updates the item — all in one call — so two
 transactions logged at the same moment can't race and silently drop one of them. Stock never goes below zero.
 The function runs as `SECURITY INVOKER` (the default), so it's still subject to Row Level Security exactly as

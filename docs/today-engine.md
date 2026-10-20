@@ -8,7 +8,7 @@ with no database or clock access, so every rule below is covered by unit tests i
 
 Each schedule block has a list of default tasks. The first time a working day is viewed, `getTodayData`
 creates that day's task rows from those lists (`source = 'schedule'`). A unique index
-(`uq_tasks_schedule_materialization`, migration 0005) makes this idempotent, so refreshing or opening the app on
+(`uq_tasks_schedule_materialization`) makes this idempotent, so refreshing or opening the app on
 two devices at once never duplicates tasks. Editing a block only affects tasks created from then on.
 
 Unfinished schedule tasks are **not** carried to the next day (the Closing block's "Review unfinished tasks"

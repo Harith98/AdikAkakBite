@@ -16,11 +16,10 @@ interface PublicMenu {
   phone: string | null
   menu_pdf_url: string | null
   menu_pdf_updated_at: string | null
-  /** Added in migration 0027; absent before it's applied. */
+  /** Social links; absent on a database that doesn't have them yet. */
   instagram_url?: string | null
   facebook_url?: string | null
   tiktok_url?: string | null
-  /** Added in migration 0028. */
   threads_url?: string | null
 }
 

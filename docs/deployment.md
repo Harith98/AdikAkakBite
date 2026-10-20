@@ -12,9 +12,9 @@
 4. Deploy. Vercel's free/hobby tier is sufficient for V1 (spec §5's cost-minimization requirement).
 5. In your Supabase project's Auth settings, add your Vercel deployment URL (and `http://localhost:3000` for local dev) to **Redirect URLs**, so `emailRedirectTo` in the signup/magic-link flows works.
 
-## Database migrations in production
+## Database changes in production
 
-Run new migrations against your Supabase project the same way as local setup (`docs/../README.md#3-set-up-supabase`) — either paste them into the Supabase SQL Editor, or `supabase db push` if the CLI is linked. There is no automatic migration-on-deploy step in V1; run migrations deliberately, before deploying code that depends on them.
+A new database is set up by running `supabase/schema.sql` once in the Supabase SQL Editor. After that, each change comes as a file in `supabase/updates/`: run it in the SQL Editor **before** deploying the code that needs it. Settings → System shows "Database: up to date" once the live database matches the code. Nothing runs automatically on deploy. See `docs/database.md`.
 
 ## HTTPS / PWA requirements
 
@@ -22,7 +22,7 @@ Vercel serves everything over HTTPS by default, which satisfies the PWA requirem
 
 ## Before going live, sanity-check
 
-- [ ] Migrations `0001`–`0007` applied, in order, to the production database
+- [ ] `supabase/schema.sql` run on the production database (and any files in `supabase/updates/` newer than it)
 - [ ] RLS verified with two separate test accounts/businesses (one must never see the other's data)
 - [ ] `.env.local` values are not the same ones committed anywhere — production uses its own Supabase project
 - [ ] Auth redirect URLs updated in Supabase to match the production domain

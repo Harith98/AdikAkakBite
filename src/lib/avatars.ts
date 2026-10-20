@@ -1,4 +1,4 @@
-/** Supabase Storage bucket for profile photos (migration 0024). */
+/** Supabase Storage bucket for profile photos (see supabase/schema.sql). */
 export const AVATAR_BUCKET = 'avatars'
 
 /** Profile photos are cropped to a square and shrunk to this many pixels. */

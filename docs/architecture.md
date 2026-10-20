@@ -22,7 +22,7 @@ The rule that shapes this whole layering (product spec §32–34): **the databas
 
 ## Multi-tenancy
 
-Every business-owned table has a `business_id` column and a Row Level Security policy that checks the caller is a member of that business, via the `is_business_member()` SQL helper (`supabase/migrations/0003_rls_policies.sql`). `src/lib/services/current-business.ts` resolves "the current user's business" server-side and is the single place that logic lives — pages never query `business_members` directly.
+Every business-owned table has a `business_id` column and a Row Level Security policy that checks the caller is a member of that business, via the `is_business_member()` SQL helper (`supabase/schema.sql`). `src/lib/services/current-business.ts` resolves "the current user's business" server-side and is the single place that logic lives — pages never query `business_members` directly.
 
 V1 assumes one business per owner (the product spec doesn't ask for a business switcher), but the schema already supports a user belonging to multiple businesses without a migration, if that's needed later.
 
@@ -48,7 +48,8 @@ src/
     services/          # the AI-ready structured service layer (spec §32) + AI provider stub (§33)
     time.ts, constants.ts, clsx.ts
 supabase/
-  migrations/          # schema, indexes, RLS — numbered, run in order
+  schema.sql           # the whole database: tables, functions, RLS, storage
+  updates/             # one small file per later change to a live database
   seed_demo_data.sql   # optional, labeled, deletable demo data
 tests/unit/            # Vitest; grows alongside each phase's calculations
 ```
@@ -66,7 +67,7 @@ This follows the phase plan from the original product spec (§58) exactly:
 7. **Polish** — responsive/mobile QA, loading/error/empty states, performance, full test coverage.
 8. **Future AI** — *not implemented*; only the interfaces in `src/lib/services/ai-provider.ts` exist.
 
-After each phase: run `npm run typecheck`, `npm run lint`, `npm run test`, verify migrations apply cleanly to a fresh database, verify RLS with a second test user, and check both a phone-width and desktop-width viewport before moving on (spec §59).
+After each phase: run `npm run typecheck`, `npm run lint`, `npm run test`, verify schema.sql runs cleanly on a fresh database, verify RLS with a second test user, and check both a phone-width and desktop-width viewport before moving on (spec §59).
 
 ## Design system
 
@@ -74,7 +75,7 @@ See `tailwind.config.ts` for the full token set. Summary: a warm, non-generic ba
 
 ## Security
 
-- Row Level Security on every business-owned table (`supabase/migrations/0003_rls_policies.sql`).
+- Row Level Security on every business-owned table (section 8 of `supabase/schema.sql`).
 - Supabase Auth (email/password + magic link); no third-party OAuth required in V1.
 - `SUPABASE_SERVICE_ROLE_KEY` exists only as a `.env.example` placeholder and is only ever read server-side (`createServiceRoleClient()` in `src/lib/supabase/server.ts`) — it is not used anywhere in Phase 1's actual code paths yet, and should only be reached for from trusted server contexts (e.g. a future scheduled job), never from a request handler that hasn't independently re-verified the caller.
 - No secrets committed — `.env.local` is git-ignored; `.env.example` holds placeholders only.
@@ -83,5 +84,5 @@ See `tailwind.config.ts` for the full token set. Summary: a warm, non-generic ba
 ## Performance
 
 - Server Components fetch data directly, close to the database, avoiding client-side request waterfalls.
-- Business-scoped indexes on every table that's filtered by `business_id`, plus the specific indexes each analytics query needs (`0002_indexes.sql`).
+- Business-scoped indexes on every table that's filtered by `business_id`, plus the specific indexes each analytics query needs (section 3 of `supabase/schema.sql`).
 - Aggregation (sums, averages, comparisons) is intended to happen in SQL/service-layer code, not by pulling full tables into the browser — this is the pattern to follow starting in Phase 5.

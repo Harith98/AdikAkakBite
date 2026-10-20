@@ -53,7 +53,7 @@ export async function completeOnboarding(
     redirect('/today')
   }
   // Single-business app: setup happens once. The database refuses a second
-  // business too (migration 0013); this just gives a clear message first.
+  // business too (businesses_single_row); this just gives a clear message first.
   if (await isAppSetUp(supabase)) {
     return { error: 'This app is already set up. Ask the owner or an admin to create your account.' }
   }

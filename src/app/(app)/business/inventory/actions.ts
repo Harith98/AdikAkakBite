@@ -130,7 +130,7 @@ export async function deleteInventoryItem(formData: FormData): Promise<void> {
   if (!UUID_PATTERN.test(id)) return
   const ctx = await getActionContext()
   if (!ctx.ok) throw new Error(ctx.error)
-  // inventory_transactions references this item with ON DELETE CASCADE (migration 0001),
+  // inventory_transactions references this item with ON DELETE CASCADE (supabase/schema.sql),
   // so its usage history is removed too — deleting an item is meant to be permanent.
   const { error } = await ctx.supabase.from('inventory_items').delete().eq('id', id).eq('business_id', ctx.businessId)
   if (error) throw new Error(error.message)
