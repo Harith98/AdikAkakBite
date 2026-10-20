@@ -27,6 +27,7 @@ PostgreSQL via Supabase. Migrations live in `supabase/migrations/`, numbered and
 23. `0023_menu_catalogue.sql` — customer menu (`/menu`, public): `businesses.menu_pdf_url` / `menu_pdf_updated_at`, a public Storage bucket `catalogue` (PDF only, 50 MB, owner/admin upload/delete via `can_manage_catalogue_file()`), and `get_public_menu()` (anon-callable; returns only business name, phone and the catalogue link). The menu's order form only opens WhatsApp with the order template; nothing is stored.
 24. `0024_profile_photos.sql` — public Storage bucket `avatars` (2 MB, images) where each person can upload/delete only in their own `<user id>/` folder. The photo's URL lives in their auth metadata (`avatar_url`), beside `display_name`; photos are cropped to a 400px square in the browser.
 25. `0025_member_avatars.sql` — `get_business_members()` also returns each member's `avatar_url` (https only) so the Team page shows everyone's photo.
+26. `0026_product_nicknames.sql` — `products.nicknames` (text[], up to 10): other names customers use, matched by the WhatsApp paste reader; an exact nickname wins over partial name matches.
 
 ## Team roles
 

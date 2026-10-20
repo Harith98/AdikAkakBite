@@ -17,6 +17,24 @@ export interface ParsedProduct {
   imageUrl: string | null
   isActive: boolean
   notes: string | null
+  /** Other names customers use (for the WhatsApp paste reader). */
+  nicknames: string[]
+}
+
+export const MAX_NICKNAMES = 10
+
+/** "batik klasik, kek batik; batik" → ["batik klasik", "kek batik", "batik"]: trimmed and de-duplicated. */
+export function parseNicknames(raw: string): string[] {
+  const seen = new Set<string>()
+  const out: string[] = []
+  for (const part of raw.split(/[,;\n]/)) {
+    const name = part.replace(/\s+/g, ' ').trim()
+    const key = name.toLowerCase()
+    if (!name || seen.has(key)) continue
+    seen.add(key)
+    out.push(name)
+  }
+  return out
 }
 
 export function parseProductForm(form: FormSource): ParseResult<ParsedProduct> {
@@ -30,6 +48,10 @@ export function parseProductForm(form: FormSource): ParseResult<ParsedProduct> {
   if (description.length > 500) return fail('Keep the description under 500 characters.')
   const notes = str(form, 'notes')
   if (notes.length > 500) return fail('Keep notes under 500 characters.')
+
+  const nicknames = parseNicknames(str(form, 'nicknames'))
+  if (nicknames.length > MAX_NICKNAMES) return fail(`Use at most ${MAX_NICKNAMES} nicknames.`)
+  if (nicknames.some((n) => n.length > 50)) return fail('Keep each nickname under 50 characters.')
 
   const imageUrl = str(form, 'imageUrl')
   if (imageUrl) {
@@ -58,6 +80,7 @@ export function parseProductForm(form: FormSource): ParseResult<ParsedProduct> {
       imageUrl: imageUrl || null,
       isActive: form.get('isActive') === 'on',
       notes: notes || null,
+      nicknames,
     },
   }
 }

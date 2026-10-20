@@ -18,6 +18,8 @@ export interface ProductOption {
   category?: string | null
   /** Finished units on hand, or null when the product isn't stock-tracked. */
   readyStock?: number | null
+  /** Other names customers use; the WhatsApp paste reader matches these too. */
+  nicknames?: string[]
 }
 export interface CustomerOption {
   id: string

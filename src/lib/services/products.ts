@@ -15,6 +15,8 @@ export interface ProductView extends ProductEconomics {
   imageUrl: string | null
   isActive: boolean
   notes: string | null
+  /** Other names customers use (migration 0026; empty before it). */
+  nicknames: string[]
   ingredientCost: number
   packagingCost: number
   otherCost: number
@@ -48,6 +50,7 @@ function toView(product: ProductRow, cost: CostRow | undefined): ProductView {
     imageUrl: product.image_url,
     isActive: product.is_active,
     notes: product.notes,
+    nicknames: (product as { nicknames?: string[] | null }).nicknames ?? [],
     ingredientCost,
     packagingCost,
     otherCost,

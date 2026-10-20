@@ -197,3 +197,25 @@ describe('buildWhatsAppOrderMessage', () => {
     expect(parseWhatsAppOrder(message, products, today).fulfilment).toBe('pickup')
   })
 })
+
+describe('nicknames', () => {
+  const withNicknames = [
+    { id: 'kbi', name: 'Kek Batik Indulgence', price: 17, nicknames: ['batik klasik', 'kek batik coklat'] },
+    { id: 'bk', name: 'Brownies Klasik', price: 17 },
+  ]
+
+  it('matches a product by one of its nicknames', () => {
+    expect(matchProduct('Batik Klasik', withNicknames).productId).toBe('kbi')
+    expect(matchProduct('kek batik coklat', withNicknames).productId).toBe('kbi')
+  })
+
+  it('an exact nickname wins over a partial name match', () => {
+    // "klasik" also appears in Brownies Klasik, but the nickname is exact.
+    expect(matchProduct('batik klasik', withNicknames).match).toBe('matched')
+  })
+
+  it('reads nicknames from the product form', async () => {
+    const { parseNicknames } = await import('@/lib/validation/products')
+    expect(parseNicknames(' batik klasik,  Kek  Batik ; batik klasik\ncoklat ')).toEqual(['batik klasik', 'Kek Batik', 'coklat'])
+  })
+})

@@ -37,6 +37,8 @@ export interface ProductForMatching {
   price: number
   /** Helps tell apart products with the same name ("Chocolate" in Brownies vs Indulgence). */
   category?: string | null
+  /** Other names customers use ("batik klasik"), matched like the name. */
+  nicknames?: string[]
 }
 
 /** "4″ Chocolate (Brownies)": the name people see when two products share a name. */
@@ -268,6 +270,9 @@ const tokens = (s: string) =>
     // Single letters are noise, but single digits are sizes ("6″" vs "8″").
     .filter((w) => w.length > 1 || /\d/.test(w))
 
+/** Same words, ignoring case, punctuation and spacing ("Batik Klasik!" = "batik klasik"). */
+const sameWords = (a: string, b: string) => tokens(a).join(' ') === tokens(b).join(' ') && tokens(a).length > 0
+
 /** Edit distance, for small typos ("brownis", "nutela"). */
 function editDistance(a: string, b: string): number {
   const prev = Array.from({ length: b.length + 1 }, (_, i) => i)
@@ -308,7 +313,15 @@ const MATCH_THRESHOLD = 0.6
 export function matchProduct(text: string, products: ProductForMatching[]): Pick<ParsedItem, 'match' | 'productId' | 'productName' | 'unitPrice' | 'candidates'> {
   const scored = products
     // The category counts too, so "brownies chocolate" picks Chocolate in Brownies over Chocolate in Indulgence.
-    .map((p) => ({ p, score: Math.max(matchScore(text, p.name), p.category ? matchScore(text, `${p.name} ${p.category}`) : 0) }))
+    // Nicknames count like names; an exact nickname beats everything, since the owner set it on purpose.
+    .map((p) => ({
+      p,
+      score: Math.max(
+        matchScore(text, p.name),
+        p.category ? matchScore(text, `${p.name} ${p.category}`) : 0,
+        ...(p.nicknames ?? []).map((n) => (sameWords(text, n) ? 1.1 : matchScore(text, n)))
+      ),
+    }))
     .filter((s) => s.score >= MATCH_THRESHOLD)
     .sort((a, b) => b.score - a.score)
   const best = scored[0]

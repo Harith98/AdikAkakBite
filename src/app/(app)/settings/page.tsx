@@ -62,6 +62,18 @@ export default async function SettingsPage() {
             ),
           },
           {
+            href: '/settings/export',
+            title: 'Export data',
+            text: 'Download orders, customers and more as spreadsheets',
+            tone: 'bg-sage-soft text-sage-dark',
+            icon: (
+              <>
+                <path d="M12 3v12M7 10l5 5 5-5" />
+                <path d="M4 17v3h16v-3" />
+              </>
+            ),
+          },
+          {
             href: '/settings/schedule',
             title: 'Daily schedule',
             text: 'Blocks and tasks that shape your day',

@@ -43,6 +43,9 @@ export async function saveProduct(_prev: SaveProductState, formData: FormData): 
     image_url: p.imageUrl,
     is_active: p.isActive,
     notes: p.notes,
+    // Sent only when there's something to save (or clear), so products still save
+    // before migration 0026 adds the column.
+    ...(p.nicknames.length > 0 || formData.get('hadNicknames') === '1' ? { nicknames: p.nicknames } : {}),
   }
   const costFields = { ingredient_cost: p.ingredientCost, packaging_cost: p.packagingCost, other_cost: p.otherCost }
 

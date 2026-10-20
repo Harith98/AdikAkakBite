@@ -56,6 +56,7 @@ export default async function SystemStatusPage() {
     status.migrations['0024'] = admin ? !(await admin.storage.getBucket('avatars')).error : false
     const members = await supabase.rpc('get_business_members', { p_business_id: business.id })
     status.migrations['0025'] = !members.error && (members.data ?? []).some((m) => 'avatar_url' in m)
+    status.migrations['0026'] = !(await supabase.from('products').select('nicknames').limit(1)).error
   }
   const lastRun = (action: string) => (cronRes.data ?? []).find((r) => r.action === action)?.created_at ?? null
   const devices = devicesRes && !devicesRes.error ? devicesRes.count ?? 0 : null

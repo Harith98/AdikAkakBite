@@ -96,6 +96,20 @@ export function ProductForm({
           <textarea name="description" rows={2} maxLength={500} defaultValue={product?.description ?? ''} className="rounded-card border border-ink/15 bg-base p-3 text-sm outline-none focus:border-raspberry" />
         </label>
         <label className="flex flex-col gap-1 text-sm">
+          <span className="font-medium text-ink">Nicknames (optional)</span>
+          {product && product.nicknames.length > 0 && <input type="hidden" name="hadNicknames" value="1" />}
+          <input
+            name="nicknames"
+            defaultValue={product?.nicknames.join(', ') ?? ''}
+            maxLength={600}
+            placeholder="e.g. batik klasik, kek batik coklat"
+            className={input}
+          />
+          <span className="text-xs text-ink-muted">
+            Other names customers use, separated by commas. Pasted WhatsApp orders match these too.
+          </span>
+        </label>
+        <label className="flex flex-col gap-1 text-sm">
           <span className="font-medium text-ink">Notes</span>
           <textarea name="notes" rows={2} maxLength={500} defaultValue={product?.notes ?? ''} className="rounded-card border border-ink/15 bg-base p-3 text-sm outline-none focus:border-raspberry" />
         </label>

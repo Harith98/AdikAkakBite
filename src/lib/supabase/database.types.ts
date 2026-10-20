@@ -256,6 +256,7 @@ export interface Database {
           notes: string | null
           ready_stock: number | null
           recipe_yield: number
+          nicknames: string[]
           created_at: string
           updated_at: string
         }
@@ -271,6 +272,7 @@ export interface Database {
           notes?: string | null
           ready_stock?: number | null
           recipe_yield?: number
+          nicknames?: string[]
           created_at?: string
           updated_at?: string
         }

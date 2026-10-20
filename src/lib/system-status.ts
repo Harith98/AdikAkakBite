@@ -81,6 +81,7 @@ export const EXPECTED_MIGRATIONS: { id: string; file: string; purpose: string }[
   { id: '0023', file: '0023_menu_catalogue.sql', purpose: 'Customer menu and catalogue' },
   { id: '0024', file: '0024_profile_photos.sql', purpose: 'Profile photos' },
   { id: '0025', file: '0025_member_avatars.sql', purpose: 'Team photos' },
+  { id: '0026', file: '0026_product_nicknames.sql', purpose: 'Product nicknames' },
 ]
 
 /** The ones not applied yet, oldest first. */
