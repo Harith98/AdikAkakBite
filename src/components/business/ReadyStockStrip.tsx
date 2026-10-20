@@ -31,14 +31,14 @@ export function ReadyStockStrip({ items }: { items: ReadyStockItem[] }) {
           return (
             <li key={item.id} className="flex w-40 shrink-0 snap-start flex-col overflow-hidden rounded-card border border-ink/10 bg-base-card">
               <Link href={`/business/products/${item.id}`} className="block">
-                <span className="relative block aspect-[4/3] w-full bg-base-soft">
+                <span className="relative block aspect-[4/3] w-full overflow-hidden bg-base-soft">
                   {item.imageUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
                       src={productThumbUrl(item.imageUrl) ?? ''}
                       alt=""
                       loading="lazy"
-                      className={clsx('h-full w-full object-cover', !available && 'opacity-50 grayscale')}
+                      className={clsx('absolute inset-0 h-full w-full object-cover', !available && 'opacity-50 grayscale')}
                     />
                   ) : (
                     <span aria-hidden="true" className={clsx('flex h-full w-full items-center justify-center text-4xl', !available && 'opacity-40')}>

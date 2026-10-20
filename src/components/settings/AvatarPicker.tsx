@@ -4,7 +4,7 @@ import { useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { AVATAR_BUCKET, AVATAR_SIZE } from '@/lib/avatars'
-import { AvatarCropper } from './AvatarCropper'
+import { PhotoCropper } from '@/components/ui/PhotoCropper'
 import { updateMyAvatar } from '@/app/(app)/settings/actions'
 import { Avatar } from '@/components/ui/Avatar'
 import { Button } from '@/components/ui/Button'
@@ -80,7 +80,7 @@ export function AvatarPicker({ userId, name, initialUrl }: { userId: string; nam
     <div className="flex items-center gap-4">
       <input ref={fileInput} type="file" accept="image/*" className="hidden" onChange={(e) => choose(e.target.files?.[0])} />
       {cropping && (
-        <AvatarCropper file={cropping} outputSize={AVATAR_SIZE} onCancel={() => setCropping(null)} onConfirm={upload} />
+        <PhotoCropper file={cropping} outputSize={AVATAR_SIZE} onCancel={() => setCropping(null)} onConfirm={upload} />
       )}
       <button
         type="button"

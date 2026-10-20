@@ -8,8 +8,13 @@ const VIEW = 260
 const MAX_ZOOM = 4
 
 interface Props {
-  file: File
+  file: Blob
+  /** Longest side of the saved square, in px (smaller if the crop itself is smaller). */
   outputSize: number
+  /** 'circle' for profile photos (shown round), 'square' for product photos (shown in square tiles). */
+  shape?: 'circle' | 'square'
+  title?: string
+  hint?: string
   onCancel: () => void
   onConfirm: (blob: Blob) => void
 }
@@ -20,11 +25,19 @@ interface Pos {
 }
 
 /**
- * Pick the part of a photo to use as a round profile picture: drag to move,
- * pinch / slider / scroll wheel to zoom. Exports exactly what's inside the
- * circle as a square JPEG (the app shows it round).
+ * Pick the part of a photo to keep: drag to move, pinch / slider / scroll
+ * wheel to zoom. Exports exactly what's inside the frame as a square JPEG
+ * (profile photos are then shown round, product photos square).
  */
-export function AvatarCropper({ file, outputSize, onCancel, onConfirm }: Props) {
+export function PhotoCropper({
+  file,
+  outputSize,
+  shape = 'circle',
+  title = 'Adjust your photo',
+  hint = 'Drag to move · pinch or slide to zoom',
+  onCancel,
+  onConfirm,
+}: Props) {
   const [src, setSrc] = useState<string | null>(null)
   const [natural, setNatural] = useState<{ w: number; h: number } | null>(null)
   const [zoom, setZoom] = useState(1)
@@ -52,7 +65,7 @@ export function AvatarCropper({ file, outputSize, onCancel, onConfirm }: Props) 
   const baseScale = natural ? Math.max(VIEW / natural.w, VIEW / natural.h) : 1
   const scale = baseScale * zoom
 
-  /** Keep the photo covering the circle: no empty gaps at the edges. */
+  /** Keep the photo covering the frame: no empty gaps at the edges. */
   const clamp = useCallback(
     (pos: Pos, s: number): Pos => {
       if (!natural) return pos
@@ -73,7 +86,7 @@ export function AvatarCropper({ file, outputSize, onCancel, onConfirm }: Props) 
     setOffset({ x: (VIEW - n.w * s) / 2, y: (VIEW - n.h * s) / 2 }) // start centred
   }
 
-  /** Zoom around the middle of the circle, so what's in the centre stays there. */
+  /** Zoom around the middle of the frame, so what's in the centre stays there. */
   function setZoomCentered(nextZoom: number) {
     const z = Math.min(MAX_ZOOM, Math.max(1, nextZoom))
     const oldScale = scale
@@ -119,7 +132,7 @@ export function AvatarCropper({ file, outputSize, onCancel, onConfirm }: Props) 
     if (!img || !natural) return
     setSaving(true)
     try {
-      // The circle's square, in the photo's own pixels.
+      // The frame's square, in the photo's own pixels.
       const sx = -offset.x / scale
       const sy = -offset.y / scale
       const size = VIEW / scale
@@ -143,10 +156,10 @@ export function AvatarCropper({ file, outputSize, onCancel, onConfirm }: Props) 
   }
 
   return (
-    <div role="dialog" aria-modal="true" aria-label="Adjust your photo" className="fixed inset-0 z-50 flex items-end justify-center bg-ink/60 p-4 sm:items-center">
+    <div role="dialog" aria-modal="true" aria-label={title} className="fixed inset-0 z-50 flex items-end justify-center bg-ink/60 p-4 sm:items-center">
       <div className="w-full max-w-sm rounded-card bg-base-card p-5 shadow-card">
-        <p className="font-display text-xl text-ink">Adjust your photo</p>
-        <p className="mt-1 text-sm text-ink-muted">Drag to move · pinch or slide to zoom</p>
+        <p className="font-display text-xl text-ink">{title}</p>
+        <p className="mt-1 text-sm text-ink-muted">{hint}</p>
 
         <div
           className="relative mx-auto mt-4 touch-none select-none overflow-hidden rounded-card bg-ink/10"
@@ -174,8 +187,12 @@ export function AvatarCropper({ file, outputSize, onCancel, onConfirm }: Props) 
               }
             />
           )}
-          {/* Darken everything outside the circle. */}
-          <div aria-hidden="true" className="pointer-events-none absolute inset-0 rounded-full ring-2 ring-white" style={{ boxShadow: '0 0 0 999px rgba(37, 38, 39, 0.55)' }} />
+          {/* Darken everything outside the circle; a square crop keeps the whole frame, with a thin outline. */}
+          <div
+            aria-hidden="true"
+            className={`pointer-events-none absolute inset-0 ring-2 ring-inset ring-white ${shape === 'circle' ? 'rounded-full' : 'rounded-card'}`}
+            style={shape === 'circle' ? { boxShadow: '0 0 0 999px rgba(37, 38, 39, 0.55)' } : undefined}
+          />
         </div>
 
         <label className="mt-4 flex items-center gap-3 text-sm text-ink-muted">

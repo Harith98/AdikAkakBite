@@ -6,7 +6,7 @@
  *   maxSize  longest side in pixels
  *   square   crop to a centred square first (profile photos)
  */
-export async function resizeToJpeg(file: File, { maxSize, square = false }: { maxSize: number; square?: boolean }): Promise<Blob> {
+export async function resizeToJpeg(file: Blob, { maxSize, square = false }: { maxSize: number; square?: boolean }): Promise<Blob> {
   const url = URL.createObjectURL(file)
   try {
     const img = new Image()

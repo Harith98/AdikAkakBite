@@ -157,10 +157,11 @@ function ProductTile({ product: p, money }: { product: ProductView; money: (n: n
           !p.isActive && 'opacity-60'
         )}
       >
-        <span className="relative block aspect-square w-full bg-base-soft">
+        {/* Square whatever the photo's shape: the photo is pinned inside, so a tall one can't stretch the tile. */}
+        <span className="relative block aspect-square w-full shrink-0 overflow-hidden bg-base-soft">
           {p.imageUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={productThumbUrl(p.imageUrl) ?? ''} alt="" loading="lazy" className="h-full w-full object-cover" />
+            <img src={productThumbUrl(p.imageUrl) ?? ''} alt="" loading="lazy" className="absolute inset-0 h-full w-full object-cover" />
           ) : (
             <span aria-hidden="true" className="flex h-full w-full items-center justify-center text-5xl">
               🧁
