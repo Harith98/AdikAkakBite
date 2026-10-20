@@ -58,19 +58,52 @@ export function percentChange(now: number, before: number): number | null {
   return Math.round(((now - before) / before) * 1000) / 10
 }
 
+export interface CostPeriod {
+  /** When this cost started (timestamp; only the date part is used). */
+  effectiveFrom: string
+  /** Cost of one unit: ingredients + packaging + other. */
+  unitCost: number
+}
+
+/**
+ * What one unit of a product cost to make on `saleDate`, from its cost history.
+ * A cost of 0 counts as "not entered". When no cost had been entered by the
+ * sale date (costs filled in after the sale), the first cost entered after it
+ * is used instead. Null when the product has no cost at all.
+ */
+export function costOnDate(history: CostPeriod[], saleDate: string): number | null {
+  const entered = history.filter((c) => Number.isFinite(c.unitCost) && c.unitCost > 0).sort((a, b) => a.effectiveFrom.localeCompare(b.effectiveFrom))
+  if (entered.length === 0) return null
+  const before = entered.filter((c) => c.effectiveFrom.slice(0, 10) <= saleDate)
+  return (before[before.length - 1] ?? entered[0]!).unitCost
+}
+
 export interface MonthOrder {
   /** YYYY-MM-DD the order was completed. */
   saleDate: string
   total: number
-  items: { name: string; quantity: number; amount: number }[]
+  /** unitCost: what one unit cost to make (see costOnDate); null = no cost entered. */
+  items: { name: string; quantity: number; amount: number; unitCost: number | null }[]
+}
+
+export interface MonthProfit {
+  /** What the items sold cost to make (items with a cost only). */
+  cost: number
+  /** Revenue minus cost. */
+  profit: number
+  /** Profit as a % of revenue, one decimal; null with no revenue. */
+  margin: number | null
+  /** Items sold with no cost entered, so the profit above is too high by their cost. */
+  missingCost: string[]
 }
 
 export interface MonthReport {
   totals: SalesTotals
+  profit: MonthProfit
   /** One entry per day of the month, including days with no sales. */
   days: { date: string; revenue: number; orders: number }[]
-  /** Best sellers by revenue (item amounts, before order-level discounts). */
-  topProducts: { name: string; quantity: number; revenue: number }[]
+  /** Best sellers by revenue (item amounts, before order-level discounts); profit null when a cost is missing. */
+  topProducts: { name: string; quantity: number; revenue: number; profit: number | null }[]
   bestDay: { date: string; revenue: number } | null
 }
 
@@ -79,7 +112,9 @@ export function buildMonthReport(orders: MonthOrder[], month: string, topCount =
   const byDay = new Map<string, { revenue: number; orders: number }>()
   for (let d = 1; d <= days; d++) byDay.set(`${month}-${String(d).padStart(2, '0')}`, { revenue: 0, orders: 0 })
 
-  const products = new Map<string, { name: string; quantity: number; revenue: number }>()
+  const products = new Map<string, { name: string; quantity: number; revenue: number; cost: number; missing: boolean }>()
+  let cost = 0
+  const missingCost = new Map<string, string>()
   for (const order of orders) {
     const day = byDay.get(order.saleDate)
     if (day) {
@@ -88,12 +123,22 @@ export function buildMonthReport(orders: MonthOrder[], month: string, topCount =
     }
     for (const item of order.items) {
       const key = item.name.trim().toLowerCase()
-      const entry = products.get(key) ?? { name: item.name.trim(), quantity: 0, revenue: 0 }
+      const entry = products.get(key) ?? { name: item.name.trim(), quantity: 0, revenue: 0, cost: 0, missing: false }
       entry.quantity += item.quantity
       entry.revenue = round2(entry.revenue + item.amount)
+      if (item.unitCost === null) {
+        entry.missing = true
+        missingCost.set(key, item.name.trim())
+      } else {
+        const itemCost = item.unitCost * item.quantity
+        entry.cost = round2(entry.cost + itemCost)
+        cost = round2(cost + itemCost)
+      }
       products.set(key, entry)
     }
   }
+  const totals = summarizeSales(orders.map((o) => ({ saleDate: o.saleDate, total: o.total })))
+  const profit = round2(totals.revenue - cost)
 
   const dayList = Array.from(byDay, ([date, v]) => ({ date, ...v }))
   const best = dayList.reduce<{ date: string; revenue: number } | null>(
@@ -101,11 +146,18 @@ export function buildMonthReport(orders: MonthOrder[], month: string, topCount =
     null
   )
   return {
-    totals: summarizeSales(orders.map((o) => ({ saleDate: o.saleDate, total: o.total }))),
+    totals,
+    profit: {
+      cost,
+      profit,
+      margin: totals.revenue > 0 ? Math.round((profit / totals.revenue) * 1000) / 10 : null,
+      missingCost: Array.from(missingCost.values()).sort((a, b) => a.localeCompare(b)),
+    },
     days: dayList,
     topProducts: Array.from(products.values())
       .sort((a, b) => b.revenue - a.revenue || b.quantity - a.quantity)
-      .slice(0, topCount),
+      .slice(0, topCount)
+      .map((p) => ({ name: p.name, quantity: p.quantity, revenue: p.revenue, profit: p.missing ? null : round2(p.revenue - p.cost) })),
     bestDay: best,
   }
 }

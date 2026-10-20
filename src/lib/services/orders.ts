@@ -142,7 +142,7 @@ export interface CompletedOrderForSales {
   completed_on: string
   discount: number
   delivery_fee: number
-  order_items: { product_name: string; quantity: number; unit_price: number }[] | null
+  order_items: { product_id: string | null; product_name: string; quantity: number; unit_price: number }[] | null
 }
 
 /** Orders completed in a date range (by completion day, so advance orders count when fulfilled) with their line items, for sales summaries (spec §20-21). */
@@ -154,7 +154,7 @@ export async function getCompletedOrdersInRange(
 ): Promise<CompletedOrderForSales[]> {
   const { data, error } = await supabase
     .from('orders')
-    .select('id, completed_on, discount, delivery_fee, order_items(product_name, quantity, unit_price)')
+    .select('id, completed_on, discount, delivery_fee, order_items(product_id, product_name, quantity, unit_price)')
     .eq('business_id', businessId)
     .eq('status', 'completed')
     .gte('completed_on', startDate)

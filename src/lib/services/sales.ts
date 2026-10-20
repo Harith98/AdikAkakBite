@@ -3,9 +3,11 @@ import type { Database } from '@/lib/supabase/database.types'
 import { calculateOrderTotals } from '@/lib/calc/orders'
 import {
   buildMonthReport,
+  costOnDate,
   monthRange,
   shiftMonth,
   summarizeSales,
+  type CostPeriod,
   type MonthOrder,
   type MonthReport,
   type SalesTotals,
@@ -84,6 +86,22 @@ export async function getMonthSalesReport(supabase: Client, businessId: string, 
       .lte('review_date', range.end),
   ])
 
+  // Cost history of every product sold this month, so each sale uses the cost it had then.
+  const productIds = Array.from(new Set(orders.flatMap((o) => (o.order_items ?? []).map((i) => i.product_id)).filter((id): id is string => Boolean(id))))
+  const costs = new Map<string, CostPeriod[]>()
+  if (productIds.length > 0) {
+    const { data, error } = await supabase
+      .from('product_costs')
+      .select('product_id, ingredient_cost, packaging_cost, other_cost, effective_from')
+      .in('product_id', productIds)
+    if (error) throw new Error(`Could not load product costs: ${error.message}`)
+    for (const c of data ?? []) {
+      const list = costs.get(c.product_id) ?? []
+      list.push({ effectiveFrom: c.effective_from, unitCost: Number(c.ingredient_cost) + Number(c.packaging_cost) + Number(c.other_cost) })
+      costs.set(c.product_id, list)
+    }
+  }
+
   const toMonthOrder = (o: (typeof orders)[number]): MonthOrder => {
     const items = o.order_items ?? []
     return {
@@ -93,7 +111,12 @@ export async function getMonthSalesReport(supabase: Client, businessId: string, 
         discount: o.discount,
         deliveryFee: o.delivery_fee,
       }).total,
-      items: items.map((i) => ({ name: i.product_name, quantity: i.quantity, amount: i.quantity * i.unit_price })),
+      items: items.map((i) => ({
+        name: i.product_name,
+        quantity: i.quantity,
+        amount: i.quantity * i.unit_price,
+        unitCost: i.product_id ? costOnDate(costs.get(i.product_id) ?? [], o.completed_on) : null,
+      })),
     }
   }
 

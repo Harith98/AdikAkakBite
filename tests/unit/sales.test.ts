@@ -38,18 +38,55 @@ describe('monthly report', () => {
     const { buildMonthReport } = await import('@/lib/calc/sales')
     const r = buildMonthReport(
       [
-        { saleDate: '2026-09-05', total: 34, items: [{ name: 'Brownies Klasik', quantity: 2, amount: 34 }] },
-        { saleDate: '2026-09-05', total: 17, items: [{ name: 'brownies klasik ', quantity: 1, amount: 17 }] },
-        { saleDate: '2026-09-20', total: 60, items: [{ name: 'Kek Batik', quantity: 1, amount: 60 }] },
+        { saleDate: '2026-09-05', total: 34, items: [{ name: 'Brownies Klasik', quantity: 2, amount: 34, unitCost: 8 }] },
+        { saleDate: '2026-09-05', total: 17, items: [{ name: 'brownies klasik ', quantity: 1, amount: 17, unitCost: 8 }] },
+        { saleDate: '2026-09-20', total: 60, items: [{ name: 'Kek Batik', quantity: 1, amount: 60, unitCost: 25.5 }] },
       ],
       '2026-09'
     )
     expect(r.totals).toEqual({ revenue: 111, orders: 3, averageOrderValue: 37 })
     expect(r.days).toHaveLength(30)
     expect(r.days.find((d) => d.date === '2026-09-05')).toEqual({ date: '2026-09-05', revenue: 51, orders: 2 })
-    expect(r.topProducts[0]).toEqual({ name: 'Kek Batik', quantity: 1, revenue: 60 })
-    expect(r.topProducts[1]).toEqual({ name: 'Brownies Klasik', quantity: 3, revenue: 51 })
+    expect(r.topProducts[0]).toEqual({ name: 'Kek Batik', quantity: 1, revenue: 60, profit: 34.5 })
+    expect(r.topProducts[1]).toEqual({ name: 'Brownies Klasik', quantity: 3, revenue: 51, profit: 27 })
     expect(r.bestDay).toEqual({ date: '2026-09-20', revenue: 60 })
+    expect(r.profit).toEqual({ cost: 49.5, profit: 61.5, margin: 55.4, missingCost: [] })
+  })
+
+  it('flags items with no cost and leaves them out of costs', async () => {
+    const { buildMonthReport } = await import('@/lib/calc/sales')
+    const r = buildMonthReport(
+      [
+        {
+          saleDate: '2026-10-04',
+          total: 90,
+          items: [
+            { name: 'Brownies Klasik 8″', quantity: 2, amount: 80, unitCost: 15 },
+            { name: 'Brownies Couple Set', quantity: 1, amount: 10, unitCost: null },
+          ],
+        },
+      ],
+      '2026-10'
+    )
+    expect(r.profit).toEqual({ cost: 30, profit: 60, margin: 66.7, missingCost: ['Brownies Couple Set'] })
+    expect(r.topProducts.find((p) => p.name === 'Brownies Couple Set')?.profit).toBeNull()
+  })
+
+  it('uses the cost a product had on the day of the sale', async () => {
+    const { costOnDate } = await import('@/lib/calc/sales')
+    const history = [
+      { effectiveFrom: '2026-09-01T03:00:00Z', unitCost: 10 },
+      { effectiveFrom: '2026-10-15T08:00:00Z', unitCost: 12 },
+    ]
+    expect(costOnDate(history, '2026-09-20')).toBe(10)
+    expect(costOnDate(history, '2026-10-15')).toBe(12)
+    expect(costOnDate(history, '2026-11-01')).toBe(12)
+    // Sold before any cost was entered: the first cost entered afterwards.
+    expect(costOnDate(history, '2026-08-10')).toBe(10)
+    // RM0 counts as "not entered".
+    expect(costOnDate([{ effectiveFrom: '2026-09-01T00:00:00Z', unitCost: 0 }, { effectiveFrom: '2026-10-20T00:00:00Z', unitCost: 14 }], '2026-09-04')).toBe(14)
+    expect(costOnDate([{ effectiveFrom: '2026-09-01T00:00:00Z', unitCost: 0 }], '2026-09-04')).toBeNull()
+    expect(costOnDate([], '2026-09-04')).toBeNull()
   })
 
   it('compares with the month before', async () => {

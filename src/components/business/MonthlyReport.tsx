@@ -19,7 +19,7 @@ const monthLabel = (month: string) =>
 
 /** A month of sales: totals vs the month before, sales per day, and best sellers. */
 export function MonthlyReport({ report, currentMonth, money }: Props) {
-  const { month, totals, previous, days, topProducts, bestDay, wasteValue } = report
+  const { month, totals, profit, previous, days, topProducts, bestDay, wasteValue } = report
   const change = percentChange(totals.revenue, previous.revenue)
   const isCurrent = month === currentMonth
   const peak = Math.max(...days.map((d) => d.revenue), 0)
@@ -66,6 +66,33 @@ export function MonthlyReport({ report, currentMonth, money }: Props) {
 
       {hasSales ? (
         <>
+          {/* Gross profit: sales minus what the items sold cost to make. */}
+          <div className="mt-5 grid grid-cols-3 gap-2 text-center">
+            <div className="rounded-card bg-base-soft px-2 py-2.5">
+              <p className="text-[11px] text-ink-muted">Sales</p>
+              <p className="font-display text-base text-ink">{money(totals.revenue)}</p>
+            </div>
+            <div className="rounded-card bg-base-soft px-2 py-2.5">
+              <p className="text-[11px] text-ink-muted">Costs</p>
+              <p className="font-display text-base text-ink">− {money(profit.cost)}</p>
+            </div>
+            <div className={clsx('rounded-card px-2 py-2.5', profit.profit >= 0 ? 'bg-sage-soft' : 'bg-clay-soft')}>
+              <p className="text-[11px] text-ink-muted">Profit{profit.margin !== null && ` · ${profit.margin}%`}</p>
+              <p className={clsx('font-display text-base', profit.profit >= 0 ? 'text-sage-dark' : 'text-clay-dark')}>{money(profit.profit)}</p>
+            </div>
+          </div>
+          {profit.missingCost.length > 0 && (
+            <p className="mt-2 rounded-card bg-amber-soft px-3 py-2 text-xs text-amber-dark">
+              ⚠️ {profit.missingCost.length} item{profit.missingCost.length === 1 ? ' has' : 's have'} no cost entered, so profit looks higher than it is:{' '}
+              {profit.missingCost.slice(0, 4).join(', ')}
+              {profit.missingCost.length > 4 && ` and ${profit.missingCost.length - 4} more`}. Add costs in{' '}
+              <Link href="/business/products" className="font-medium underline">
+                Products
+              </Link>
+              .
+            </p>
+          )}
+
           {/* Sales per day: one bar per day, height relative to the best day. */}
           <div className="mt-5">
             <div className="flex h-28 items-end gap-[2px]" role="img" aria-label={`Sales per day in ${monthLabel(month)}`}>
@@ -103,8 +130,11 @@ export function MonthlyReport({ report, currentMonth, money }: Props) {
                       <span className="mr-2 text-ink-faint">{index + 1}.</span>
                       {p.name}
                     </span>
-                    <span className="shrink-0 text-ink-muted">
+                    <span className="shrink-0 text-right text-ink-muted">
                       {p.quantity} sold · {money(p.revenue)}
+                      <span className={clsx('block text-xs', p.profit === null ? 'text-ink-faint' : p.profit >= 0 ? 'text-sage-dark' : 'text-clay-dark')}>
+                        {p.profit === null ? 'no cost entered' : `${money(p.profit)} profit`}
+                      </span>
                     </span>
                   </li>
                 ))}
@@ -123,7 +153,8 @@ export function MonthlyReport({ report, currentMonth, money }: Props) {
       )}
 
       <p className="mt-4 text-xs text-ink-muted">
-        Sales count on the day an order is completed. Best-seller amounts are before order discounts and delivery fees.
+        Sales count on the day an order is completed. Profit is sales minus what the products cost to make (each at the cost it had on
+        the day of the sale), not rent or other bills. Best-seller amounts are before order discounts and delivery fees.
       </p>
     </Card>
   )
