@@ -46,8 +46,6 @@ export default async function ProductsPage({ searchParams }: { searchParams: { c
         <LinkButton href="/business/products/new">Add product</LinkButton>
       </header>
 
-      <ReadyStockList items={readyStock} title="Ready stock" wide />
-
       {products.length === 0 ? (
         <Card>
           <p className="text-sm text-ink-muted">
@@ -107,6 +105,9 @@ export default async function ProductsPage({ searchParams }: { searchParams: { c
             </p>
           )}
         </div>
+
+        {/* Out of the way while searching or filtering, so results come first. */}
+        {!isFiltered && <ReadyStockList items={readyStock} title="Ready stock" wide />}
 
         {shown.length === 0 ? (
           <Card>

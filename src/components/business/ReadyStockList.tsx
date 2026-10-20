@@ -3,6 +3,7 @@ import clsx from '@/lib/clsx'
 import { readyStockLabel } from '@/lib/calc/products'
 import type { ReadyStockItem } from '@/lib/services/products'
 import { Card } from '@/components/ui/Card'
+import { ReadyStockStepper } from './ReadyStockStepper'
 
 interface Props {
   items: ReadyStockItem[]
@@ -13,7 +14,7 @@ interface Props {
   wide?: boolean
 }
 
-/** What's baked and ready to sell right now. One row per product; each row opens the product. */
+/** What's baked and ready to sell right now. One row per product: tap the name to open it, or − / + to adjust. */
 export function ReadyStockList({ items, title = 'Ready to sell', limit, wide = false }: Props) {
   if (items.length === 0) return null
   const inStock = items.filter((i) => i.readyStock > 0)
@@ -36,14 +37,14 @@ export function ReadyStockList({ items, title = 'Ready to sell', limit, wide = f
         {shown.map((item) => {
           const available = item.readyStock > 0
           return (
-            <li key={item.id}>
-              <Link
-                href={`/business/products/${item.id}`}
-                className={clsx(
-                  'flex h-full items-center gap-3 rounded-card border px-3 py-2.5 transition-colors',
-                  available ? 'border-ink/10 bg-base-card hover:border-raspberry/40 hover:bg-base-soft' : 'border-ink/5 bg-base-soft/60'
-                )}
-              >
+            <li
+              key={item.id}
+              className={clsx(
+                'flex items-center gap-2 rounded-card border py-2 pl-3 pr-2',
+                available ? 'border-ink/10 bg-base-card' : 'border-ink/5 bg-base-soft/60'
+              )}
+            >
+              <Link href={`/business/products/${item.id}`} className="flex min-w-0 flex-1 items-center gap-3">
                 {item.imageUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
@@ -63,18 +64,16 @@ export function ReadyStockList({ items, title = 'Ready to sell', limit, wide = f
                 <span className="min-w-0 flex-1 leading-snug">
                   <span className={clsx('block text-sm font-medium', available ? 'text-ink' : 'text-ink-muted')}>{item.name}</span>
                   {item.category && <span className="block text-xs text-ink-muted">{item.category}</span>}
+                  {!available && <span className="block text-xs font-medium text-clay-dark">{readyStockLabel(item.readyStock)}</span>}
                 </span>
-                {available ? (
-                  <span className="shrink-0 text-right leading-none">
-                    <span className="block font-display text-2xl text-ink">{item.readyStock}</span>
-                    <span className="mt-0.5 block text-[11px] text-sage-dark">ready</span>
-                  </span>
-                ) : (
-                  <span className="shrink-0 rounded-pill bg-clay-soft px-2.5 py-1 text-xs font-medium text-clay-dark">
-                    {readyStockLabel(item.readyStock)}
-                  </span>
-                )}
               </Link>
+              {/* key: start again from the server's number after a refresh */}
+              <ReadyStockStepper
+                key={`${item.id}-${item.readyStock}`}
+                productId={item.id}
+                productName={item.name}
+                initialStock={item.readyStock}
+              />
             </li>
           )
         })}
