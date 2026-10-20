@@ -10,10 +10,12 @@ interface TaskRowProps {
   title: string
   status: TaskStatus
   isPriority?: boolean
+  /** A small label after the title, e.g. "Next" or "Overdue". */
+  tag?: string
 }
 
 /** One task in a list. Tap the circle to tick it off (or undo). */
-export function TaskRow({ id, title, status, isPriority }: TaskRowProps) {
+export function TaskRow({ id, title, status, isPriority, tag }: TaskRowProps) {
   const [pending, setPending] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const done = status === 'completed'
@@ -60,6 +62,16 @@ export function TaskRow({ id, title, status, isPriority }: TaskRowProps) {
         <span className={clsx('min-w-0 flex-1 break-words text-sm', done || status === 'skipped' ? 'text-ink-faint line-through' : 'text-ink')}>
           {title}
         </span>
+        {tag && status !== 'completed' && status !== 'skipped' && (
+          <span
+            className={clsx(
+              'shrink-0 rounded-pill px-2 py-0.5 text-[11px] font-medium',
+              tag === 'Overdue' ? 'bg-clay-soft text-clay-dark' : 'bg-raspberry-soft text-raspberry-dark'
+            )}
+          >
+            {tag}
+          </span>
+        )}
         {status === 'in_progress' && <span className="text-xs font-medium text-raspberry-dark">In progress</span>}
         {status === 'paused' && <span className="text-xs font-medium text-amber-dark">Paused</span>}
         {status === 'skipped' && <span className="text-xs text-ink-faint">Skipped</span>}

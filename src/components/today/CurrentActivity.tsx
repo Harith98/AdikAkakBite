@@ -4,7 +4,6 @@ import { ProgressBar } from '@/components/ui/ProgressBar'
 import { formatTime12 } from '@/lib/time'
 import type { RecommendedTask } from '@/lib/services/types'
 import type { BlockProgress, ScheduleBlockLike, TaskLike } from '@/lib/services/schedule'
-import { TaskControls } from './TaskControls'
 import { TaskRow } from './TaskRow'
 
 interface CurrentActivityProps {
@@ -19,64 +18,62 @@ interface CurrentActivityProps {
   nextBlock: ScheduleBlockLike | null
 }
 
-export function CurrentActivity({
-  time,
-  block,
-  blockTasks,
-  progress,
-  recommendation,
-  focusTask,
-  deprioritized,
-  nextBlock,
-}: CurrentActivityProps) {
+/**
+ * The current schedule block at a glance: where you are, how far along, and
+ * its tasks. Informational — ticking a task's circle is the only action. The
+ * recommended task is marked "Next" in the list instead of repeated in a panel.
+ */
+export function CurrentActivity({ time, block, blockTasks, progress, focusTask, deprioritized, nextBlock }: CurrentActivityProps) {
+  // A recommended task from outside this block (e.g. an overdue priority) joins the list at the top.
+  const outside = focusTask && !blockTasks.some((t) => t.id === focusTask.id) ? focusTask : null
+  const tasks = outside ? [outside, ...blockTasks] : blockTasks
+  const open = tasks.filter((t) => t.status !== 'completed' && t.status !== 'skipped').length
+
   return (
     <Card>
       <p className="text-xs font-medium uppercase tracking-wide text-ink-faint">Right now · {formatTime12(time)}</p>
 
       {block ? (
         <div className="mt-2">
-          <p className="font-display text-2xl text-ink">{block.title}</p>
-          <p className="mt-0.5 text-sm text-ink-muted">
-            {formatTime12(block.startTime)} – {formatTime12(block.endTime)}
-          </p>
+          <div className="flex flex-wrap items-baseline justify-between gap-x-3">
+            <p className="font-display text-2xl text-ink">{block.title}</p>
+            <p className="text-sm text-ink-muted">
+              {formatTime12(block.startTime)} – {formatTime12(block.endTime)}
+            </p>
+          </div>
           {progress && <ProgressBar className="mt-3" percent={progress.percent} label={progress.label} />}
         </div>
       ) : (
         <p className="mt-2 font-display text-2xl text-ink">Nothing scheduled right now</p>
       )}
 
-      {/* What to do next, and why (spec §12). */}
-      <div className="mt-4 rounded-card bg-base-soft p-4">
-        <p className="text-xs font-medium uppercase tracking-wide text-ink-faint">
-          {deprioritized ? 'Order first' : 'Next up'}
-        </p>
-        <p className="mt-1 text-lg font-medium text-ink">{recommendation.title}</p>
-        <p className="mt-1 text-sm text-ink-muted">{recommendation.reason}</p>
-        {!deprioritized && focusTask && <TaskControls taskId={focusTask.id} status={focusTask.status} />}
-      </div>
-
       {deprioritized && (
-        <p className="mt-3 text-sm text-ink-muted">
-          Your normal tasks are still here and will be waiting when the order is done.
+        <p className="mt-3 rounded-card bg-clay-soft px-3 py-2 text-sm text-clay-dark">
+          An order is due soon. It&apos;s at the top of the page; these tasks will wait.
         </p>
       )}
 
-      {blockTasks.length > 0 && (
-        <ul className={clsx('mt-4 flex flex-col', deprioritized && 'opacity-60')}>
-          {blockTasks.map((task) => (
+      {tasks.length > 0 ? (
+        <ul className={clsx('mt-3 flex flex-col', deprioritized && 'opacity-60')}>
+          {tasks.map((task) => (
             <TaskRow
               key={task.id}
               id={task.id}
               title={task.title}
               status={task.status}
               isPriority={task.dailyPriorityRank !== null}
+              tag={task.id === outside?.id ? 'Overdue' : !deprioritized && task.id === focusTask?.id ? 'Next' : undefined}
             />
           ))}
         </ul>
+      ) : (
+        block && <p className="mt-3 text-sm text-ink-muted">No tasks in this block.</p>
       )}
 
+      {tasks.length > 0 && open === 0 && <p className="mt-2 text-sm font-medium text-sage-dark">✓ All done for this block</p>}
+
       {nextBlock && (
-        <p className="mt-4 text-xs text-ink-faint">
+        <p className="mt-3 text-xs text-ink-faint">
           Then: {nextBlock.title} at {formatTime12(nextBlock.startTime)}
         </p>
       )}
