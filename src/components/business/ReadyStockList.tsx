@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { productThumbUrl } from '@/lib/product-images'
 import clsx from '@/lib/clsx'
 import { readyStockLabel } from '@/lib/calc/products'
 import type { ReadyStockItem } from '@/lib/services/products'
@@ -49,7 +50,7 @@ export function ReadyStockList({ items, title = 'Ready stock', limit, wide = fal
                 {item.imageUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
-                    src={item.imageUrl}
+                    src={productThumbUrl(item.imageUrl) ?? ''}
                     alt=""
                     loading="lazy"
                     className={clsx('h-11 w-11 shrink-0 rounded-card object-cover', !available && 'opacity-50 grayscale')}

@@ -1521,7 +1521,7 @@ create policy "people can see their own notification preferences"
 -- to be shown); who may upload or delete is limited by the policies below.
 -- ============================================================================
 
--- ---- product-images: <business_id>/<random>.jpg, resized in the browser ----
+-- ---- product-images: <business_id>/<id>_full.jpg + a small <id>_thumb.jpg --
 
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
 values ('product-images', 'product-images', true, 5242880, array['image/jpeg', 'image/png', 'image/webp'])

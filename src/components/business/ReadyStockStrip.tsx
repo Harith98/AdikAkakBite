@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { productThumbUrl } from '@/lib/product-images'
 import clsx from '@/lib/clsx'
 import type { ReadyStockItem } from '@/lib/services/products'
 import { Card } from '@/components/ui/Card'
@@ -34,7 +35,7 @@ export function ReadyStockStrip({ items }: { items: ReadyStockItem[] }) {
                   {item.imageUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
-                      src={item.imageUrl}
+                      src={productThumbUrl(item.imageUrl) ?? ''}
                       alt=""
                       loading="lazy"
                       className={clsx('h-full w-full object-cover', !available && 'opacity-50 grayscale')}

@@ -1,4 +1,6 @@
 import Link from 'next/link'
+import { productThumbUrl } from '@/lib/product-images'
+import { BackLink } from '@/components/ui/PageHeader'
 import { notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { getCurrentBusinessContext } from '@/lib/services/current-business'
@@ -40,19 +42,11 @@ export default async function ProductPage({ params, searchParams }: { params: { 
   return (
     <div className="flex max-w-2xl flex-col gap-6">
       <header className="flex flex-col gap-3">
-        <Link
-          href="/business/products"
-          className="-ml-1 inline-flex w-fit items-center gap-1 rounded-pill px-2 py-1 text-sm text-ink-muted transition-colors hover:bg-ink/5 hover:text-ink"
-        >
-          <span aria-hidden="true" className="text-base leading-none">
-            ‹
-          </span>
-          Products
-        </Link>
+        <BackLink href="/business/products" label="Products" />
         <div className="flex items-center gap-4">
           {product.imageUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={product.imageUrl} alt="" className="h-16 w-16 shrink-0 rounded-card bg-base-soft object-cover" />
+            <img src={productThumbUrl(product.imageUrl) ?? ''} alt="" className="h-16 w-16 shrink-0 rounded-card bg-base-soft object-cover" />
           ) : (
             <span aria-hidden="true" className="flex h-16 w-16 shrink-0 items-center justify-center rounded-card bg-base-soft text-3xl">
               🧁

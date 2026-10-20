@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { productThumbUrl } from '@/lib/product-images'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { SectionLabel } from '@/components/ui/SectionLabel'
 import { createClient } from '@/lib/supabase/server'
@@ -124,7 +125,7 @@ export default async function ContentPage({ searchParams }: { searchParams: { mo
         <div className="mt-3 flex items-start gap-3">
           {suggestion.imageUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={suggestion.imageUrl} alt="" className="h-16 w-16 shrink-0 rounded-card object-cover shadow-card" />
+            <img src={productThumbUrl(suggestion.imageUrl) ?? ''} alt="" className="h-16 w-16 shrink-0 rounded-card object-cover shadow-card" />
           ) : (
             <span aria-hidden="true" className="flex h-16 w-16 shrink-0 items-center justify-center rounded-card bg-white text-3xl shadow-card">
               {suggestion.emoji}

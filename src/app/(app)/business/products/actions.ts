@@ -5,7 +5,7 @@ import { redirect } from 'next/navigation'
 import type { Database } from '@/lib/supabase/database.types'
 import { getActionContext } from '@/lib/services/action-context'
 import { parseProductForm } from '@/lib/validation/products'
-import { PRODUCT_IMAGE_BUCKET, productImagePath } from '@/lib/product-images'
+import { PRODUCT_IMAGE_BUCKET, productImagePath, productThumbUrl } from '@/lib/product-images'
 import { recipeCostPerUnit } from '@/lib/calc/recipes'
 import { getRecipe } from '@/lib/services/recipes'
 import { alertNewlyLowStock, snapshotStock } from '@/lib/notifications/low-stock'
@@ -231,7 +231,9 @@ export async function changeReadyStock(productId: string, change: ReadyStockChan
 async function removeProductImage(supabase: any, url: string) {
   const path = productImagePath(url, process.env.NEXT_PUBLIC_SUPABASE_URL)
   if (!path) return
-  const { error } = await supabase.storage.from(PRODUCT_IMAGE_BUCKET).remove([path])
+  // Its small copy too, when it has one.
+  const thumb = productImagePath(productThumbUrl(url), process.env.NEXT_PUBLIC_SUPABASE_URL)
+  const { error } = await supabase.storage.from(PRODUCT_IMAGE_BUCKET).remove(thumb && thumb !== path ? [path, thumb] : [path])
   if (error) console.error('Could not delete the old product photo:', error.message)
 }
 

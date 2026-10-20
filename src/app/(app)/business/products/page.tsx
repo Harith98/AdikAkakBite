@@ -1,4 +1,5 @@
 import { PageHeader } from '@/components/ui/PageHeader'
+import { productThumbUrl } from '@/lib/product-images'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { getCurrentBusinessContext } from '@/lib/services/current-business'
@@ -159,7 +160,7 @@ function ProductTile({ product: p, money }: { product: ProductView; money: (n: n
         <span className="relative block aspect-square w-full bg-base-soft">
           {p.imageUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={p.imageUrl} alt="" loading="lazy" className="h-full w-full object-cover" />
+            <img src={productThumbUrl(p.imageUrl) ?? ''} alt="" loading="lazy" className="h-full w-full object-cover" />
           ) : (
             <span aria-hidden="true" className="flex h-full w-full items-center justify-center text-5xl">
               🧁

@@ -2,7 +2,7 @@
 
 import { useRef, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { PRODUCT_IMAGE_BUCKET, PRODUCT_IMAGE_MAX_SIZE } from '@/lib/product-images'
+import { PRODUCT_IMAGE_BUCKET, PRODUCT_IMAGE_MAX_SIZE, PRODUCT_THUMB_MAX_SIZE, productImageFileNames } from '@/lib/product-images'
 import { Button } from '@/components/ui/Button'
 import { resizeToJpeg } from '@/lib/resize-image'
 
@@ -34,14 +34,24 @@ export function ProductImagePicker({ businessId, initialUrl, onUploadingChange }
     setError(null)
     setBusy(true)
     try {
-      const blob = await resizeToJpeg(file, { maxSize: PRODUCT_IMAGE_MAX_SIZE })
-      const path = `${businessId}/${crypto.randomUUID()}.jpg`
+      // The photo, plus a small copy for grids and lists (named to match, see productThumbUrl).
+      const [blob, thumb] = await Promise.all([
+        resizeToJpeg(file, { maxSize: PRODUCT_IMAGE_MAX_SIZE }),
+        resizeToJpeg(file, { maxSize: PRODUCT_THUMB_MAX_SIZE }),
+      ])
+      const paths = productImageFileNames(businessId, crypto.randomUUID())
       const supabase = createClient()
-      const { error: uploadError } = await supabase.storage
-        .from(PRODUCT_IMAGE_BUCKET)
-        .upload(path, blob, { contentType: 'image/jpeg', cacheControl: '31536000', upsert: false })
-      if (uploadError) throw uploadError
-      setUrl(supabase.storage.from(PRODUCT_IMAGE_BUCKET).getPublicUrl(path).data.publicUrl)
+      const bucket = supabase.storage.from(PRODUCT_IMAGE_BUCKET)
+      const options = { contentType: 'image/jpeg', cacheControl: '31536000', upsert: false }
+      // Small copy first: once the photo exists, its small copy always does too.
+      const { error: thumbError } = await bucket.upload(paths.thumb, thumb, options)
+      if (thumbError) throw thumbError
+      const { error: uploadError } = await bucket.upload(paths.full, blob, options)
+      if (uploadError) {
+        await bucket.remove([paths.thumb])
+        throw uploadError
+      }
+      setUrl(bucket.getPublicUrl(paths.full).data.publicUrl)
     } catch (err) {
       const message = err instanceof Error ? err.message : ''
       setError(
