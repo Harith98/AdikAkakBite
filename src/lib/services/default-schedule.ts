@@ -136,7 +136,6 @@ export function buildDefaultScheduleBlocks(businessId: string): ScheduleBlockIns
         'Clean workspace',
         'Organize stock',
         'Record sales',
-        'Record waste',
         'Review unfinished tasks',
         'Prepare tomorrow',
       ],

@@ -19,9 +19,9 @@ export function PageHeader({ back, title, subtitle, action, children }: PageHead
       {back && (
         <Link
           href={back.href}
-          className="-ml-1 inline-flex w-fit items-center gap-1 rounded-pill px-2 py-1 text-sm text-ink-muted transition-colors hover:bg-ink/5 hover:text-ink"
+          className="inline-flex w-fit items-center gap-1.5 rounded-pill bg-raspberry-soft py-1.5 pl-2.5 pr-3.5 text-sm font-medium text-raspberry-dark transition-colors hover:bg-raspberry-soft/70 active:scale-[0.97]"
         >
-          <span aria-hidden="true" className="text-base leading-none">
+          <span aria-hidden="true" className="-mt-0.5 text-lg leading-none">
             ‹
           </span>
           {back.label}

@@ -28,12 +28,12 @@ export default async function SalesPage({ searchParams }: { searchParams: { mont
     <div className="flex max-w-2xl flex-col gap-6">
       <PageHeader back={{ href: '/business', label: 'Business' }} title="Sales" subtitle="Revenue is calculated live from completed orders." />
 
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+      <div className="grid grid-cols-2 gap-3">
         {summary.map((period) => (
           <Card key={period.label}>
             <SectionLabel icon="💰">{period.label}</SectionLabel>
-            <p className="mt-1 font-display text-3xl text-ink">{money(period.totals.revenue)}</p>
-            <p className="mt-1 text-sm text-ink-muted">
+            <p className="mt-1 break-words font-display text-2xl text-ink sm:text-3xl">{money(period.totals.revenue)}</p>
+            <p className="mt-1 text-xs text-ink-muted sm:text-sm">
               {period.totals.orders} order{period.totals.orders === 1 ? '' : 's'} · avg {money(period.totals.averageOrderValue)}
             </p>
           </Card>

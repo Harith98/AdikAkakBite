@@ -17,26 +17,21 @@ import { getCompletedOrdersInRange } from './orders'
 type Client = SupabaseClient<Database>
 
 export interface SalesPeriod {
-  label: 'Today' | 'This week' | 'This month'
+  label: 'Today' | 'This week'
   startDate: string
   endDate: string
   totals: SalesTotals
 }
 
 /**
- * Today / this week (Mon–Sun) / this month, each computed live from
- * completed orders — never stored, so it can't drift (spec §21). Discounts
- * and delivery fees are already folded into each order's `total`
+ * Today and this week (Mon–Sun), computed live from completed orders — never
+ * stored, so it can't drift. (The month is the monthly report below them.)
+ * Discounts and delivery fees are already folded into each order's `total`
  * (calculateOrderTotals), so summing totals is correct without re-adding them.
  */
 export async function getSalesSummary(supabase: Client, businessId: string, today: string): Promise<SalesPeriod[]> {
-  const monthStart = `${today.slice(0, 7)}-01`
   const weekStart = mondayOf(today)
-  // Early in a month the week began last month, so the week is NOT a subset of
-  // the month. Fetch once from whichever starts first and split in memory.
-  const rangeStart = weekStart < monthStart ? weekStart : monthStart
-
-  const orders = await getCompletedOrdersInRange(supabase, businessId, rangeStart, today)
+  const orders = await getCompletedOrdersInRange(supabase, businessId, weekStart, today)
 
   const rows = orders.map((o) => ({
     saleDate: o.completed_on,
@@ -51,7 +46,6 @@ export async function getSalesSummary(supabase: Client, businessId: string, toda
   return [
     { label: 'Today', startDate: today, endDate: today, totals: since(today) },
     { label: 'This week', startDate: weekStart, endDate: today, totals: since(weekStart) },
-    { label: 'This month', startDate: monthStart, endDate: today, totals: since(monthStart) },
   ]
 }
 
