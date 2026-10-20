@@ -70,6 +70,7 @@ export interface Database {
           instagram_url: string | null
           facebook_url: string | null
           tiktok_url: string | null
+          threads_url: string | null
           created_at: string
           updated_at: string
         }
@@ -87,6 +88,7 @@ export interface Database {
           instagram_url?: string | null
           facebook_url?: string | null
           tiktok_url?: string | null
+          threads_url?: string | null
           created_at?: string
           updated_at?: string
         }

@@ -83,6 +83,7 @@ export const EXPECTED_MIGRATIONS: { id: string; file: string; purpose: string }[
   { id: '0025', file: '0025_member_avatars.sql', purpose: 'Team photos' },
   { id: '0026', file: '0026_product_nicknames.sql', purpose: 'Product nicknames' },
   { id: '0027', file: '0027_social_links.sql', purpose: 'Social links on the menu' },
+  { id: '0028', file: '0028_threads_link.sql', purpose: 'Threads link on the menu' },
 ]
 
 /** The ones not applied yet, oldest first. */

@@ -34,6 +34,7 @@ export default async function BusinessDetailsPage() {
               instagramUrl: business.instagram_url ?? null,
               facebookUrl: business.facebook_url ?? null,
               tiktokUrl: business.tiktok_url ?? null,
+              threadsUrl: business.threads_url ?? null,
             }}
           />
         ) : (

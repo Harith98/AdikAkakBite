@@ -41,16 +41,18 @@ export async function updateBusinessDetails(_prev: BusinessDetailsState, formDat
   if (values.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(values.email)) return fail('Enter a valid email address.')
 
   // Social pages for the customer menu: "@handle" or a link, stored as clean https links.
-  const social: Partial<Record<'instagram_url' | 'facebook_url' | 'tiktok_url', string | null>> = {}
-  for (const platform of ['instagram', 'facebook', 'tiktok'] as const) {
+  const social: Partial<Record<'instagram_url' | 'facebook_url' | 'tiktok_url' | 'threads_url', string | null>> = {}
+  for (const platform of ['instagram', 'facebook', 'tiktok', 'threads'] as const) {
     const raw = str(formData, platform)
     if (raw.length > 200) return fail('One of the social links is too long.')
     const result = normalizeSocialLink(platform, raw)
     if (!result.ok) return fail(result.error)
     social[`${platform}_url`] = result.url
   }
-  // Only sent when there's something to save or clear, so details still save before migration 0027.
-  const sendSocial = Object.values(social).some(Boolean) || formData.get('hadSocial') === '1'
+  // Only sent when there's something to save or clear, so details still save before migrations 0027/0028.
+  const { threads_url, ...older } = social
+  const sendSocial = Object.values(older).some(Boolean) || formData.get('hadSocial') === '1'
+  const sendThreads = Boolean(threads_url) || formData.get('hadThreads') === '1'
 
   const ctx = await getActionContext()
   if (!ctx.ok) return fail(ctx.error)
@@ -66,7 +68,8 @@ export async function updateBusinessDetails(_prev: BusinessDetailsState, formDat
       address: values.address || null,
       registration_number: values.registrationNumber || null,
       receipt_footer: values.receiptFooter || null,
-      ...(sendSocial ? social : {}),
+      ...(sendSocial ? older : {}),
+      ...(sendThreads ? { threads_url } : {}),
     })
     .eq('id', ctx.businessId)
     .select('id')

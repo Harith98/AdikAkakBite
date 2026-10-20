@@ -29,6 +29,7 @@ PostgreSQL via Supabase. Migrations live in `supabase/migrations/`, numbered and
 25. `0025_member_avatars.sql` — `get_business_members()` also returns each member's `avatar_url` (https only) so the Team page shows everyone's photo.
 26. `0026_product_nicknames.sql` — `products.nicknames` (text[], up to 10): other names customers use, matched by the WhatsApp paste reader; an exact nickname wins over partial name matches.
 27. `0027_social_links.sql` — `businesses.instagram_url` / `facebook_url` / `tiktok_url` (clean https links; "@handle" is converted when saving), returned by `get_public_menu()` for the menu's follow-us buttons.
+28. `0028_threads_link.sql` — `businesses.threads_url`, also returned by `get_public_menu()`.
 
 ## Team roles
 

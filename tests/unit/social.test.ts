@@ -6,6 +6,13 @@ describe('normalizeSocialLink', () => {
     expect(normalizeSocialLink('instagram', '@adikakakbites')).toEqual({ ok: true, url: 'https://www.instagram.com/adikakakbites' })
     expect(normalizeSocialLink('instagram', 'instagram.com/adikakakbites/')).toEqual({ ok: true, url: 'https://www.instagram.com/adikakakbites' })
     expect(normalizeSocialLink('tiktok', 'adikakak.bites')).toEqual({ ok: true, url: 'https://www.tiktok.com/@adikakak.bites' })
+    expect(normalizeSocialLink('facebook', '@61575546909969')).toEqual({ ok: true, url: 'https://www.facebook.com/profile.php?id=61575546909969' })
+    expect(normalizeSocialLink('facebook', 'https://www.facebook.com/profile.php?id=61575546909969&mibextid=abc')).toEqual({
+      ok: true,
+      url: 'https://www.facebook.com/profile.php?id=61575546909969',
+    })
+    expect(normalizeSocialLink('threads', '@adikakak.bites')).toEqual({ ok: true, url: 'https://www.threads.net/@adikakak.bites' })
+    expect(normalizeSocialLink('threads', 'https://www.threads.com/@adikakak')).toEqual({ ok: true, url: 'https://www.threads.net/@adikakak' })
     expect(normalizeSocialLink('tiktok', 'https://www.tiktok.com/@adikakak')).toEqual({ ok: true, url: 'https://www.tiktok.com/@adikakak' })
     expect(normalizeSocialLink('facebook', 'https://m.facebook.com/AdikakakBites?ref=x')).toEqual({ ok: true, url: 'https://www.facebook.com/AdikakakBites' })
   })

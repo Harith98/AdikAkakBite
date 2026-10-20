@@ -59,6 +59,7 @@ export default async function SystemStatusPage() {
     status.migrations['0025'] = !members.error && (members.data ?? []).some((m) => 'avatar_url' in m)
     status.migrations['0026'] = !(await supabase.from('products').select('nicknames').limit(1)).error
     status.migrations['0027'] = !(await supabase.from('businesses').select('instagram_url').limit(1)).error
+    status.migrations['0028'] = !(await supabase.from('businesses').select('threads_url').limit(1)).error
   }
   const lastRun = (action: string) => (cronRes.data ?? []).find((r) => r.action === action)?.created_at ?? null
   const devices = devicesRes && !devicesRes.error ? devicesRes.count ?? 0 : null

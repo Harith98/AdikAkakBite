@@ -20,12 +20,14 @@ export interface BusinessDetails {
   instagramUrl?: string | null
   facebookUrl?: string | null
   tiktokUrl?: string | null
+  threadsUrl?: string | null
 }
 
 const SOCIAL = [
   { name: 'instagram', label: 'Instagram', key: 'instagramUrl', placeholder: '@adikakakbites' },
   { name: 'facebook', label: 'Facebook', key: 'facebookUrl', placeholder: 'facebook.com/adikakakbites' },
   { name: 'tiktok', label: 'TikTok', key: 'tiktokUrl', placeholder: '@adikakakbites' },
+  { name: 'threads', label: 'Threads', key: 'threadsUrl', placeholder: '@adikakakbites' },
 ] as const
 
 export function BusinessDetailsForm({ details }: { details: BusinessDetails }) {
@@ -76,6 +78,7 @@ export function BusinessDetailsForm({ details }: { details: BusinessDetails }) {
         <p className="text-sm font-medium text-ink">Social media</p>
         <p className="-mt-2 text-xs text-ink-faint">Shown as buttons on your customer menu. Type your @handle or paste the link.</p>
         {(details.instagramUrl || details.facebookUrl || details.tiktokUrl) && <input type="hidden" name="hadSocial" value="1" />}
+        {details.threadsUrl && <input type="hidden" name="hadThreads" value="1" />}
         {SOCIAL.map((s) => (
           <label key={s.name} className="flex flex-col gap-1 text-sm">
             <span className="text-ink-muted">{s.label}</span>
