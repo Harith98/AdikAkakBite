@@ -7,7 +7,7 @@ import { getBusinessNow } from '@/lib/time'
 import { buildWhatsAppOrderMessage } from '@/lib/whatsapp-order'
 import { isValidPhoneKey, normalizePhone } from '@/lib/customer-identity'
 
-const input = 'h-11 w-full rounded-card border border-ink/15 bg-base px-3 text-sm text-ink outline-none focus:border-raspberry'
+const input = 'h-11 w-full rounded-card border border-ink/15 bg-white px-3 text-sm text-ink outline-none transition-colors focus:border-raspberry focus:ring-2 focus:ring-raspberry/15'
 
 /**
  * The shop's order template as a form. "Send on WhatsApp" opens WhatsApp to the
@@ -73,7 +73,7 @@ export function MenuOrderForm({ whatsappNumber }: { whatsappNumber: string | nul
           rows={4}
           maxLength={1000}
           placeholder={'e.g.\n1 Batik Cake Indulgence Chocolate 8″\n2 Bento Brownies Klasik'}
-          className="w-full rounded-card border border-ink/15 bg-base p-3 text-sm text-ink outline-none focus:border-raspberry"
+          className="w-full rounded-card border border-ink/15 bg-white p-3 text-sm text-ink outline-none transition-colors focus:border-raspberry focus:ring-2 focus:ring-raspberry/15"
         />
       </Field>
 
@@ -94,7 +94,7 @@ export function MenuOrderForm({ whatsappNumber }: { whatsappNumber: string | nul
                 fulfilment === option ? 'bg-base-card text-ink shadow-card' : 'text-ink-muted'
               )}
             >
-              {option === 'pickup' ? 'Pickup' : 'COD'}
+              {option === 'pickup' ? '🏪 Pickup' : '🛵 COD'}
             </button>
           ))}
         </div>
@@ -108,7 +108,7 @@ export function MenuOrderForm({ whatsappNumber }: { whatsappNumber: string | nul
             rows={2}
             maxLength={300}
             autoComplete="street-address"
-            className="w-full rounded-card border border-ink/15 bg-base p-3 text-sm text-ink outline-none focus:border-raspberry"
+            className="w-full rounded-card border border-ink/15 bg-white p-3 text-sm text-ink outline-none transition-colors focus:border-raspberry focus:ring-2 focus:ring-raspberry/15"
           />
         </Field>
       )}
@@ -123,7 +123,7 @@ export function MenuOrderForm({ whatsappNumber }: { whatsappNumber: string | nul
         <button
           type="button"
           onClick={send}
-          className="flex h-14 w-full items-center justify-center gap-2 rounded-pill bg-[#25D366] text-base font-medium text-white transition-opacity hover:opacity-90"
+          className="flex h-14 w-full items-center justify-center gap-2 rounded-pill bg-[#25D366] text-base font-semibold text-white shadow-[0_6px_20px_rgba(37,211,102,0.35)] transition-transform hover:opacity-95 active:scale-[0.98]"
         >
           <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
             <path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2zm0 18.2a8.2 8.2 0 0 1-4.2-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1l-.8 1c-.1.2-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.3-.4.2-.4.7-1.3.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3 3 3 0 0 0-.9 2.2c0 1.3.9 2.5 1 2.7.1.2 1.8 2.8 4.4 3.9 1.6.7 2.3.8 3.1.6.5-.1 1.5-.6 1.7-1.2.2-.6.2-1.1.2-1.2-.1-.1-.3-.2-.5-.3z" />
