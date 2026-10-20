@@ -28,3 +28,4 @@ next-env.d.ts
 
 # testing
 /coverage
+supabase/seed/catalogue_2026_products.sql
