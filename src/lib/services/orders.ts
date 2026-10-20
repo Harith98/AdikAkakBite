@@ -161,3 +161,14 @@ export async function getUpcomingOrders(supabase: Client, businessId: string, to
   if (error) throw new Error(`Could not load upcoming orders: ${error.message}`)
   return toOrderViews((data ?? []) as unknown as OrderRowWithRelations[])
 }
+
+/** How many orders are in each tab, for the counts on the Orders page tabs. */
+export async function getOrderTabCounts(supabase: Client, businessId: string): Promise<Record<OrderFilter, number>> {
+  const count = (statuses: OrderStatus[] | null) => {
+    let q = supabase.from('orders').select('id', { count: 'exact', head: true }).eq('business_id', businessId)
+    if (statuses) q = q.in('status', statuses)
+    return q.then((r) => r.count ?? 0)
+  }
+  const [active, completed, cancelled, all] = await Promise.all([count(ACTIVE), count(['completed']), count(['cancelled']), count(null)])
+  return { active, completed, cancelled, all }
+}
