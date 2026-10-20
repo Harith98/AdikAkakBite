@@ -3,9 +3,10 @@ import { createClient } from '@/lib/supabase/server'
 import { getCurrentBusinessContext } from '@/lib/services/current-business'
 import { Card } from '@/components/ui/Card'
 import { ChangeEmailForm, ChangePasswordForm } from '@/components/settings/AccountSecurityForms'
+import { ProfileForm } from '@/components/settings/ProfileForm'
 
 export default async function AccountPage({ searchParams }: { searchParams: { email?: string } }) {
-  await getCurrentBusinessContext() // members only, same as the rest of Settings
+  const { displayName } = await getCurrentBusinessContext() // members only, same as the rest of Settings
   // Middleware has already verified this session for the request.
   const {
     data: { session },
@@ -19,9 +20,14 @@ export default async function AccountPage({ searchParams }: { searchParams: { em
         <Link href="/settings" className="text-sm text-ink-muted">
           ← Settings
         </Link>
-        <p className="mt-2 font-display text-3xl text-ink">Email &amp; password</p>
-        <p className="mt-1 text-sm text-ink-muted">How you sign in to the app.</p>
+        <p className="mt-2 font-display text-3xl text-ink">Your account</p>
+        <p className="mt-1 text-sm text-ink-muted">Your name, and how you sign in to the app.</p>
       </header>
+
+      <Card>
+        <p className="mb-3 text-xs font-medium uppercase tracking-wide text-ink-faint">Name</p>
+        <ProfileForm displayName={displayName} email={null} />
+      </Card>
 
       {searchParams.email === 'confirmed' && (
         <Card className="border border-sage/40">

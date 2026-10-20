@@ -4,6 +4,11 @@ import type { Config } from 'tailwindcss'
 // See docs/architecture.md for the rationale behind this palette.
 const config: Config = {
   content: ['./src/**/*.{ts,tsx}'],
+  future: {
+    // On phones a tapped card kept its hover colour (it looked selected). Hover
+    // styles now only apply on devices that can actually hover (mouse, trackpad).
+    hoverOnlyWhenSupported: true,
+  },
   theme: {
     extend: {
       colors: {
