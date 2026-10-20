@@ -1,4 +1,5 @@
-import Link from 'next/link'
+import { PageHeader } from '@/components/ui/PageHeader'
+import { SectionLabel } from '@/components/ui/SectionLabel'
 import { redirect } from 'next/navigation'
 import { createClient, createServiceRoleClient } from '@/lib/supabase/server'
 import { getCurrentBusinessContext } from '@/lib/services/current-business'
@@ -108,13 +109,7 @@ export default async function SystemStatusPage() {
 
   return (
     <div className="flex max-w-2xl flex-col gap-6">
-      <header>
-        <Link href="/settings" className="text-sm text-ink-muted">
-          ← Settings
-        </Link>
-        <p className="mt-2 font-display text-3xl text-ink">System status</p>
-        <p className="mt-1 text-sm text-ink-muted">Usage against the free plans, and anything that needs fixing. Only you (the owner) can see this.</p>
-      </header>
+      <PageHeader back={{ href: '/settings', label: 'Settings' }} title="System status" subtitle="Usage against the free plans, and anything that needs fixing. Only you (the owner) can see this." />
 
       <Card className={problems === 0 ? '!border-sage/40 !bg-sage-soft/40' : '!border-clay/40 !bg-clay-soft/40'}>
         <p className={clsx('font-medium', problems === 0 ? 'text-sage-dark' : 'text-clay-dark')}>
@@ -135,7 +130,7 @@ export default async function SystemStatusPage() {
 
       <Card>
         <div className="flex items-baseline justify-between gap-3">
-          <p className="text-xs font-medium uppercase tracking-wide text-ink-faint">Supabase · free plan</p>
+          <SectionLabel icon="🐘">Supabase · free plan</SectionLabel>
           <a href={`${supabaseDashboard}/usage`} target="_blank" rel="noopener noreferrer" className="text-sm font-medium text-raspberry-dark">
             Usage ↗
           </a>
@@ -174,7 +169,7 @@ export default async function SystemStatusPage() {
       </Card>
 
       <Card>
-        <p className="text-xs font-medium uppercase tracking-wide text-ink-faint">Daily jobs (Vercel Cron)</p>
+        <SectionLabel icon="⏰">Daily jobs (Vercel Cron)</SectionLabel>
         <ul className="mt-3 flex flex-col gap-2.5 text-sm">
           {[
             { label: 'Order reminders', when: '8am', action: CRON_ACTIONS.orderReminders },
@@ -198,7 +193,7 @@ export default async function SystemStatusPage() {
 
       <Card>
         <div className="flex items-baseline justify-between gap-3">
-          <p className="text-xs font-medium uppercase tracking-wide text-ink-faint">Vercel · Hobby plan</p>
+          <SectionLabel icon="▲">Vercel · Hobby plan</SectionLabel>
           <a href="https://vercel.com/dashboard" target="_blank" rel="noopener noreferrer" className="text-sm font-medium text-raspberry-dark">
             Dashboard ↗
           </a>
@@ -217,7 +212,7 @@ export default async function SystemStatusPage() {
       </Card>
 
       <Card>
-        <p className="text-xs font-medium uppercase tracking-wide text-ink-faint">If something breaks</p>
+        <SectionLabel icon="🛟">If something breaks</SectionLabel>
         <div className="mt-2 flex flex-col divide-y divide-ink/5 text-sm">
           {TROUBLESHOOTING.map((item) => (
             <details key={item.problem} className="group py-2.5">

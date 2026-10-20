@@ -11,13 +11,15 @@ export interface CategoryStyle {
   text: string
   /** Solid left stripe. */
   stripe: string
+  /** Text colour for accents drawn in currentColor (the progress ring). */
+  accent: string
 }
 
-const PINK: Omit<CategoryStyle, 'emoji'> = { soft: 'bg-raspberry-soft', text: 'text-raspberry-dark', stripe: '!border-l-raspberry' }
-const BUTTER: Omit<CategoryStyle, 'emoji'> = { soft: 'bg-amber-soft', text: 'text-amber-dark', stripe: '!border-l-amber' }
-const SAGE: Omit<CategoryStyle, 'emoji'> = { soft: 'bg-sage-soft', text: 'text-sage-dark', stripe: '!border-l-sage' }
-const CLAY: Omit<CategoryStyle, 'emoji'> = { soft: 'bg-clay-soft', text: 'text-clay-dark', stripe: '!border-l-clay' }
-const INK: Omit<CategoryStyle, 'emoji'> = { soft: 'bg-ink/5', text: 'text-ink-muted', stripe: '!border-l-ink-faint' }
+const PINK: Omit<CategoryStyle, 'emoji'> = { soft: 'bg-raspberry-soft', text: 'text-raspberry-dark', stripe: '!border-l-raspberry', accent: 'text-raspberry' }
+const BUTTER: Omit<CategoryStyle, 'emoji'> = { soft: 'bg-amber-soft', text: 'text-amber-dark', stripe: '!border-l-amber', accent: 'text-amber' }
+const SAGE: Omit<CategoryStyle, 'emoji'> = { soft: 'bg-sage-soft', text: 'text-sage-dark', stripe: '!border-l-sage', accent: 'text-sage' }
+const CLAY: Omit<CategoryStyle, 'emoji'> = { soft: 'bg-clay-soft', text: 'text-clay-dark', stripe: '!border-l-clay', accent: 'text-clay' }
+const INK: Omit<CategoryStyle, 'emoji'> = { soft: 'bg-ink/5', text: 'text-ink-muted', stripe: '!border-l-ink-faint', accent: 'text-ink-faint' }
 
 const STYLES: Record<string, CategoryStyle> = {
   content: { emoji: '📸', ...PINK },

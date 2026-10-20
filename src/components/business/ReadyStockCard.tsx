@@ -1,5 +1,6 @@
 'use client'
 
+import { SectionLabel } from '@/components/ui/SectionLabel'
 import { useState } from 'react'
 import clsx from '@/lib/clsx'
 import { readyStockLabel, readyStockState } from '@/lib/calc/products'
@@ -51,7 +52,7 @@ export function ReadyStockCard({ productId, initialStock }: { productId: string;
 
   return (
     <Card>
-      <p className="text-xs font-medium uppercase tracking-wide text-ink-faint">Ready stock</p>
+      <SectionLabel icon="🧁">Ready stock</SectionLabel>
 
       {state === 'untracked' ? (
         <div className="mt-2 flex flex-col gap-3">

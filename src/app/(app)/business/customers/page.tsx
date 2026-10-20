@@ -1,3 +1,4 @@
+import { PageHeader } from '@/components/ui/PageHeader'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { getCurrentBusinessContext } from '@/lib/services/current-business'
@@ -18,12 +19,8 @@ export default async function CustomersPage() {
   const sorted = [...customers].sort((a, b) => b.totalSpending - a.totalSpending || a.name.localeCompare(b.name))
 
   return (
-    <div className="flex max-w-2xl flex-col gap-5">
-      <header>
-        <Link href="/business" className="text-sm text-ink-muted">← Business</Link>
-        <p className="mt-2 font-display text-3xl text-ink">Customers</p>
-        <p className="mt-1 text-sm text-ink-muted">Customers are added automatically when you create an order.</p>
-      </header>
+    <div className="flex max-w-2xl flex-col gap-6">
+      <PageHeader back={{ href: '/business', label: 'Business' }} title="Customers" subtitle="Customers are added automatically when you create an order." />
 
       {customers.length > 0 && (
         <div className="grid grid-cols-3 gap-3">

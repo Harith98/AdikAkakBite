@@ -1,4 +1,5 @@
-import Link from 'next/link'
+import { PageHeader } from '@/components/ui/PageHeader'
+import { SectionLabel } from '@/components/ui/SectionLabel'
 import { notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { getCurrentBusinessContext } from '@/lib/services/current-business'
@@ -31,15 +32,13 @@ export default async function OrderPage({ params }: { params: { id: string } }) 
   const money = (n: number) => formatMoney(n, settings.currency)
 
   return (
-    <div className="flex max-w-2xl flex-col gap-5">
-      <header>
-        <Link href="/orders" className="text-sm text-ink-muted">← Orders</Link>
-        <p className="mt-2 font-display text-3xl text-ink">{orderData.customerName ?? 'Walk-in'}</p>
-        <div className="mt-2 flex flex-wrap gap-2">
+    <div className="flex max-w-2xl flex-col gap-6">
+      <PageHeader back={{ href: '/orders', label: 'Orders' }} title={<>{orderData.customerName ?? 'Walk-in'}</>}>
+        <div className="flex flex-wrap gap-2">
           <OrderStatusBadge status={orderData.status} />
           <PaymentBadge status={orderData.paymentStatus} />
         </div>
-      </header>
+      </PageHeader>
 
       <Card>
         <ul className="text-sm text-ink">
@@ -77,7 +76,7 @@ export default async function OrderPage({ params }: { params: { id: string } }) 
 
       {orderData.status === 'completed' && (
         <Card>
-          <p className="mb-1 text-xs font-medium uppercase tracking-wide text-ink-faint">Receipt</p>
+          <SectionLabel icon="🧾" className="mb-1">Receipt</SectionLabel>
           {orderData.receiptNumber !== null ? (
             <>
               <p className="mb-3 text-sm text-ink-muted">
@@ -104,7 +103,7 @@ export default async function OrderPage({ params }: { params: { id: string } }) 
       )}
 
       <Card>
-        <p className="mb-4 text-xs font-medium uppercase tracking-wide text-ink-faint">Edit order</p>
+        <SectionLabel icon="✏️" className="mb-4">Edit order</SectionLabel>
         <OrderForm
           order={orderData}
           products={products.map((product: ProductView) => ({ id: product.id, name: product.isActive ? product.name : `${product.name} (inactive)`, price: product.sellingPrice, category: product.category, readyStock: product.readyStock }))}

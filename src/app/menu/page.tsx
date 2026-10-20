@@ -1,3 +1,4 @@
+import { SectionLabel } from '@/components/ui/SectionLabel'
 import type { Metadata } from 'next'
 import { createClient } from '@supabase/supabase-js'
 import { toWhatsAppNumber } from '@/lib/receipts'
@@ -51,7 +52,7 @@ export default async function MenuPage() {
         </header>
 
         <section className="rounded-card border border-raspberry/20 bg-base-card p-5 text-center shadow-card">
-          <p className="text-xs font-medium uppercase tracking-wide text-ink-faint">1 · See the menu</p>
+          <SectionLabel icon="📖">1 · See the menu</SectionLabel>
           {menu?.menu_pdf_url ? (
             <>
               <a
@@ -70,7 +71,7 @@ export default async function MenuPage() {
         </section>
 
         <section className="rounded-card border border-raspberry/20 bg-base-card p-5 shadow-card">
-          <p className="text-xs font-medium uppercase tracking-wide text-ink-faint">2 · Fill in your order</p>
+          <SectionLabel icon="📝">2 · Fill in your order</SectionLabel>
           <MenuOrderForm whatsappNumber={whatsapp} />
         </section>
 

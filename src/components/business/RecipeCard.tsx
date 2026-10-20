@@ -1,5 +1,6 @@
 'use client'
 
+import { SectionLabel } from '@/components/ui/SectionLabel'
 import { useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
@@ -117,7 +118,7 @@ export function RecipeCard({ productId, recipe, currency, ingredientCost, tracks
 
   return (
     <Card>
-      <p className="text-xs font-medium uppercase tracking-wide text-ink-faint">Recipe</p>
+      <SectionLabel icon="🥣">Recipe</SectionLabel>
       <p className="mt-1 text-sm text-ink-muted">
         What one batch uses, from your inventory.{' '}
         {tracksReadyStock

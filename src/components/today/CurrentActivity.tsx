@@ -2,7 +2,7 @@ import clsx from '@/lib/clsx'
 import { Card } from '@/components/ui/Card'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { SectionLabel } from '@/components/ui/SectionLabel'
-import { ProgressBar } from '@/components/ui/ProgressBar'
+import { ProgressRing } from '@/components/ui/ProgressRing'
 import { formatTime12 } from '@/lib/time'
 import type { RecommendedTask } from '@/lib/services/types'
 import type { BlockProgress, ScheduleBlockLike, TaskLike } from '@/lib/services/schedule'
@@ -31,6 +31,7 @@ export function CurrentActivity({ time, block, blockTasks, progress, focusTask, 
   const outside = focusTask && !blockTasks.some((t) => t.id === focusTask.id) ? focusTask : null
   const tasks = outside ? [outside, ...blockTasks] : blockTasks
   const open = tasks.filter((t) => t.status !== 'completed' && t.status !== 'skipped').length
+  const openInBlock = blockTasks.filter((t) => t.status !== 'completed' && t.status !== 'skipped').length
 
   const style = categoryStyle(block?.category, block?.title)
   const next = nextBlock ? categoryStyle(nextBlock.category, nextBlock.title) : null
@@ -51,8 +52,16 @@ export function CurrentActivity({ time, block, blockTasks, progress, focusTask, 
                 {formatTime12(block.startTime)} – {formatTime12(block.endTime)}
               </p>
             </div>
+            {progress && (
+              <ProgressRing
+                percent={progress.percent}
+                // Tasks: "2/4". A block without tasks (e.g. a break) fills with time instead.
+                label={blockTasks.length > 0 ? `${blockTasks.length - openInBlock}/${blockTasks.length}` : `${progress.percent}%`}
+                ariaLabel={progress.label}
+                colorClass={style.accent}
+              />
+            )}
           </div>
-          {progress && <ProgressBar className="mt-4" percent={progress.percent} label={progress.label} />}
         </div>
       ) : (
         <EmptyState compact emoji="🌿" title="Nothing scheduled right now" text="Free time. Check what's coming up, or take a breather." />
@@ -81,7 +90,11 @@ export function CurrentActivity({ time, block, blockTasks, progress, focusTask, 
         block && <p className="mt-3 text-sm text-ink-muted">No tasks in this block. Enjoy it ☕</p>
       )}
 
-      {tasks.length > 0 && open === 0 && <p className="mt-2 text-sm font-medium text-sage-dark">✓ All done for this block</p>}
+      {tasks.length > 0 && open === 0 && (
+        <p className="celebrate-in mt-3 rounded-card bg-sage-soft px-3 py-2.5 text-center text-sm font-medium text-sage-dark">
+          🎉 {block ? `${block.title} done!` : 'All done!'} Nice work.
+        </p>
+      )}
 
       {nextBlock && next && (
         <p className="mt-4 flex items-center gap-2 border-t border-ink/5 pt-3 text-xs text-ink-muted">

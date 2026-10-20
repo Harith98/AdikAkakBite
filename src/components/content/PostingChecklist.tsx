@@ -1,5 +1,6 @@
 'use client'
 
+import { SectionLabel } from '@/components/ui/SectionLabel'
 import { useEffect, useState } from 'react'
 import clsx from '@/lib/clsx'
 import { CHECKLIST_PLATFORMS, PLATFORM_LABELS, type ChecklistPlatform } from '@/lib/content'
@@ -54,7 +55,7 @@ export function PostingChecklist({ postedAt }: Props) {
   return (
     <div>
       <div className="flex items-baseline justify-between gap-3">
-        <p className="text-xs font-medium uppercase tracking-wide text-ink-faint">Posted today</p>
+        <SectionLabel icon="📸">Posted today</SectionLabel>
         <p className={clsx('text-sm font-medium', done === CHECKLIST_PLATFORMS.length ? 'text-sage-dark' : 'text-ink-muted')}>
           {done === CHECKLIST_PLATFORMS.length ? 'All done 🎉' : `${done} of ${CHECKLIST_PLATFORMS.length}`}
         </p>

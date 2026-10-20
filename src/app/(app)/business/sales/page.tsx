@@ -1,4 +1,5 @@
-import Link from 'next/link'
+import { PageHeader } from '@/components/ui/PageHeader'
+import { SectionLabel } from '@/components/ui/SectionLabel'
 import { createClient } from '@/lib/supabase/server'
 import { getCurrentBusinessContext } from '@/lib/services/current-business'
 import { getMonthSalesReport, getRecentCloses, getSalesSummary } from '@/lib/services/sales'
@@ -27,17 +28,13 @@ export default async function SalesPage({ searchParams }: { searchParams: { mont
   const closedToday = closes.some((c) => c.review_date === today)
 
   return (
-    <div className="flex max-w-2xl flex-col gap-5">
-      <header>
-        <Link href="/business" className="text-sm text-ink-muted">← Business</Link>
-        <p className="mt-2 font-display text-3xl text-ink">Sales</p>
-        <p className="mt-1 text-sm text-ink-muted">Revenue is calculated live from completed orders.</p>
-      </header>
+    <div className="flex max-w-2xl flex-col gap-6">
+      <PageHeader back={{ href: '/business', label: 'Business' }} title="Sales" subtitle="Revenue is calculated live from completed orders." />
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         {summary.map((period) => (
           <Card key={period.label}>
-            <p className="text-xs font-medium uppercase tracking-wide text-ink-faint">{period.label}</p>
+            <SectionLabel icon="💰">{period.label}</SectionLabel>
             <p className="mt-1 font-display text-3xl text-ink">{money(period.totals.revenue)}</p>
             <p className="mt-1 text-sm text-ink-muted">
               {period.totals.orders} order{period.totals.orders === 1 ? '' : 's'} · avg {money(period.totals.averageOrderValue)}
@@ -58,7 +55,7 @@ export default async function SalesPage({ searchParams }: { searchParams: { mont
 
       {closes.length > 0 && (
         <Card>
-          <p className="mb-3 text-xs font-medium uppercase tracking-wide text-ink-faint">Recent days</p>
+          <SectionLabel icon="🗓️" className="mb-3">Recent days</SectionLabel>
           <ul className="flex flex-col gap-2 text-sm">
             {closes.map((c) => (
               <li key={c.id} className="flex items-center justify-between gap-3">

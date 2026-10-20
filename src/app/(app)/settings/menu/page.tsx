@@ -1,3 +1,5 @@
+import { PageHeader } from '@/components/ui/PageHeader'
+import { SectionLabel } from '@/components/ui/SectionLabel'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { getCurrentBusinessContext } from '@/lib/services/current-business'
@@ -23,15 +25,7 @@ export default async function MenuSettingsPage() {
 
   return (
     <div className="flex max-w-2xl flex-col gap-6">
-      <header>
-        <Link href="/settings" className="text-sm text-ink-muted">
-          ← Settings
-        </Link>
-        <p className="mt-2 font-display text-3xl text-ink">Customer menu</p>
-        <p className="mt-1 text-sm text-ink-muted">
-          A page for customers: your catalogue, and an order form that sends your WhatsApp template to you.
-        </p>
-      </header>
+      <PageHeader back={{ href: '/settings', label: 'Settings' }} title="Customer menu" subtitle="A page for customers: your catalogue, and an order form that sends your WhatsApp template to you." />
 
       {!hasWhatsApp && (
         <Card className="!border-amber/60 !bg-amber-soft">
@@ -46,12 +40,12 @@ export default async function MenuSettingsPage() {
       )}
 
       <Card>
-        <p className="mb-3 text-xs font-medium uppercase tracking-wide text-ink-faint">Catalogue (PDF)</p>
+        <SectionLabel icon="📖" className="mb-3">Catalogue (PDF)</SectionLabel>
         <CatalogueManager businessId={business.id} currentUrl={business.menu_pdf_url} updatedLabel={updated} />
       </Card>
 
       <Card>
-        <p className="mb-3 text-xs font-medium uppercase tracking-wide text-ink-faint">Menu link</p>
+        <SectionLabel icon="🔗" className="mb-3">Menu link</SectionLabel>
         <MenuLinkShare url={`${siteUrl()}/menu`} />
       </Card>
 

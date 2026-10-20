@@ -1,4 +1,4 @@
-import Link from 'next/link'
+import { PageHeader } from '@/components/ui/PageHeader'
 import { createClient } from '@/lib/supabase/server'
 import { getCurrentBusinessContext } from '@/lib/services/current-business'
 import { pushConfigured } from '@/lib/notifications/push'
@@ -25,13 +25,7 @@ export default async function NotificationsPage() {
 
   return (
     <div className="flex max-w-2xl flex-col gap-6">
-      <header>
-        <Link href="/settings" className="text-sm text-ink-muted">
-          ← Settings
-        </Link>
-        <p className="mt-2 font-display text-3xl text-ink">Notifications</p>
-        <p className="mt-1 text-sm text-ink-muted">Alerts on your phone’s lock screen, even when the app is closed.</p>
-      </header>
+      <PageHeader back={{ href: '/settings', label: 'Settings' }} title="Notifications" subtitle="Alerts on your phone’s lock screen, even when the app is closed." />
 
       {ready ? (
         <NotificationSettings vapidPublicKey={process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ?? ''} preferences={preferences} />

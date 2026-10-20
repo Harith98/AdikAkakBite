@@ -38,10 +38,16 @@ export default async function ProductPage({ params, searchParams }: { params: { 
   const stockState = readyStockState(product.readyStock)
 
   return (
-    <div className="flex max-w-2xl flex-col gap-5">
+    <div className="flex max-w-2xl flex-col gap-6">
       <header className="flex flex-col gap-3">
-        <Link href="/business/products" className="text-sm text-ink-muted">
-          ← Products
+        <Link
+          href="/business/products"
+          className="-ml-1 inline-flex w-fit items-center gap-1 rounded-pill px-2 py-1 text-sm text-ink-muted transition-colors hover:bg-ink/5 hover:text-ink"
+        >
+          <span aria-hidden="true" className="text-base leading-none">
+            ‹
+          </span>
+          Products
         </Link>
         <div className="flex items-center gap-4">
           {product.imageUrl ? (

@@ -1,3 +1,4 @@
+import { PageHeader } from '@/components/ui/PageHeader'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { getCurrentBusinessContext } from '@/lib/services/current-business'
@@ -38,14 +39,8 @@ export default async function ProductsPage({ searchParams }: { searchParams: { c
   )
 
   return (
-    <div className="flex max-w-2xl flex-col gap-5">
-      <header className="flex items-start justify-between gap-3">
-        <div>
-          <Link href="/business" className="text-sm text-ink-muted">← Business</Link>
-          <p className="mt-2 font-display text-3xl text-ink">Products</p>
-        </div>
-        <LinkButton href="/business/products/new">Add product</LinkButton>
-      </header>
+    <div className="flex max-w-2xl flex-col gap-6">
+      <PageHeader back={{ href: '/business', label: 'Business' }} title="Products" action={<LinkButton href="/business/products/new">Add product</LinkButton>} />
 
       {products.length === 0 ? (
         <Card>

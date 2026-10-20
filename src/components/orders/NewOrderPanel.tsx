@@ -1,5 +1,6 @@
 'use client'
 
+import { SectionLabel } from '@/components/ui/SectionLabel'
 import { useState } from 'react'
 import { formatMoney } from '@/lib/constants'
 import { formatDateShort, formatTime12 } from '@/lib/time'
@@ -77,7 +78,7 @@ export function NewOrderPanel({ products, customers, currency, today }: Props) {
   return (
     <>
       <Card>
-        <p className="text-xs font-medium uppercase tracking-wide text-ink-faint">Paste from WhatsApp</p>
+        <SectionLabel icon="💬">Paste from WhatsApp</SectionLabel>
         <p className="mt-1 text-sm text-ink-muted">
           Paste the customer&apos;s filled-in order template and the form below fills itself. Check it, then save.
         </p>

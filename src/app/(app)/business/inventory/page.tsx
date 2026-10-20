@@ -1,3 +1,4 @@
+import { PageHeader } from '@/components/ui/PageHeader'
 import Link from 'next/link'
 import clsx from '@/lib/clsx'
 import { needsReorder } from '@/lib/calc/inventory'
@@ -15,20 +16,15 @@ export default async function InventoryPage() {
   const alerts = items.filter((i) => needsReorder(i.status)).length
 
   return (
-    <div className="flex max-w-2xl flex-col gap-5">
-      <header className="flex items-start justify-between gap-3">
-        <div>
-          <Link href="/business" className="text-sm text-ink-muted">← Business</Link>
-          <p className="mt-2 font-display text-3xl text-ink">Inventory</p>
-          {alerts > 0 && (
-            <p className="mt-2 inline-flex items-center gap-1.5 rounded-pill bg-clay-soft px-3 py-1 text-sm font-medium text-clay-dark">
-              <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-current" />
-              {alerts} item{alerts === 1 ? '' : 's'} need{alerts === 1 ? 's' : ''} attention
-            </p>
-          )}
-        </div>
-        <LinkButton href="/business/inventory/new">Add item</LinkButton>
-      </header>
+    <div className="flex max-w-2xl flex-col gap-6">
+      <PageHeader back={{ href: '/business', label: 'Business' }} title="Inventory" action={<LinkButton href="/business/inventory/new">Add item</LinkButton>}>
+        {alerts > 0 && (
+          <p className="inline-flex w-fit items-center gap-1.5 rounded-pill bg-clay-soft px-3 py-1 text-sm font-medium text-clay-dark">
+            <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-current" />
+            {alerts} item{alerts === 1 ? '' : 's'} need{alerts === 1 ? 's' : ''} attention
+          </p>
+        )}
+      </PageHeader>
 
       {items.length === 0 ? (
         <Card>

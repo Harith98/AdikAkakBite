@@ -1,8 +1,9 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import clsx from '@/lib/clsx'
 import { setTaskStatus } from '@/app/(app)/today/actions'
+import { tapFeedback } from '@/lib/haptics'
 import type { TaskStatus } from '@/lib/supabase/database.types'
 
 interface TaskRowProps {
@@ -18,19 +19,35 @@ interface TaskRowProps {
 export function TaskRow({ id, title, status, isPriority, tag }: TaskRowProps) {
   const [pending, setPending] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const done = status === 'completed'
+  // The tick shows the moment it's tapped (and pops), before the server confirms.
+  const [override, setOverride] = useState<boolean | null>(null)
+  const [popKey, setPopKey] = useState(0)
+  const done = override ?? status === 'completed'
+
+  // Once the page refreshes with the saved status, follow it again.
+  useEffect(() => setOverride(null), [status])
 
   async function toggle() {
     if (typeof navigator !== 'undefined' && !navigator.onLine) {
       setError("You're offline. Reconnect to save changes.")
       return
     }
+    const next = !done
     setError(null)
+    setOverride(next)
+    if (next) {
+      setPopKey((k) => k + 1)
+      tapFeedback()
+    }
     setPending(true)
     try {
-      const result = await setTaskStatus(id, done ? 'not_started' : 'completed')
-      if (result.error) setError(result.error)
+      const result = await setTaskStatus(id, next ? 'completed' : 'not_started')
+      if (result.error) {
+        setOverride(null)
+        setError(result.error)
+      }
     } catch {
+      setOverride(null)
       setError('Something went wrong. Please try again.')
     } finally {
       setPending(false)
@@ -49,9 +66,11 @@ export function TaskRow({ id, title, status, isPriority, tag }: TaskRowProps) {
           className="group -ml-2 flex h-11 w-11 shrink-0 items-center justify-center rounded-pill disabled:opacity-60"
         >
           <span
+            key={popKey}
             className={clsx(
               'flex h-7 w-7 items-center justify-center rounded-pill border-2 transition-colors',
-              done ? 'border-sage-dark bg-sage-dark text-white' : 'border-ink-faint text-transparent group-hover:border-raspberry'
+              done ? 'border-sage-dark bg-sage-dark text-white' : 'border-ink-faint text-transparent group-hover:border-raspberry',
+              popKey > 0 && done && 'tick-pop'
             )}
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">

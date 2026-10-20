@@ -1,4 +1,4 @@
-import Link from 'next/link'
+import { PageHeader } from '@/components/ui/PageHeader'
 import { redirect } from 'next/navigation'
 import { getCurrentBusinessContext } from '@/lib/services/current-business'
 import { canManageBusiness } from '@/lib/team'
@@ -18,13 +18,7 @@ export default async function ExportPage() {
 
   return (
     <div className="flex max-w-2xl flex-col gap-6">
-      <header>
-        <Link href="/settings" className="text-sm text-ink-muted">
-          ← Settings
-        </Link>
-        <p className="mt-2 font-display text-3xl text-ink">Export data</p>
-        <p className="mt-1 text-sm text-ink-muted">Download your data as spreadsheets (CSV). Opens in Excel or Google Sheets.</p>
-      </header>
+      <PageHeader back={{ href: '/settings', label: 'Settings' }} title="Export data" subtitle="Download your data as spreadsheets (CSV). Opens in Excel or Google Sheets." />
 
       <Card className="!p-0 overflow-hidden">
         <ul className="divide-y divide-ink/5">

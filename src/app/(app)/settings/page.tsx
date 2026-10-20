@@ -1,3 +1,4 @@
+import { PageHeader } from '@/components/ui/PageHeader'
 import Link from 'next/link'
 import type { ReactNode } from 'react'
 import { getCurrentBusinessContext } from '@/lib/services/current-business'
@@ -122,9 +123,7 @@ export default async function SettingsPage() {
 
   return (
     <div className="flex max-w-2xl flex-col gap-6">
-      <header>
-        <p className="font-display text-3xl text-ink">Settings</p>
-      </header>
+      <PageHeader title="Settings" />
 
       {/* Who's signed in; name, email and password are edited on the account page. */}
       <Link href="/settings/account" className="block">

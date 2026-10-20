@@ -1,4 +1,4 @@
-import Link from 'next/link'
+import { PageHeader } from '@/components/ui/PageHeader'
 import { createClient } from '@/lib/supabase/server'
 import { getCurrentBusinessContext } from '@/lib/services/current-business'
 import { getProductCategories } from '@/lib/services/products'
@@ -9,11 +9,8 @@ export default async function NewProductPage() {
   const { business, settings } = await getCurrentBusinessContext()
   const categories = await getProductCategories(createClient(), business.id)
   return (
-    <div className="flex max-w-2xl flex-col gap-5">
-      <header>
-        <Link href="/business/products" className="text-sm text-ink-muted">← Products</Link>
-        <p className="mt-2 font-display text-3xl text-ink">Add a product</p>
-      </header>
+    <div className="flex max-w-2xl flex-col gap-6">
+      <PageHeader back={{ href: '/business/products', label: 'Products' }} title="Add a product" />
       <Card>
         <ProductForm businessId={business.id} currency={settings.currency} categories={categories} />
       </Card>

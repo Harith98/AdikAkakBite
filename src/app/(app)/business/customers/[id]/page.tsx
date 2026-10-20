@@ -1,3 +1,5 @@
+import { PageHeader } from '@/components/ui/PageHeader'
+import { SectionLabel } from '@/components/ui/SectionLabel'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
@@ -35,12 +37,10 @@ export default async function CustomerPage({ params }: { params: { id: string } 
   const money = (n: number) => formatMoney(n, settings.currency)
 
   return (
-    <div className="flex max-w-2xl flex-col gap-5">
-      <header>
-        <Link href="/business/customers" className="text-sm text-ink-muted">← Customers</Link>
-        <p className="mt-2 font-display text-3xl text-ink">{customer.name}</p>
+    <div className="flex max-w-2xl flex-col gap-6">
+      <PageHeader back={{ href: '/business/customers', label: 'Customers' }} title={<>{customer.name}</>}>
         {customer.isRepeatCustomer && <div className="mt-2"><Badge tone="sage">Repeat customer</Badge></div>}
-      </header>
+      </PageHeader>
 
       <Card>
         <dl className="grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
@@ -55,7 +55,7 @@ export default async function CustomerPage({ params }: { params: { id: string } 
       </Card>
 
       <Card>
-        <p className="mb-3 text-xs font-medium uppercase tracking-wide text-ink-faint">Orders</p>
+        <SectionLabel icon="🧾" className="mb-3">Orders</SectionLabel>
         {orders.length === 0 ? (
           <p className="text-sm text-ink-muted">No orders yet.</p>
         ) : (
@@ -76,7 +76,7 @@ export default async function CustomerPage({ params }: { params: { id: string } 
       </Card>
 
       <Card>
-        <p className="mb-3 text-xs font-medium uppercase tracking-wide text-ink-faint">Details</p>
+        <SectionLabel icon="📝" className="mb-3">Details</SectionLabel>
         <CustomerForm customer={{ id: customer.customerId, name: customer.name, phone: customer.phone, email: customer.email, notes: customer.notes }} />
       </Card>
     </div>

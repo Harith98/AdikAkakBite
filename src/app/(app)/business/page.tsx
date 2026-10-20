@@ -1,3 +1,4 @@
+import { PageHeader } from '@/components/ui/PageHeader'
 import Link from 'next/link'
 import type { ReactNode } from 'react'
 
@@ -56,10 +57,7 @@ const COMING = ['Dashboard & goals', 'Forecasts']
 export default function BusinessPage() {
   return (
     <div className="flex max-w-2xl flex-col gap-6">
-      <header>
-        <p className="font-display text-3xl text-ink">Business</p>
-        <p className="mt-1 text-sm text-ink-muted">The numbers behind your dessert business</p>
-      </header>
+      <PageHeader title="Business" subtitle="The numbers behind your dessert business" />
 
       <div className="grid grid-cols-2 gap-3">
         {AVAILABLE.map((item) => (

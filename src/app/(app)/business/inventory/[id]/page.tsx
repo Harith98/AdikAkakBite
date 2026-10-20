@@ -1,4 +1,5 @@
-import Link from 'next/link'
+import { PageHeader } from '@/components/ui/PageHeader'
+import { SectionLabel } from '@/components/ui/SectionLabel'
 import { notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { getCurrentBusinessContext } from '@/lib/services/current-business'
@@ -28,23 +29,21 @@ export default async function InventoryItemPage({ params }: { params: { id: stri
   if (!item) notFound()
 
   return (
-    <div className="flex max-w-2xl flex-col gap-5">
-      <header>
-        <Link href="/business/inventory" className="text-sm text-ink-muted">← Inventory</Link>
-        <p className="mt-2 font-display text-3xl text-ink">{item.name}</p>
-        <div className="mt-2 flex items-center gap-3">
+    <div className="flex max-w-2xl flex-col gap-6">
+      <PageHeader back={{ href: '/business/inventory', label: 'Inventory' }} title={<>{item.name}</>}>
+        <div className="flex items-center gap-3">
           <InventoryStatusBadge status={item.status} />
           <span className="text-sm text-ink-muted">{item.current_quantity} {item.unit} in stock</span>
         </div>
-      </header>
+      </PageHeader>
 
       <Card>
-        <p className="mb-3 text-xs font-medium uppercase tracking-wide text-ink-faint">Log a transaction</p>
+        <SectionLabel icon="✏️" className="mb-3">Log a transaction</SectionLabel>
         <TransactionForm itemId={item.id} unit={item.unit} />
       </Card>
 
       <Card>
-        <p className="mb-3 text-xs font-medium uppercase tracking-wide text-ink-faint">Recent history</p>
+        <SectionLabel icon="📜" className="mb-3">Recent history</SectionLabel>
         {transactions.length === 0 ? (
           <p className="text-sm text-ink-muted">No transactions logged yet.</p>
         ) : (
@@ -62,7 +61,7 @@ export default async function InventoryItemPage({ params }: { params: { id: stri
       </Card>
 
       <Card>
-        <p className="mb-4 text-xs font-medium uppercase tracking-wide text-ink-faint">Edit item</p>
+        <SectionLabel icon="✏️" className="mb-4">Edit item</SectionLabel>
         <InventoryItemForm item={item} />
       </Card>
     </div>

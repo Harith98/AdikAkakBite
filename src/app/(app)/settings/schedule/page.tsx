@@ -1,4 +1,5 @@
-import Link from 'next/link'
+import { PageHeader } from '@/components/ui/PageHeader'
+import { SectionLabel } from '@/components/ui/SectionLabel'
 import { redirect } from 'next/navigation'
 import { canManageBusiness } from '@/lib/team'
 import { createClient } from '@/lib/supabase/server'
@@ -21,16 +22,7 @@ export default async function SchedulePage() {
 
   return (
     <div className="flex max-w-2xl flex-col gap-6">
-      <header>
-        <Link href="/settings" className="text-sm text-ink-muted">
-          ← Settings
-        </Link>
-        <p className="mt-2 font-display text-3xl text-ink">Daily schedule</p>
-        <p className="mt-1 text-sm text-ink-muted">
-          These blocks repeat every working day and drive the Today screen. Changes apply to tasks created
-          from now on — tasks already created for today stay as they are.
-        </p>
-      </header>
+      <PageHeader back={{ href: '/settings', label: 'Settings' }} title="Daily schedule" subtitle="These blocks repeat every working day and drive the Today screen. Changes apply to tasks created from now on — tasks already created for today stay as they are." />
 
       <div className="flex flex-col gap-3">
         {(blocks ?? []).map((block) => (
@@ -68,7 +60,7 @@ export default async function SchedulePage() {
       </div>
 
       <Card>
-        <p className="mb-3 text-xs font-medium uppercase tracking-wide text-ink-faint">Add a block</p>
+        <SectionLabel icon="➕" className="mb-3">Add a block</SectionLabel>
         <ScheduleBlockForm />
       </Card>
     </div>

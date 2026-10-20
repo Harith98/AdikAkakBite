@@ -1,3 +1,4 @@
+import { PageHeader } from '@/components/ui/PageHeader'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { getCurrentBusinessContext } from '@/lib/services/current-business'
@@ -17,11 +18,8 @@ export default async function NewOrderPage() {
   if (customersRes.error) throw new Error(`Could not load customers: ${customersRes.error.message}`)
 
   return (
-    <div className="flex max-w-2xl flex-col gap-5">
-      <header>
-        <Link href="/orders" className="text-sm text-ink-muted">← Orders</Link>
-        <p className="mt-2 font-display text-3xl text-ink">New order</p>
-      </header>
+    <div className="flex max-w-2xl flex-col gap-6">
+      <PageHeader back={{ href: '/orders', label: 'Orders' }} title="New order" />
       {products.length === 0 && (
         <Card className="border border-dashed border-ink/15 bg-transparent shadow-none">
           <p className="text-sm text-ink-muted">

@@ -1,4 +1,5 @@
-import Link from 'next/link'
+import { PageHeader } from '@/components/ui/PageHeader'
+import { SectionLabel } from '@/components/ui/SectionLabel'
 import { getCurrentBusinessContext } from '@/lib/services/current-business'
 import { canManageBusiness } from '@/lib/team'
 import { Card } from '@/components/ui/Card'
@@ -17,13 +18,7 @@ export default async function BusinessDetailsPage() {
 
   return (
     <div className="flex max-w-2xl flex-col gap-6">
-      <header>
-        <Link href="/settings" className="text-sm text-ink-muted">
-          ← Settings
-        </Link>
-        <p className="mt-2 font-display text-3xl text-ink">Business details</p>
-        <p className="mt-1 text-sm text-ink-muted">Shown at the top of every receipt you generate.</p>
-      </header>
+      <PageHeader back={{ href: '/settings', label: 'Settings' }} title="Business details" subtitle="Shown at the top of every receipt you generate." />
 
       <Card>
         {canEdit ? (
@@ -51,7 +46,7 @@ export default async function BusinessDetailsPage() {
       </Card>
 
       <Card>
-        <p className="mb-3 text-xs font-medium uppercase tracking-wide text-ink-faint">Hours &amp; region</p>
+        <SectionLabel icon="🕘" className="mb-3">Hours &amp; region</SectionLabel>
         <dl className="flex flex-col gap-3 text-sm">
           <Row label="Working days" value={workingDays} />
           <Row label="Working hours" value={`${settings.working_hours_start.slice(0, 5)} – ${settings.working_hours_end.slice(0, 5)}`} />

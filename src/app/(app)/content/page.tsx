@@ -1,3 +1,5 @@
+import { PageHeader } from '@/components/ui/PageHeader'
+import { SectionLabel } from '@/components/ui/SectionLabel'
 import { createClient } from '@/lib/supabase/server'
 import { getCurrentBusinessContext } from '@/lib/services/current-business'
 import { addDaysISO, getBusinessNow } from '@/lib/time'
@@ -52,10 +54,7 @@ export default async function ContentPage() {
 
   return (
     <div className="flex max-w-2xl flex-col gap-6">
-      <header>
-        <p className="font-display text-3xl text-ink">Content</p>
-        <p className="mt-1 text-sm text-ink-muted">Post on each platform every day, then tick it off.</p>
-      </header>
+      <PageHeader title="Content" subtitle="Post on each platform every day, then tick it off." />
 
       <Card>
         {/* key resets the ticks when the day changes */}
@@ -64,7 +63,7 @@ export default async function ContentPage() {
 
       <Card>
         <div className="flex items-baseline justify-between gap-3">
-          <p className="text-xs font-medium uppercase tracking-wide text-ink-faint">Last 7 days</p>
+          <SectionLabel icon="📅">Last 7 days</SectionLabel>
           <p className="text-sm text-ink-muted">
             {streak > 0 ? `🔥 ${streak}-day streak` : 'Post on all three to start a streak'}
           </p>

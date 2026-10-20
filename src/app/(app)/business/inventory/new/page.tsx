@@ -1,14 +1,11 @@
-import Link from 'next/link'
+import { PageHeader } from '@/components/ui/PageHeader'
 import { Card } from '@/components/ui/Card'
 import { InventoryItemForm } from '@/components/business/InventoryItemForm'
 
 export default function NewInventoryItemPage() {
   return (
-    <div className="flex max-w-2xl flex-col gap-5">
-      <header>
-        <Link href="/business/inventory" className="text-sm text-ink-muted">← Inventory</Link>
-        <p className="mt-2 font-display text-3xl text-ink">Add an item</p>
-      </header>
+    <div className="flex max-w-2xl flex-col gap-6">
+      <PageHeader back={{ href: '/business/inventory', label: 'Inventory' }} title="Add an item" />
       <Card>
         <InventoryItemForm />
       </Card>

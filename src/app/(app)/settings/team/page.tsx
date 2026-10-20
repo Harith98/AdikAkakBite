@@ -1,4 +1,5 @@
-import Link from 'next/link'
+import { PageHeader } from '@/components/ui/PageHeader'
+import { SectionLabel } from '@/components/ui/SectionLabel'
 import { createClient } from '@/lib/supabase/server'
 import { getCurrentBusinessContext } from '@/lib/services/current-business'
 import { assignableRoles, canManageRole, ROLE_DESCRIPTIONS, ROLE_LABELS } from '@/lib/team'
@@ -21,18 +22,10 @@ export default async function TeamPage() {
 
   return (
     <div className="flex max-w-2xl flex-col gap-6">
-      <header>
-        <Link href="/settings" className="text-sm text-ink-muted">
-          ← Settings
-        </Link>
-        <p className="mt-2 font-display text-3xl text-ink">Team</p>
-        <p className="mt-1 text-sm text-ink-muted">
-          Who can use {business.name}. Your role: {ROLE_LABELS[role]}.
-        </p>
-      </header>
+      <PageHeader back={{ href: '/settings', label: 'Settings' }} title="Team" subtitle={<>Who can use {business.name}. Your role: {ROLE_LABELS[role]}.</>} />
 
       <Card>
-        <p className="text-xs font-medium uppercase tracking-wide text-ink-faint">Members · {members.length}</p>
+        <SectionLabel icon="👥">Members · {members.length}</SectionLabel>
         <ul className="mt-1 divide-y divide-ink/10">
           {members.map((m) => (
             <MemberRow
@@ -52,7 +45,7 @@ export default async function TeamPage() {
 
       {canAddPeople && (
         <Card>
-          <p className="text-xs font-medium uppercase tracking-wide text-ink-faint">Add team member</p>
+          <SectionLabel icon="➕">Add team member</SectionLabel>
           <p className="mb-3 mt-1 text-sm text-ink-muted">
             Create their account here. No email is sent. Give them the sign-in details and they can start straight away.
           </p>
@@ -68,7 +61,7 @@ export default async function TeamPage() {
       )}
 
       <Card className="border border-dashed border-ink/15 bg-transparent shadow-none">
-        <p className="text-xs font-medium uppercase tracking-wide text-ink-faint">What each role can do</p>
+        <SectionLabel icon="🔑">What each role can do</SectionLabel>
         <dl className="mt-2 flex flex-col gap-2 text-sm">
           {(['owner', 'admin', 'staff'] as const).map((r) => (
             <div key={r}>

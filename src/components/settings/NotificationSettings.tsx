@@ -1,5 +1,6 @@
 'use client'
 
+import { SectionLabel } from '@/components/ui/SectionLabel'
 import { useEffect, useState } from 'react'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
@@ -137,7 +138,7 @@ export function NotificationSettings({ vapidPublicKey, preferences }: Props) {
   return (
     <div className="flex flex-col gap-6">
       <Card>
-        <p className="text-xs font-medium uppercase tracking-wide text-ink-faint">This device</p>
+        <SectionLabel icon="📱">This device</SectionLabel>
         {device === 'checking' && <p className="mt-2 text-sm text-ink-muted">Checking…</p>}
 
         {device === 'ios-install' && (
@@ -197,7 +198,7 @@ export function NotificationSettings({ vapidPublicKey, preferences }: Props) {
       </Card>
 
       <Card>
-        <p className="text-xs font-medium uppercase tracking-wide text-ink-faint">What to notify you about</p>
+        <SectionLabel icon="🔔">What to notify you about</SectionLabel>
         <p className="mt-1 text-sm text-ink-muted">Applies to all your devices.</p>
         <ul className="mt-3 flex flex-col divide-y divide-ink/5">
           {NOTIFICATION_KINDS.map((kind) => (

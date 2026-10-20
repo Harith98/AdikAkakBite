@@ -8,6 +8,7 @@ import { addTask, savePriority, setTaskStatus, type AddTaskState } from '@/app/(
 import type { TaskStatus } from '@/lib/supabase/database.types'
 import type { PrioritySuggestion } from '@/lib/services/priorities'
 import { Card } from '@/components/ui/Card'
+import { tapFeedback } from '@/lib/haptics'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { SectionLabel } from '@/components/ui/SectionLabel'
 
@@ -31,6 +32,8 @@ export function TodayFocusCard({ priorities, suggestions }: { priorities: Priori
   const [starred, setStarred] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  /** The priority just ticked, so only it plays the pop. */
+  const [justDone, setJustDone] = useState<string | null>(null)
 
   const sorted = [...priorities].sort((a, b) => a.rank - b.rank)
   const slotsLeft = MAX_PRIORITIES - sorted.length
@@ -69,7 +72,7 @@ export function TodayFocusCard({ priorities, suggestions }: { priorities: Priori
       <div className="flex items-baseline justify-between gap-3">
         <SectionLabel icon="🎯">Today&apos;s priorities</SectionLabel>
         {sorted.length > 0 && (
-          <p className={clsx('text-sm', done === sorted.length ? 'font-medium text-sage-dark' : 'text-ink-muted')}>
+          <p className={clsx('text-sm', done === sorted.length ? 'celebrate-in font-medium text-sage-dark' : 'text-ink-muted')}>
             {done === sorted.length ? 'All done 🎉' : `${done} of ${sorted.length} done`}
           </p>
         )}
@@ -87,14 +90,21 @@ export function TodayFocusCard({ priorities, suggestions }: { priorities: Priori
                 <button
                   type="button"
                   disabled={busy}
-                  onClick={() => run(() => setTaskStatus(task.id, isDone ? 'not_started' : 'completed'))}
+                  onClick={() => {
+                    if (!isDone) {
+                      setJustDone(task.id)
+                      tapFeedback()
+                    }
+                    void run(() => setTaskStatus(task.id, isDone ? 'not_started' : 'completed'))
+                  }}
                   aria-label={isDone ? `Mark "${task.title}" as not done` : `Mark "${task.title}" as done`}
                   className="-ml-2 flex h-11 w-11 shrink-0 items-center justify-center rounded-pill"
                 >
                   <span
                     className={clsx(
                       'flex h-8 w-8 items-center justify-center rounded-pill border-2 text-sm font-medium transition-colors',
-                      isDone ? 'border-sage-dark bg-sage-dark text-white' : 'border-raspberry/50 text-raspberry-dark'
+                      isDone ? 'border-sage-dark bg-sage-dark text-white' : 'border-raspberry/50 text-raspberry-dark',
+                      isDone && justDone === task.id && 'tick-pop'
                     )}
                   >
                     {isDone ? '✓' : task.rank}

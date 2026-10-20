@@ -1,3 +1,4 @@
+import { PageHeader } from '@/components/ui/PageHeader'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { getCurrentBusinessContext } from '@/lib/services/current-business'
@@ -29,14 +30,8 @@ export default async function OrdersPage({ searchParams }: { searchParams: { sta
   const money = (n: number) => formatMoney(n, settings.currency)
 
   return (
-    <div className="flex max-w-2xl flex-col gap-5">
-      <header className="flex items-start justify-between gap-3">
-        <div>
-          <p className="font-display text-3xl text-ink">Orders</p>
-          <p className="mt-1 text-sm text-ink-muted">Everything customers have asked for</p>
-        </div>
-        <LinkButton href="/orders/new">New order</LinkButton>
-      </header>
+    <div className="flex max-w-2xl flex-col gap-6">
+      <PageHeader title="Orders" subtitle="Everything customers have asked for" action={<LinkButton href="/orders/new">New order</LinkButton>} />
 
       <nav aria-label="Filter orders" className="flex flex-wrap gap-2">
         {FILTERS.map((f) => (

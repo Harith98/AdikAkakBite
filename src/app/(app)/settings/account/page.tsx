@@ -1,4 +1,5 @@
-import Link from 'next/link'
+import { PageHeader } from '@/components/ui/PageHeader'
+import { SectionLabel } from '@/components/ui/SectionLabel'
 import { createClient } from '@/lib/supabase/server'
 import { getCurrentBusinessContext } from '@/lib/services/current-business'
 import { Card } from '@/components/ui/Card'
@@ -17,16 +18,10 @@ export default async function AccountPage({ searchParams }: { searchParams: { em
 
   return (
     <div className="flex max-w-2xl flex-col gap-6">
-      <header>
-        <Link href="/settings" className="text-sm text-ink-muted">
-          ← Settings
-        </Link>
-        <p className="mt-2 font-display text-3xl text-ink">Your account</p>
-        <p className="mt-1 text-sm text-ink-muted">Your photo, name, and how you sign in to the app.</p>
-      </header>
+      <PageHeader back={{ href: '/settings', label: 'Settings' }} title="Your account" subtitle="Your photo, name, and how you sign in to the app." />
 
       <Card>
-        <p className="mb-3 text-xs font-medium uppercase tracking-wide text-ink-faint">Photo &amp; name</p>
+        <SectionLabel icon="🙂" className="mb-3">Photo &amp; name</SectionLabel>
         <div className="mb-4">
           <AvatarPicker userId={userId} name={displayName ?? email} initialUrl={avatarUrl} />
         </div>
@@ -44,12 +39,12 @@ export default async function AccountPage({ searchParams }: { searchParams: { em
       )}
 
       <Card>
-        <p className="mb-3 text-xs font-medium uppercase tracking-wide text-ink-faint">Email</p>
+        <SectionLabel icon="✉️" className="mb-3">Email</SectionLabel>
         <ChangeEmailForm currentEmail={email} pendingEmail={pendingEmail} />
       </Card>
 
       <Card>
-        <p className="mb-3 text-xs font-medium uppercase tracking-wide text-ink-faint">Password</p>
+        <SectionLabel icon="🔒" className="mb-3">Password</SectionLabel>
         <ChangePasswordForm email={email} />
       </Card>
     </div>
