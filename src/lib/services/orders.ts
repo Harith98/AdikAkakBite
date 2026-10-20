@@ -88,13 +88,29 @@ export function toOrderViews(rows: OrderRowWithRelations[]): OrderView[] {
   })
 }
 
+/** A month (or any span) of orders: by the date they're needed, or the day taken when there's no date. */
+export interface DateRange {
+  start: string
+  end: string
+}
+
+/** PostgREST filter for "needed in the range (or, with no date, taken in it)". */
+function inRange(range: DateRange): string {
+  return (
+    `and(required_date.gte.${range.start},required_date.lte.${range.end}),` +
+    `and(required_date.is.null,order_date.gte.${range.start},order_date.lte.${range.end})`
+  )
+}
+
 export async function getOrders(
   supabase: Client,
   businessId: string,
   filter: OrderFilter,
-  limit = 100
+  limit = 100,
+  range?: DateRange
 ): Promise<OrderView[]> {
   let query = supabase.from('orders').select(ORDER_SELECT).eq('business_id', businessId)
+  if (range) query = query.or(inRange(range))
   if (filter === 'active') query = query.in('status', ACTIVE)
   if (filter === 'completed') query = query.eq('status', 'completed')
   if (filter === 'cancelled') query = query.eq('status', 'cancelled')
@@ -163,9 +179,10 @@ export async function getUpcomingOrders(supabase: Client, businessId: string, to
 }
 
 /** How many orders are in each tab, for the counts on the Orders page tabs. */
-export async function getOrderTabCounts(supabase: Client, businessId: string): Promise<Record<OrderFilter, number>> {
+export async function getOrderTabCounts(supabase: Client, businessId: string, range?: DateRange): Promise<Record<OrderFilter, number>> {
   const count = (statuses: OrderStatus[] | null) => {
     let q = supabase.from('orders').select('id', { count: 'exact', head: true }).eq('business_id', businessId)
+    if (range) q = q.or(inRange(range))
     if (statuses) q = q.in('status', statuses)
     return q.then((r) => r.count ?? 0)
   }
