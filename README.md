@@ -1,105 +1,174 @@
-# Dessert OS
+<div align="center">
 
-An AI-ready business control centre for a small dessert business — a mobile-first PWA that answers "what should I be working on right now?" using deterministic schedules, orders, and business rules. No AI API is used or required in V1; the architecture is built so an AI layer can be added later without redesigning the database or business logic. See `docs/ai-readiness.md`.
+<img src="public/icons/iconAdik512x512.png" alt="AdikAkak Bites logo" width="120" />
 
-**Status: Phase 3B — Sales & inventory.** (Phases 1-3A are done too: foundation, daily operations, orders/products/customers.) Phase 1 (auth, schema, RLS, app shell, onboarding, PWA) plus the Today screen, editable daily schedule, task controls, today's three priorities, order-priority alerts and the deterministic recommendation engine (`docs/today-engine.md`). Content, Analytics and Forecasting are still honest "coming in Phase N" placeholders — see `docs/architecture.md` for the full phase plan and section 58 of the original product spec.
+# AdikAkak Bites · Business Control Centre
 
-## Tech stack
+**The back office of a small Malaysian dessert business, in your pocket.**
+Orders, ready stock, recipes, sales and the day's plan, built for one-handed use at the counter.
 
-- **Frontend:** Next.js 14 (App Router), React 18, TypeScript, Tailwind CSS
-- **Backend/database:** Supabase (PostgreSQL, Auth, Row Level Security)
-- **Hosting:** Vercel (recommended)
+![Next.js](https://img.shields.io/badge/Next.js-14-000000?logo=nextdotjs&logoColor=white)
+![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6?logo=typescript&logoColor=white)
+![Supabase](https://img.shields.io/badge/Supabase-Postgres%20%2B%20Auth-3ECF8E?logo=supabase&logoColor=white)
+![Tailwind CSS](https://img.shields.io/badge/Tailwind-3-38BDF8?logo=tailwindcss&logoColor=white)
+![PWA](https://img.shields.io/badge/PWA-installable-AD566B)
+![Cost](https://img.shields.io/badge/running%20cost-RM0%2Fmonth-88A17A)
 
-No paid AI API, no external analytics platform, no other paid third-party service is used.
+</div>
 
-## Local setup
+---
 
-### 1. Prerequisites
+## Why it exists
 
-- Node.js 18.18+ and npm
-- A free [Supabase](https://supabase.com) account
-- The [Supabase CLI](https://supabase.com/docs/guides/cli) (optional but recommended, for running migrations locally): `npm install -g supabase`
+Running a home dessert business means juggling WhatsApp orders, baking slots, Instagram posts and "do we still have butter?" all at once. This app answers one question first: **what should I be doing right now?** Then it keeps everything else (orders, stock, money) out of your head.
 
-### 2. Install dependencies
+It runs entirely on free plans, uses **no AI and no paid services**, and installs on a phone like a normal app.
 
-```bash
-npm install
+## ✨ What it does
+
+| | Feature | In short |
+|---|---|---|
+| 🌅 | **Today** | Greeting, the current schedule block in its own colour, tick-off tasks, three daily priorities, orders coming up in the next 7 days, ready stock at a glance |
+| 🧾 | **Orders** | Grouped by when they're due (overdue, today, tomorrow, later), deposits and balances, past sales, sale-date correction |
+| 💬 | **Paste from WhatsApp** | Paste a customer's filled-in order template and the order fills itself: Malay and English dates, "2x", "ITEM-1", typos, sizes like 6″/8″ |
+| 📖 | **Customer menu** | A public page with your PDF catalogue and an order form that sends your template to your WhatsApp |
+| 🧁 | **Products** | Photos, categories, search, price, cost, profit and margin; ready stock with quick − / + buttons |
+| 🥣 | **Recipes** | Ingredients per batch, cost per piece, "can make 18 with stock now", and automatic ingredient deduction |
+| 📦 | **Inventory** | Reorder levels, usage, waste and purchases, low-stock alerts |
+| 👥 | **Customers** | Phone-first identity (no duplicate Aisyahs), spending and repeat-customer metrics |
+| 📊 | **Sales** | Today, this week, this month, a monthly report with per-day bars and best sellers, the daily close |
+| 🧾 | **Receipts** | Sequential receipt numbers, print, or send as a PDF on WhatsApp |
+| 📸 | **Content** | Daily posting checklist for Instagram, Facebook and WhatsApp, with a 🔥 streak |
+| 🔔 | **Notifications** | Web push for low stock, orders due in 2 days, schedule changes and the 8pm posting reminder |
+| 👩‍🍳 | **Team** | Owner, admin and staff roles; the owner creates staff logins directly (no invite emails) |
+| 🩺 | **System status** | Supabase usage against free-plan limits, missing migrations, key checks, daily-job health |
+
+## 🧱 How it's built
+
+```mermaid
+flowchart TD
+    A["📱 Phone / PWA<br/>Next.js pages, service worker"] --> B["Middleware<br/>session + auth redirects"]
+    B --> C["Server Components<br/>read data"]
+    B --> D["Server Actions<br/>validate → write → revalidate"]
+    E["⏰ Vercel Cron<br/>8am orders · 8pm posting"] --> F["/api/cron/*"]
+    C --> G["src/lib<br/>services · pure calc · validation"]
+    D --> G
+    F --> G
+    G --> H[("🐘 Supabase<br/>Postgres + RLS + Storage + Auth")]
+    G --> I["🔔 Web Push<br/>FCM · Apple"]
 ```
 
-### 3. Set up Supabase
+- **Next.js 14 (App Router)** with Server Components and Server Actions, so there's no separate backend to run.
+- **Supabase** handles Postgres, Auth and Storage. **Row Level Security protects every table**, and atomic actions (stock, receipt numbers, recipes) run as SQL functions.
+- **The maths has no database or network code** (`src/lib/calc`, the paste reader, notifications wording), so it's fully unit-tested.
+- **Derived numbers are computed, never stored.** Totals, margins, stock status and sales can't drift out of sync.
+- **Deployed on Vercel** in Tokyo (`hnd1`), next to the database in `ap-northeast-1`.
 
-1. Create a new Supabase project (free tier is fine).
-2. In the Supabase SQL Editor, run the migrations in `supabase/migrations/` **in order**:
-   - `0001_init_schema.sql`
-   - `0002_indexes.sql`
-   - `0003_rls_policies.sql`
-   - `0004_onboarding_membership_policy.sql`
-   - `0005_task_priorities_and_ordering.sql`
-   - `0006_customer_name_index.sql`
-   - `0007_inventory_transactions_rpc.sql`
+<details>
+<summary><b>Tech stack and dependencies</b></summary>
 
-   Or, if you have the Supabase CLI linked to your project:
-
-   ```bash
-   supabase link --project-ref <your-project-ref>
-   supabase db push
-   ```
-3. Copy your project's URL and anon key from **Project Settings → API**.
-
-### 4. Configure environment variables
-
-```bash
-cp .env.example .env.local
-```
-
-Fill in `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` from step 3. Leave `SUPABASE_SERVICE_ROLE_KEY` unset unless you specifically need server-side RLS-bypass access (see the comment in `src/lib/supabase/server.ts`).
-
-### 5. Run it
-
-```bash
-npm run dev
-```
-
-Open [http://localhost:3000](http://localhost:3000), sign up, and complete onboarding. This creates your business, seeds the default daily schedule (product spec §8), and takes you to the Today screen.
-
-### 6. Optional demo data
-
-`supabase/seed_demo_data.sql` adds a handful of sample products, costs, inventory items and customers, all tagged `[DEMO]` so they're identifiable and removable later. See the comment at the top of that file for usage — you need your `business_id` first (visible in the Supabase Table Editor after onboarding).
-
-## Development commands
-
-| Command | What it does |
+| Runtime | Why |
 |---|---|
-| `npm run dev` | Start the local dev server |
-| `npm run build` | Production build |
-| `npm run start` | Run the production build locally |
-| `npm run lint` | ESLint |
+| `next` 14 · `react` 18 | App, Server Components, Server Actions |
+| `@supabase/supabase-js` · `@supabase/ssr` (pinned) | Database, auth, storage, cookie sessions |
+| `web-push` | Phone notifications (VAPID) |
+| `html-to-image` · `jspdf` | Receipt PDFs, loaded only when needed |
+
+Dev: TypeScript (strict), Tailwind CSS, Vitest, ESLint.
+</details>
+
+## 🚀 Quick start
+
+```bash
+git clone https://github.com/Harith98/AdikAkakBite.git
+cd AdikAkakBite
+npm install
+cp .env.example .env.local   # then fill it in (see below)
+npm run dev                  # http://localhost:3000
+```
+
+1. **Create a free [Supabase](https://supabase.com) project.**
+2. **Run every file in [`supabase/migrations/`](supabase/migrations) in order** (`0001` → `0023`) in the Supabase SQL Editor, or `supabase db push` if you use the CLI.
+3. **Fill in `.env.local`,** then open the app, sign up, and complete first-time setup. This creates the business and a starter daily schedule.
+4. *(Optional)* **[`supabase/seed_demo_data.sql`](supabase/seed_demo_data.sql)** adds sample products, stock and customers tagged `[DEMO]`.
+
+> 💡 After the app is running, **Settings → System status** tells you exactly which migrations or keys are still missing.
+
+### Environment variables
+
+| Variable | Needed for | Secret? |
+|---|---|---|
+| `NEXT_PUBLIC_SUPABASE_URL` · `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Everything | No |
+| `SUPABASE_SERVICE_ROLE_KEY` | Adding staff, password resets, notifications | 🔒 **Yes** |
+| `NEXT_PUBLIC_VAPID_PUBLIC_KEY` · `VAPID_PRIVATE_KEY` | Phone notifications (`npx web-push generate-vapid-keys`) | 🔒 private key |
+| `CRON_SECRET` | Daily 8am / 8pm reminders | 🔒 **Yes** |
+| `NEXT_PUBLIC_SITE_URL` | Links in emails (defaults to the production domain) | No |
+| `NEXT_PUBLIC_DEFAULT_CURRENCY` · `NEXT_PUBLIC_DEFAULT_TIMEZONE` | Optional overrides (MYR, Asia/Kuala_Lumpur) | No |
+
+Never prefix a secret with `NEXT_PUBLIC_`, and never change the VAPID keys once people have subscribed.
+
+## 🛠️ Scripts
+
+| Command | Does |
+|---|---|
+| `npm run dev` | Local dev server |
+| `npm run build` · `npm start` | Production build / serve it |
 | `npm run typecheck` | `tsc --noEmit` |
-| `npm run test` | Run the Vitest unit tests |
-| `npm run db:types` | Regenerate `src/lib/supabase/database.types.ts` from your live Supabase schema |
+| `npm run lint` | ESLint |
+| `npm test` | Vitest unit tests (200+, run in about 2 s) |
+| `npm run db:types` | Regenerate `database.types.ts` from the live schema |
 
-Run `lint`, `typecheck`, and `test` before every commit — see `docs/architecture.md` for the full "after each phase" checklist this project is built against (spec §59).
+Run **typecheck, lint and test** before every commit.
 
-## Testing
+## 🗂️ Where things live
 
-Phase 1 ships tests for the utilities that exist today (currency/percent formatting, schedule time-window logic) in `tests/unit/`. As each phase adds real calculations — product costing, inventory forecasting, sales comparisons, the task recommendation engine — its tests land in the same commit, covering the edge cases called out in the product spec (zero sales, no orders, insufficient history, cancelled orders, deleted products, missing optional fields).
+```
+src/
+├─ app/
+│  ├─ (app)/          signed-in app: today, orders, business/*, content, settings/*
+│  ├─ menu/           public customer menu (no login)
+│  ├─ receipt/        printable receipts
+│  └─ api/            auth callback, cron jobs
+├─ components/        ui/ · layout/ · today/ · orders/ · business/ · settings/ · menu/
+└─ lib/
+   ├─ calc/           pure maths (orders, products, recipes, sales, inventory)
+   ├─ services/       data access + the Today recommendation engine
+   ├─ notifications/  push wording, sending, daily reminders
+   └─ whatsapp-order.ts   the template reader & writer
+supabase/migrations/  0001 → 0023, applied in order
+tests/unit/           Vitest suites
+```
 
-## PWA testing
+## 📱 Install it like an app
 
-1. Run `npm run build && npm run start` (the service worker only registers in production mode — see `src/app/service-worker-registration.tsx`).
-2. Open the app in Chrome/Edge on desktop or Android, or Safari on iOS.
-3. **Android/desktop Chrome:** look for the install icon in the address bar, or Menu → "Install app".
-4. **iOS Safari:** Share → "Add to Home Screen".
-5. Confirm the app opens standalone (no browser chrome), the splash/icon look correct, and it loads instantly on a second open.
+- **iPhone:** Safari → Share → **Add to Home Screen**. Notifications need iOS 16.4+ and the Home Screen app.
+- **Android:** Chrome → menu → **Install app**.
 
-## Deploying to Vercel
+The service worker only registers in production builds (`npm run build && npm start`).
 
-See `docs/deployment.md`.
+## 🚢 Deploying
 
-## Security
+1. Import the repo into **Vercel** and add the environment variables above.
+2. **Run any new migration in Supabase before deploying code that needs it.**
+3. Vercel picks up the daily cron jobs from [`vercel.json`](vercel.json) automatically.
 
-See `docs/architecture.md#security` and the RLS policies in `supabase/migrations/0003_rls_policies.sql`. In short: every business-owned table is protected by Row Level Security keyed on `business_members`, the service-role key is never exposed to the browser, and there are no secrets in this repository — only placeholders in `.env.example`.
+More in [`docs/deployment.md`](docs/deployment.md), and the full schema history is in [`docs/database.md`](docs/database.md).
 
-## Future AI integration
+## 🔐 Security in one breath
 
-Read `docs/ai-readiness.md` before adding any AI provider. The short version: AI explains numbers, it never calculates them.
+**Every business table has Row Level Security.** The service-role key is server-only and used only behind an owner/admin check. The public menu reads a single safe function that returns only the shop name, phone and catalogue link. The audit log is append-only, and the repo contains no secrets.
+
+## 🗺️ What's next
+
+- [ ] Dashboard and goals: trends, comparisons and progress bars
+- [ ] Forecasts: busy days, and when stock will run out
+- [ ] Product nicknames, so pasted orders match customers' own words
+- [ ] CSV export, which doubles as a backup
+
+<div align="center">
+
+---
+
+Made with 🧁 for **AdikAkak Bites** · Freshly made · Limited slots
+
+</div>
