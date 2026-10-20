@@ -89,7 +89,7 @@ export function missingMigrations(applied: Record<string, boolean> | null | unde
   return EXPECTED_MIGRATIONS.filter((m) => !applied?.[m.id])
 }
 
-/** "jdmyjdumxstirwzwinnu" from "https://jdmyjdumxstirwzwinnu.supabase.co". */
+/** "abcdefghijklmnopqrst" from "https://abcdefghijklmnopqrst.supabase.co". */
 export function supabaseProjectRef(url: string | undefined): string | null {
   if (!url) return null
   try {

@@ -29,7 +29,7 @@ describe('system status helpers', () => {
   })
 
   it('reads the Supabase project ref from its URL', () => {
-    expect(supabaseProjectRef('https://jdmyjdumxstirwzwinnu.supabase.co')).toBe('jdmyjdumxstirwzwinnu')
+    expect(supabaseProjectRef('https://abcdefghijklmnopqrst.supabase.co')).toBe('abcdefghijklmnopqrst')
     expect(supabaseProjectRef('http://localhost:54321')).toBeNull()
   })
 })
