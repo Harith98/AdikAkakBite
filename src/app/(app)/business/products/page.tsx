@@ -13,7 +13,7 @@ import { Card } from '@/components/ui/Card'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { LinkButton } from '@/components/ui/LinkButton'
 
-export default async function ProductsPage({ searchParams }: { searchParams: { category?: string; q?: string; view?: string } }) {
+export default async function ProductsPage({ searchParams }: { searchParams: { category?: string; q?: string } }) {
   const { business, settings } = await getCurrentBusinessContext()
   const products = await getProducts(createClient(), business.id)
   const money = (n: number) => formatMoney(n, settings.currency)
@@ -23,16 +23,13 @@ export default async function ProductsPage({ searchParams }: { searchParams: { c
   const query = (searchParams.q ?? '').trim().slice(0, 80)
   const shown = filterProducts(products, { category, query })
   const isFiltered = Boolean(category || query)
-  const view: 'list' | 'grid' = searchParams.view === 'grid' ? 'grid' : 'list'
-  /** A link to this page that keeps the current filters and view, changing only what's given. */
-  const pageHref = (change: { category?: string | null; view?: 'list' | 'grid'; q?: string | null }) => {
+  /** A link to this page that keeps the current filters, changing only what's given. */
+  const pageHref = (change: { category?: string | null; q?: string | null }) => {
     const params = new URLSearchParams()
     const c = change.category !== undefined ? change.category : category
     const q = change.q !== undefined ? change.q : query
-    const v = change.view ?? view
     if (c) params.set('category', c)
     if (q) params.set('q', q)
-    if (v === 'grid') params.set('view', 'grid')
     const qs = params.toString()
     return qs ? `/business/products?${qs}` : '/business/products'
   }
@@ -60,10 +57,8 @@ export default async function ProductsPage({ searchParams }: { searchParams: { c
       ) : (
         <>
         <div className="flex flex-col gap-3">
-          <div className="flex gap-2">
-          <form action="/business/products" method="get" role="search" className="flex min-w-0 flex-1 gap-2">
+          <form action="/business/products" method="get" role="search" className="flex gap-2">
             {category && <input type="hidden" name="category" value={category} />}
-            {view === 'grid' && <input type="hidden" name="view" value="grid" />}
             <input
               type="search"
               name="q"
@@ -79,37 +74,6 @@ export default async function ProductsPage({ searchParams }: { searchParams: { c
               Search
             </button>
           </form>
-          {/* List / grid switch */}
-          <div className="flex shrink-0 rounded-pill bg-ink/5 p-1" role="group" aria-label="View">
-            {(['list', 'grid'] as const).map((v) => (
-              <Link
-                key={v}
-                href={pageHref({ view: v })}
-                replace
-                scroll={false}
-                aria-label={v === 'list' ? 'List view' : 'Grid view'}
-                aria-current={view === v ? 'true' : undefined}
-                className={clsx(
-                  'flex h-9 w-9 items-center justify-center rounded-pill transition-colors',
-                  view === v ? 'bg-base-card text-ink shadow-card' : 'text-ink-muted'
-                )}
-              >
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
-                  {v === 'list' ? (
-                    <path d="M4 6h16M4 12h16M4 18h16" />
-                  ) : (
-                    <>
-                      <rect x="4" y="4" width="7" height="7" rx="1.5" />
-                      <rect x="13" y="4" width="7" height="7" rx="1.5" />
-                      <rect x="4" y="13" width="7" height="7" rx="1.5" />
-                      <rect x="13" y="13" width="7" height="7" rx="1.5" />
-                    </>
-                  )}
-                </svg>
-              </Link>
-            ))}
-          </div>
-          </div>
 
           {chips.length > 1 && (
             <nav aria-label="Filter by category" className="flex flex-wrap gap-2">
@@ -151,7 +115,7 @@ export default async function ProductsPage({ searchParams }: { searchParams: { c
           <Card>
             <p className="text-sm text-ink-muted">No products match. Try another category or search.</p>
           </Card>
-        ) : view === 'grid' ? (
+        ) : (
         <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3">
           {shown.map((p) => {
             const stock = p.readyStock === null ? null : readyStockState(p.readyStock)
@@ -203,55 +167,6 @@ export default async function ProductsPage({ searchParams }: { searchParams: { c
               </li>
             )
           })}
-        </ul>
-        ) : (
-        <ul className="flex flex-col gap-3">
-          {shown.map((p) => (
-            <li key={p.id}>
-              <Link href={`/business/products/${p.id}`} className="block">
-                <Card className={p.isActive ? 'transition-colors hover:bg-base-soft' : 'opacity-70'}>
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex min-w-0 items-start gap-3">
-                      {p.imageUrl ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img
-                          src={p.imageUrl}
-                          alt=""
-                          loading="lazy"
-                          className="h-16 w-16 shrink-0 rounded-card bg-base-soft object-cover"
-                        />
-                      ) : (
-                        <span aria-hidden="true" className="flex h-16 w-16 shrink-0 items-center justify-center rounded-card bg-base-soft text-2xl">
-                          🧁
-                        </span>
-                      )}
-                      <div className="min-w-0">
-                        <p className="break-words font-display text-xl text-ink">{p.name}</p>
-                        {p.category && <p className="text-sm text-ink-muted">{p.category}</p>}
-                      </div>
-                    </div>
-                    <div className="flex shrink-0 flex-col items-end gap-1.5">
-                      <p className="text-lg font-medium text-ink">{money(p.sellingPrice)}</p>
-                      {p.readyStock !== null && (
-                        <Badge tone={readyStockState(p.readyStock) === 'in_stock' ? 'sage' : 'clay'} dot>
-                          {readyStockLabel(p.readyStock)}
-                        </Badge>
-                      )}
-                    </div>
-                  </div>
-                  <dl className="mt-3 grid grid-cols-3 gap-2 text-sm">
-                    <div><dt className="text-xs text-ink-muted">Cost</dt><dd>{money(p.totalCost)}</dd></div>
-                    <div>
-                      <dt className="text-xs text-ink-muted">Profit</dt>
-                      <dd className={p.grossProfit < 0 ? 'text-clay-dark' : undefined}>{money(p.grossProfit)}</dd>
-                    </div>
-                    <div><dt className="text-xs text-ink-muted">Margin</dt><dd>{p.grossMargin === null ? '—' : formatPercent(p.grossMargin)}</dd></div>
-                  </dl>
-                  {!p.isActive && <div className="mt-3"><Badge>Inactive</Badge></div>}
-                </Card>
-              </Link>
-            </li>
-          ))}
         </ul>
         )}
         </>

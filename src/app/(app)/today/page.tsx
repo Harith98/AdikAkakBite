@@ -13,6 +13,7 @@ import { getUpcomingOrders } from '@/lib/services/orders'
 import { formatMoney } from '@/lib/constants'
 import { addDaysISO } from '@/lib/time'
 import { ComingUpCard } from '@/components/today/ComingUpCard'
+import { dayHeadline, dayPart } from '@/lib/today-greeting'
 import { ReadyStockStrip } from '@/components/business/ReadyStockStrip'
 import { Card } from '@/components/ui/Card'
 import { LinkButton } from '@/components/ui/LinkButton'
@@ -27,7 +28,7 @@ const MAX_ORDER_CARDS = 3
 const UPCOMING_DAYS = 7
 
 export default async function TodayPage() {
-  const { business, settings, role, displayName } = await getCurrentBusinessContext()
+  const { business, settings, role, displayName, avatarUrl } = await getCurrentBusinessContext()
   const supabase = createClient()
   // Greet each person by their own name; the business's owner name only ever stands in for the owner.
   const greetName = displayName ?? (role === 'owner' ? business.owner_name : null) ?? 'there'
@@ -94,22 +95,50 @@ export default async function TodayPage() {
   const isClosingBlock = block?.title.toLowerCase() === 'closing'
   const closedToday = latestClose.some((c) => c.review_date === now.isoDate)
 
+  // ---- Header personality: time-of-day greeting + one line about the day ----
+  const part = dayPart(now.time)
+  const headline = dayHeadline({
+    overdueOrders: orderRows.filter((row) => row.urgency.isOverdue).length,
+    ordersDueToday: ordersToday,
+    lowStock: data.inventoryAlerts.length,
+    tasksDone,
+    tasksSoFar: tasksSoFar.length,
+    isWorkingDay,
+    isoDate: now.isoDate,
+  })
+
   return (
     <div className="flex flex-col gap-6">
-      <header className="relative overflow-hidden rounded-card bg-gradient-to-br from-raspberry-soft via-base-soft to-amber-soft p-5 shadow-card">
-        {/* soft decorative circles */}
+      <header className={clsx('relative overflow-hidden rounded-card p-5 shadow-card', part.wash)}>
+        {/* soft decorative circles, and the time of day's own emoji */}
         <span aria-hidden="true" className="pointer-events-none absolute -right-8 -top-10 h-32 w-32 rounded-full bg-white/40" />
         <span aria-hidden="true" className="pointer-events-none absolute -bottom-12 right-16 h-24 w-24 rounded-full bg-white/30" />
+        <span aria-hidden="true" className="pointer-events-none absolute right-4 top-3 text-4xl opacity-80 sm:text-5xl">
+          {part.emoji}
+        </span>
 
         <div className="relative flex items-center gap-4">
-          {/* The icon is already cropped close to the duck and penguin, so it simply fills the tile. */}
-          <span className="h-14 w-14 shrink-0 overflow-hidden rounded-card bg-white shadow-card">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/icons/iconAdik512x512.png?v=2" alt="" className="h-full w-full object-contain p-0.5" />
+          {/* Your own photo, with the shop's logo as a little badge; just the logo if there's no photo. */}
+          <span className="relative h-14 w-14 shrink-0">
+            {avatarUrl ? (
+              <>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={avatarUrl} alt="" className="h-14 w-14 rounded-pill object-cover shadow-card ring-2 ring-white" />
+                <span className="absolute -bottom-1 -right-1 h-6 w-6 overflow-hidden rounded-pill bg-white shadow-card ring-2 ring-white">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src="/icons/iconAdik192x192.png?v=2" alt="" className="h-full w-full object-contain" />
+                </span>
+              </>
+            ) : (
+              <span className="block h-14 w-14 overflow-hidden rounded-card bg-white shadow-card">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src="/icons/iconAdik512x512.png?v=2" alt="" className="h-full w-full object-contain p-0.5" />
+              </span>
+            )}
           </span>
-          <div className="min-w-0">
+          <div className="min-w-0 pr-10">
             <p className="font-display text-2xl leading-tight text-ink sm:text-3xl">
-              {greeting(now.time)}, {greetName}! 👋
+              {part.greeting}, {greetName}!
             </p>
             <p className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-ink-muted">
               <span>
@@ -128,7 +157,9 @@ export default async function TodayPage() {
           </div>
         </div>
 
-        <div className="relative mt-4 grid grid-cols-3 gap-2">
+        <p className="relative mt-3 rounded-card bg-white/60 px-3 py-2 text-sm font-medium text-ink backdrop-blur">{headline}</p>
+
+        <div className="relative mt-3 grid grid-cols-3 gap-2">
           <Stat emoji="🧾" label="Orders today" value={String(ordersToday)} href="/orders" />
           <Stat emoji="✅" label="Tasks so far" value={tasksSoFar.length > 0 ? `${tasksDone}/${tasksSoFar.length}` : '—'} />
           <Stat
@@ -236,11 +267,4 @@ function Stat({ emoji, label, value, href, alert }: { emoji: string; label: stri
   ) : (
     <div className={className}>{body}</div>
   )
-}
-
-function greeting(time: string): string {
-  const hour = Number(time.slice(0, 2))
-  if (hour < 12) return 'Good morning'
-  if (hour < 17) return 'Good afternoon'
-  return 'Good evening'
 }
