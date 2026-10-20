@@ -9,6 +9,10 @@ import { getNextRecommendedTask, getOrderUrgency } from '@/lib/services/recommen
 import { getSuggestedPriorities } from '@/lib/services/priorities'
 import { getRecentCloses } from '@/lib/services/sales'
 import { getReadyStock } from '@/lib/services/products'
+import { getUpcomingOrders } from '@/lib/services/orders'
+import { formatMoney } from '@/lib/constants'
+import { addDaysISO } from '@/lib/time'
+import { ComingUpCard } from '@/components/today/ComingUpCard'
 import { ReadyStockList } from '@/components/business/ReadyStockList'
 import { Badge } from '@/components/ui/Badge'
 import { Card } from '@/components/ui/Card'
@@ -20,6 +24,8 @@ import { TodayFocusCard } from '@/components/today/TodayFocusCard'
 import { LiveClock } from '@/components/today/LiveClock'
 
 const MAX_ORDER_CARDS = 3
+/** How far ahead the "Coming up" card looks. */
+const UPCOMING_DAYS = 7
 
 export default async function TodayPage() {
   const { business, settings, role, displayName } = await getCurrentBusinessContext()
@@ -36,11 +42,12 @@ export default async function TodayPage() {
 
   // The latest close is a tiny query, so fetch it alongside the main data
   // rather than waiting until we know whether the Closing block is active.
-  const [data, latestClose, readyStock] = await Promise.all([
+  const [data, latestClose, readyStock, upcoming] = await Promise.all([
     getTodayData(supabase, business.id, now.isoDate, isWorkingDay),
     isWorkingDay ? getRecentCloses(supabase, business.id, 1) : Promise.resolve([]),
-    // Optional extra: never let it take the Today page down.
+    // Optional extras: never let them take the Today page down.
     getReadyStock(supabase, business.id).catch(() => []),
+    getUpcomingOrders(supabase, business.id, now.isoDate, addDaysISO(now.isoDate, UPCOMING_DAYS)).catch(() => []),
   ])
 
   // ---- Orders, most pressing first (overdue, then by due date/time) ----
@@ -76,8 +83,12 @@ export default async function TodayPage() {
   })
 
   // ---- Summary tiles ----
-  const todaysTasks = data.tasks.filter((t) => t.scheduledDate === now.isoDate)
-  const tasksDone = todaysTasks.filter((t) => t.status === 'completed' || t.status === 'skipped').length
+  // Only tasks whose block has started (plus manual ones) count, so the morning
+  // doesn't open on "0/27": the rest of the day isn't due yet.
+  const tasksSoFar = data.tasks.filter(
+    (t) => t.scheduledDate === now.isoDate && (!t.scheduledTime || t.scheduledTime.slice(0, 5) <= now.time)
+  )
+  const tasksDone = tasksSoFar.filter((t) => t.status === 'completed' || t.status === 'skipped').length
   const ordersToday = data.orders.filter((o) => o.requiredDate === now.isoDate).length
 
   // Nudge toward the daily close once Closing is the active block (spec §8/§61), unless already done.
@@ -98,7 +109,7 @@ export default async function TodayPage() {
         </div>
         <div className="mt-4 grid grid-cols-3 gap-3">
           <Stat label="Orders due today" value={String(ordersToday)} />
-          <Stat label="Tasks done" value={todaysTasks.length > 0 ? `${tasksDone}/${todaysTasks.length}` : '—'} />
+          <Stat label="Tasks so far" value={tasksSoFar.length > 0 ? `${tasksDone}/${tasksSoFar.length}` : '—'} />
           <Stat
             label="Low stock"
             value={String(data.inventoryAlerts.length)}
@@ -133,6 +144,8 @@ export default async function TodayPage() {
               nextBlock={nextBlock}
             />
           ) : null}
+
+          <ComingUpCard orders={upcoming} today={now.isoDate} days={UPCOMING_DAYS} money={(n) => formatMoney(n, settings.currency)} />
 
           {isWorkingDay && isClosingBlock && (
             <Card className={closedToday ? 'border border-sage/40' : 'border-2 border-raspberry'}>

@@ -146,3 +146,18 @@ export async function getCompletedOrdersInRange(
   if (error) throw new Error(`Could not load orders: ${error.message}`)
   return (data ?? []) as unknown as CompletedOrderForSales[]
 }
+
+/** Active orders due after today, up to `days` days ahead (for Today's "Coming up" card). */
+export async function getUpcomingOrders(supabase: Client, businessId: string, today: string, lastDate: string): Promise<OrderView[]> {
+  const { data, error } = await supabase
+    .from('orders')
+    .select(ORDER_SELECT)
+    .eq('business_id', businessId)
+    .in('status', ACTIVE)
+    .gt('required_date', today)
+    .lte('required_date', lastDate)
+    .order('required_date', { ascending: true })
+    .order('required_time', { ascending: true, nullsFirst: false })
+  if (error) throw new Error(`Could not load upcoming orders: ${error.message}`)
+  return toOrderViews((data ?? []) as unknown as OrderRowWithRelations[])
+}
