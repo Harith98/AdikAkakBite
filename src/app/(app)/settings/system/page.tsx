@@ -50,7 +50,13 @@ export default async function SystemStatusPage() {
   ])
   const status = statusRes.error ? null : (statusRes.data as unknown as SystemStatus)
   // Migrations after 0022 are detected here (0022's function only knows the ones before it).
-  if (status) status.migrations['0023'] = !(await supabase.rpc('get_public_menu')).error
+  if (status) {
+    status.migrations['0023'] = !(await supabase.rpc('get_public_menu')).error
+    const admin = createServiceRoleClient()
+    status.migrations['0024'] = admin ? !(await admin.storage.getBucket('avatars')).error : false
+    const members = await supabase.rpc('get_business_members', { p_business_id: business.id })
+    status.migrations['0025'] = !members.error && (members.data ?? []).some((m) => 'avatar_url' in m)
+  }
   const lastRun = (action: string) => (cronRes.data ?? []).find((r) => r.action === action)?.created_at ?? null
   const devices = devicesRes && !devicesRes.error ? devicesRes.count ?? 0 : null
 

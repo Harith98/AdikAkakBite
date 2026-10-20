@@ -3,6 +3,7 @@ import type { ReactNode } from 'react'
 import { getCurrentBusinessContext } from '@/lib/services/current-business'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
+import { Avatar } from '@/components/ui/Avatar'
 import { canManageBusiness, ROLE_LABELS } from '@/lib/team'
 import { signOut } from './actions'
 
@@ -15,7 +16,7 @@ interface SettingsRow {
 }
 
 export default async function SettingsPage() {
-  const { business, role, displayName, userEmail } = await getCurrentBusinessContext()
+  const { business, role, displayName, userEmail, avatarUrl } = await getCurrentBusinessContext()
   const manager = canManageBusiness(role)
 
   const businessRows: SettingsRow[] = [
@@ -116,12 +117,7 @@ export default async function SettingsPage() {
       {/* Who's signed in; name, email and password are edited on the account page. */}
       <Link href="/settings/account" className="block">
         <Card className="flex items-center gap-4 transition-colors hover:bg-base-soft">
-          <span
-            aria-hidden="true"
-            className="flex h-12 w-12 shrink-0 items-center justify-center rounded-pill bg-raspberry-soft font-display text-xl text-raspberry-dark"
-          >
-            {(displayName ?? userEmail ?? '?').trim().charAt(0).toUpperCase()}
-          </span>
+          <Avatar url={avatarUrl} name={displayName ?? userEmail ?? '?'} size={48} />
           <span className="min-w-0 flex-1">
             <span className="block truncate font-medium text-ink">{displayName ?? 'Add your name'}</span>
             <span className="block truncate text-sm text-ink-muted">

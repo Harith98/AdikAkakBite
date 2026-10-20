@@ -4,34 +4,7 @@ import { useRef, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { PRODUCT_IMAGE_BUCKET, PRODUCT_IMAGE_MAX_SIZE } from '@/lib/product-images'
 import { Button } from '@/components/ui/Button'
-
-/**
- * Shrinks a photo to at most PRODUCT_IMAGE_MAX_SIZE px on its longest side and
- * re-encodes it as JPEG. Phone photos are often 3–8 MB; this makes them
- * ~100–300 KB, so uploads are quick and the free storage lasts.
- */
-async function resizeToJpeg(file: File): Promise<Blob> {
-  const url = URL.createObjectURL(file)
-  try {
-    const img = new Image()
-    img.src = url
-    await img.decode() // browsers apply the photo's EXIF rotation here
-    const scale = Math.min(1, PRODUCT_IMAGE_MAX_SIZE / Math.max(img.naturalWidth, img.naturalHeight))
-    const canvas = document.createElement('canvas')
-    canvas.width = Math.round(img.naturalWidth * scale)
-    canvas.height = Math.round(img.naturalHeight * scale)
-    const ctx = canvas.getContext('2d')
-    if (!ctx) throw new Error('No canvas')
-    ctx.fillStyle = '#ffffff' // transparent PNGs get a white background instead of black
-    ctx.fillRect(0, 0, canvas.width, canvas.height)
-    ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
-    return await new Promise<Blob>((resolve, reject) =>
-      canvas.toBlob((blob) => (blob ? resolve(blob) : reject(new Error('Encode failed'))), 'image/jpeg', 0.82)
-    )
-  } finally {
-    URL.revokeObjectURL(url)
-  }
-}
+import { resizeToJpeg } from '@/lib/resize-image'
 
 interface Props {
   businessId: string
@@ -61,7 +34,7 @@ export function ProductImagePicker({ businessId, initialUrl, onUploadingChange }
     setError(null)
     setBusy(true)
     try {
-      const blob = await resizeToJpeg(file)
+      const blob = await resizeToJpeg(file, { maxSize: PRODUCT_IMAGE_MAX_SIZE })
       const path = `${businessId}/${crypto.randomUUID()}.jpg`
       const supabase = createClient()
       const { error: uploadError } = await supabase.storage

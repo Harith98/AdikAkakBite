@@ -79,6 +79,8 @@ export const EXPECTED_MIGRATIONS: { id: string; file: string; purpose: string }[
   { id: '0021', file: '0021_editable_sale_date.sql', purpose: 'Past sales and sale dates' },
   { id: '0022', file: '0022_system_status.sql', purpose: 'This status page' },
   { id: '0023', file: '0023_menu_catalogue.sql', purpose: 'Customer menu and catalogue' },
+  { id: '0024', file: '0024_profile_photos.sql', purpose: 'Profile photos' },
+  { id: '0025', file: '0025_member_avatars.sql', purpose: 'Team photos' },
 ]
 
 /** The ones not applied yet, oldest first. */

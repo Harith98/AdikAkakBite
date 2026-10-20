@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { Avatar } from '@/components/ui/Avatar'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import {
@@ -55,6 +56,8 @@ export interface MemberRowProps {
   email: string
   /** Their own name, if they've set one; the email is shown instead otherwise. */
   displayName: string | null
+  /** Their profile photo, if they've added one (initial shown otherwise). */
+  avatarUrl?: string | null
   role: BusinessMemberRole
   joinedLabel: string
   isYou: boolean
@@ -62,7 +65,7 @@ export interface MemberRowProps {
   assignable: BusinessMemberRole[]
 }
 
-export function MemberRow({ memberId, email, displayName, role, joinedLabel, isYou, assignable }: MemberRowProps) {
+export function MemberRow({ memberId, email, displayName, avatarUrl = null, role, joinedLabel, isYou, assignable }: MemberRowProps) {
   const { pending, error, run } = useTeamAction()
   const canEdit = assignable.length > 0 && !isYou
   const label = displayName ?? email
@@ -79,8 +82,9 @@ export function MemberRow({ memberId, email, displayName, role, joinedLabel, isY
 
   return (
     <li className="flex flex-col gap-2 py-3">
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
+      <div className="flex items-center justify-between gap-3">
+        <Avatar url={avatarUrl} name={label} size={40} />
+        <div className="min-w-0 flex-1">
           <p className="truncate text-sm font-medium text-ink">
             {label}
             {isYou && <span className="font-normal text-ink-muted"> (you)</span>}

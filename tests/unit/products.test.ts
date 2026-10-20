@@ -116,3 +116,15 @@ describe('catalogueFilePath', () => {
     expect(catalogueFilePath('https://example.com/menu.pdf', base)).toBeNull()
   })
 })
+
+describe('avatarFilePath', () => {
+  it('only accepts JPEGs in our avatars bucket', async () => {
+    const { avatarFilePath, readAvatarUrl } = await import('@/lib/avatars')
+    const base = 'https://abc.supabase.co'
+    const id = '0b6a3f0e-1c2d-4e5f-8a9b-0c1d2e3f4a5b'
+    expect(avatarFilePath(`${base}/storage/v1/object/public/avatars/${id}/me.jpg`, base)).toBe(`${id}/me.jpg`)
+    expect(avatarFilePath(`${base}/storage/v1/object/public/catalogue/${id}/me.jpg`, base)).toBeNull()
+    expect(readAvatarUrl({ avatar_url: 'javascript:alert(1)' })).toBeNull()
+    expect(readAvatarUrl({ avatar_url: 'https://x.supabase.co/a.jpg' })).toBe('https://x.supabase.co/a.jpg')
+  })
+})

@@ -733,6 +733,8 @@ export interface Database {
           email: string
           /** Added in migration 0014; absent (undefined) before it's applied. */
           display_name?: string | null
+          /** Added in migration 0025; absent (undefined) before it's applied. */
+          avatar_url?: string | null
           role: BusinessMemberRole
           joined_at: string
         }[]

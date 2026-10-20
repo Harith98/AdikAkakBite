@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase/server'
 import { getActionContext } from '@/lib/services/action-context'
 import { canManageBusiness } from '@/lib/team'
 import { str } from '@/lib/validation/common'
+import { AVATAR_BUCKET, avatarFilePath, readAvatarUrl } from '@/lib/avatars'
 
 export async function signOut() {
   const supabase = createClient()
@@ -80,4 +81,36 @@ export async function updateMyName(_prev: ProfileState, formData: FormData): Pro
 
   revalidatePath('/', 'layout')
   return { error: null, nonce: Date.now() }
+}
+
+/**
+ * Any team member: set (or clear, with null) their own profile photo. The photo
+ * is uploaded from the browser to their own avatars folder first; this saves
+ * its link in their auth metadata and deletes the previous file.
+ */
+export async function updateMyAvatar(url: string | null): Promise<{ error: string | null }> {
+  const supabase = createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return { error: 'Please sign in again.' }
+
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  if (url !== null) {
+    const path = avatarFilePath(url, supabaseUrl)
+    if (!path || !path.startsWith(`${user.id}/`)) return { error: 'That photo couldn’t be used. Please try again.' }
+  }
+
+  const previous = readAvatarUrl(user.user_metadata)
+  const { error } = await supabase.auth.updateUser({ data: { avatar_url: url } })
+  if (error) return { error: error.message }
+
+  const oldPath = previous && previous !== url ? avatarFilePath(previous, supabaseUrl) : null
+  if (oldPath) {
+    const { error: removeError } = await supabase.storage.from(AVATAR_BUCKET).remove([oldPath])
+    if (removeError) console.error('Could not delete the old profile photo:', removeError.message)
+  }
+
+  revalidatePath('/', 'layout')
+  return { error: null }
 }

@@ -40,6 +40,7 @@ export default async function TeamPage() {
               memberId={m.member_id}
               email={m.email}
               displayName={m.display_name ?? null}
+              avatarUrl={m.avatar_url ?? null}
               role={m.role}
               joinedLabel={dateLabel(m.joined_at, settings.timezone)}
               isYou={m.user_id === userId}

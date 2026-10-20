@@ -102,8 +102,11 @@ export default async function TodayPage() {
         <span aria-hidden="true" className="pointer-events-none absolute -bottom-12 right-16 h-24 w-24 rounded-full bg-white/30" />
 
         <div className="relative flex items-center gap-4">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/icons/iconAdik192x192.png" alt="" className="h-14 w-14 shrink-0 rounded-card bg-white/70 object-contain p-1 shadow-card" />
+          {/* The icon has wide white margins, so it's zoomed in to let the duck and penguin fill the tile. */}
+          <span className="h-14 w-14 shrink-0 overflow-hidden rounded-card bg-white shadow-card">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/icons/iconAdik512x512.png" alt="" className="h-full w-full scale-[1.45] object-cover" />
+          </span>
           <div className="min-w-0">
             <p className="font-display text-2xl leading-tight text-ink sm:text-3xl">
               {greeting(now.time)}, {greetName}! 👋

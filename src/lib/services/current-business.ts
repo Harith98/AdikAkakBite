@@ -1,3 +1,4 @@
+import { readAvatarUrl } from '@/lib/avatars'
 import { cache } from 'react'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
@@ -21,6 +22,8 @@ export interface CurrentBusinessContext {
   role: BusinessMemberRole
   /** The signed-in person's own name (auth user metadata), if they've set one. */
   displayName: string | null
+  /** The signed-in person's profile photo, if they've added one. */
+  avatarUrl: string | null
 }
 
 /**
@@ -93,6 +96,7 @@ export const getCurrentBusinessContext = cache(async (): Promise<CurrentBusiness
     userEmail: user.email ?? null,
     role: membership.role,
     displayName: readDisplayName(user.user_metadata),
+    avatarUrl: readAvatarUrl(user.user_metadata),
   }
 })
 
