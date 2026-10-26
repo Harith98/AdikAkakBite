@@ -501,8 +501,11 @@ create table push_subscriptions (
   p256dh text not null,
   auth text not null,
   user_agent text,
+  -- The person's own name for it ("Harith's iPhone"): websites can't read a phone's model.
+  device_name text,
   created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
+  updated_at timestamptz not null default now(),
+  constraint push_subscriptions_device_name_length check (device_name is null or length(device_name) between 1 and 40)
 );
 
 -- Which notifications each person wants. No row means "all on".
@@ -1173,7 +1176,7 @@ returns integer
 language sql
 immutable
 as $$
-  select 5;
+  select 7;
 $$;
 
 revoke all on function schema_version() from public;
@@ -1182,7 +1185,7 @@ grant execute on function schema_version() to authenticated;
 -- What Settings → System shows the owner: database and photo-storage size (to
 -- compare with the Supabase free plan), row counts and number of logins.
 -- SECURITY DEFINER because it reads sizes and auth/storage tables a normal
--- user can't; it refuses anyone who isn't the owner. Numbers only — never
+-- user can't; it refuses anyone who isn't the owner or an admin. Numbers only — never
 -- any customer or account details.
 create or replace function app_system_status()
 returns jsonb
@@ -1194,8 +1197,8 @@ as $$
 declare
   v_result jsonb;
 begin
-  if not exists (select 1 from business_members where user_id = auth.uid() and role = 'owner') then
-    raise exception 'Only the owner can view system status.';
+  if not exists (select 1 from business_members where user_id = auth.uid() and role in ('owner', 'admin')) then
+    raise exception 'Only the owner or an admin can view system status.';
   end if;
 
   select jsonb_build_object(

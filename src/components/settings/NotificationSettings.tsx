@@ -6,12 +6,20 @@ import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { NOTIFICATION_KINDS, type NotificationKind } from '@/lib/notifications/messages'
 import {
+  getDeviceName,
   removeSubscription,
+  saveDeviceName,
   saveNotificationPreference,
   saveSubscription,
   sendTestNotification,
   type DeviceSubscription,
 } from '@/app/(app)/settings/notifications/actions'
+import { describeDevice } from '@/lib/device-label'
+
+const nameInput = 'h-11 w-full rounded-card border border-ink/15 bg-base px-3 text-sm outline-none focus:border-raspberry'
+
+/** A starting suggestion, e.g. "My iPhone" (websites can't read the exact model). */
+const suggestedName = () => `My ${describeDevice(navigator.userAgent).split(' · ')[0]}`
 
 type DeviceState =
   | 'checking'
@@ -54,6 +62,12 @@ export function NotificationSettings({ vapidPublicKey, preferences }: Props) {
   const [prefs, setPrefs] = useState(preferences)
   const [busy, setBusy] = useState(false)
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null)
+  // This device's name: asked for when turning on, and for devices already on without one.
+  const [endpoint, setEndpoint] = useState<string | null>(null)
+  const [deviceName, setDeviceName] = useState<string | null>(null)
+  const [nameDraft, setNameDraft] = useState('')
+  const [naming, setNaming] = useState(false)
+  const [namesSupported, setNamesSupported] = useState(true)
 
   useEffect(() => {
     const supported = 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window
@@ -65,13 +79,29 @@ export function NotificationSettings({ vapidPublicKey, preferences }: Props) {
       setDevice('blocked')
       return
     }
+    setNameDraft(suggestedName())
     getRegistration()
       .then((reg) => reg.pushManager.getSubscription())
-      .then((sub) => setDevice(sub && Notification.permission === 'granted' ? 'on' : 'off'))
+      .then(async (sub) => {
+        const on = Boolean(sub && Notification.permission === 'granted')
+        setDevice(on ? 'on' : 'off')
+        if (!on || !sub) return
+        setEndpoint(sub.endpoint)
+        const saved = await getDeviceName(sub.endpoint).catch(() => ({ name: null, supported: false }))
+        setNamesSupported(saved.supported)
+        setDeviceName(saved.name)
+        // Already on but never named: ask now.
+        if (saved.supported && !saved.name) setNaming(true)
+      })
       .catch(() => setDevice('off'))
   }, [])
 
   async function turnOn() {
+    const name = nameDraft.trim()
+    if (!name) {
+      setMessage({ ok: false, text: 'Give this device a name first, e.g. "My iPhone".' })
+      return
+    }
     setBusy(true)
     setMessage(null)
     try {
@@ -87,13 +117,16 @@ export function NotificationSettings({ vapidPublicKey, preferences }: Props) {
           userVisibleOnly: true,
           applicationServerKey: urlBase64ToUint8Array(vapidPublicKey) as BufferSource,
         }))
-      const result = await saveSubscription(sub.toJSON() as DeviceSubscription, navigator.userAgent)
+      const result = await saveSubscription(sub.toJSON() as DeviceSubscription, navigator.userAgent, name)
       if (result.error) {
         setMessage({ ok: false, text: result.error })
         return
       }
       setDevice('on')
-      setMessage({ ok: true, text: 'Notifications are on for this device.' })
+      setEndpoint(sub.endpoint)
+      setDeviceName(name)
+      setNaming(false)
+      setMessage({ ok: true, text: `Notifications are on for ${name}.` })
     } catch {
       setMessage({ ok: false, text: 'Couldn’t turn on notifications. Please try again.' })
     } finally {
@@ -111,6 +144,9 @@ export function NotificationSettings({ vapidPublicKey, preferences }: Props) {
         await sub.unsubscribe()
       }
       setDevice('off')
+      setDeviceName(null)
+      setNaming(false)
+      setNameDraft(suggestedName())
     } catch {
       setMessage({ ok: false, text: 'Couldn’t turn off notifications. Please try again.' })
     } finally {
@@ -124,6 +160,22 @@ export function NotificationSettings({ vapidPublicKey, preferences }: Props) {
     const result = await sendTestNotification().catch(() => ({ error: 'Something went wrong. Please try again.' }))
     setMessage(result.error ? { ok: false, text: result.error } : { ok: true, text: 'Sent! It should appear in a moment.' })
     setBusy(false)
+  }
+
+  async function saveName() {
+    const name = nameDraft.trim()
+    if (!name || !endpoint) return
+    setBusy(true)
+    setMessage(null)
+    const result = await saveDeviceName(endpoint, name).catch(() => ({ error: 'Could not save. Check your connection.' }))
+    setBusy(false)
+    if (result.error) {
+      setMessage({ ok: false, text: result.error })
+      return
+    }
+    setDeviceName(name)
+    setNaming(false)
+    setMessage({ ok: true, text: `Saved. This device is now “${name}”.` })
   }
 
   async function toggle(kind: NotificationKind, enabled: boolean) {
@@ -169,11 +221,59 @@ export function NotificationSettings({ vapidPublicKey, preferences }: Props) {
         {(device === 'off' || device === 'on') && (
           <div className="mt-2 flex flex-col gap-3">
             <p className="text-sm text-ink">
-              {device === 'on' ? '🔔 Notifications are on for this device.' : 'Notifications are off for this device.'}
+              {device === 'on' ? (
+                <>
+                  🔔 Notifications are on for <span className="font-medium">{deviceName ?? 'this device'}</span>.
+                  {namesSupported && deviceName && !naming && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setNameDraft(deviceName)
+                        setNaming(true)
+                      }}
+                      className="ml-2 rounded-pill px-2 py-0.5 text-xs font-medium text-raspberry-dark hover:bg-raspberry-soft"
+                    >
+                      Rename
+                    </button>
+                  )}
+                </>
+              ) : (
+                'Notifications are off for this device.'
+              )}
             </p>
+
+            {/* Name: before turning on, or for a device that's on without one (or being renamed). */}
+            {(device === 'off' || (device === 'on' && naming)) && (
+              <div className={device === 'on' && !deviceName ? 'rounded-card bg-amber-soft p-3' : ''}>
+                <label className="flex flex-col gap-1 text-sm">
+                  <span className="font-medium text-ink">{device === 'on' && !deviceName ? 'Name this device' : 'Device name'}</span>
+                  <input
+                    value={nameDraft}
+                    onChange={(e) => setNameDraft(e.target.value)}
+                    maxLength={40}
+                    placeholder="e.g. Harith’s iPhone, Kitchen iPad"
+                    className={nameInput}
+                  />
+                  <span className="text-xs text-ink-muted">So you can tell your devices apart in System status. Phones don’t share their model.</span>
+                </label>
+                {device === 'on' && (
+                  <div className="mt-2 flex gap-2">
+                    <Button type="button" onClick={saveName} loading={busy} disabled={!nameDraft.trim()}>
+                      Save name
+                    </Button>
+                    {deviceName && (
+                      <Button type="button" variant="ghost" onClick={() => setNaming(false)} disabled={busy}>
+                        Cancel
+                      </Button>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+
             <div className="flex flex-wrap gap-2">
               {device === 'off' ? (
-                <Button type="button" onClick={turnOn} disabled={busy}>
+                <Button type="button" onClick={turnOn} loading={busy} disabled={!nameDraft.trim()}>
                   {busy ? 'Turning on…' : 'Turn on notifications'}
                 </Button>
               ) : (

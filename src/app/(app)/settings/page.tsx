@@ -109,7 +109,7 @@ export default async function SettingsPage() {
         </>
       ),
     },
-    ...(role === 'owner'
+    ...(canManageBusiness(role)
       ? [
           {
             href: '/settings/system',

@@ -28,26 +28,70 @@ function isValidSubscription(sub: DeviceSubscription): boolean {
   }
 }
 
-/** Remembers this device so the server can send it notifications. */
-export async function saveSubscription(sub: DeviceSubscription, userAgent: string): Promise<ActionResult> {
+/** A device name: 1–40 characters, trimmed. */
+function cleanDeviceName(name: unknown): string | null {
+  if (typeof name !== 'string') return null
+  const trimmed = name.trim().replace(/\s+/g, ' ')
+  return trimmed.length >= 1 && trimmed.length <= 40 ? trimmed : null
+}
+
+/** True when the database doesn't have device names yet (before its update), so saving carries on without one. */
+const noNameColumn = (message: string) => /device_name/.test(message)
+
+/** Remembers this device (and its name) so the server can send it notifications. */
+export async function saveSubscription(sub: DeviceSubscription, userAgent: string, deviceName: string): Promise<ActionResult> {
   if (!isValidSubscription(sub)) return { error: 'This device returned an invalid subscription. Please try again.' }
+  const name = cleanDeviceName(deviceName)
+  if (!name) return { error: 'Give this device a name (up to 40 characters).' }
   const ctx = await getActionContext()
   if (!ctx.ok) return { error: ctx.error }
   const admin = createServiceRoleClient()
   if (!admin) return { error: NO_ADMIN_KEY }
 
   // Same endpoint = same browser install; if someone else used this phone before, it becomes yours.
-  const { error } = await admin.from('push_subscriptions').upsert(
-    {
-      business_id: ctx.businessId,
-      user_id: ctx.userId,
-      endpoint: sub.endpoint,
-      p256dh: sub.keys.p256dh,
-      auth: sub.keys.auth,
-      user_agent: userAgent.slice(0, 300) || null,
-    },
-    { onConflict: 'endpoint' }
-  )
+  const row = {
+    business_id: ctx.businessId,
+    user_id: ctx.userId,
+    endpoint: sub.endpoint,
+    p256dh: sub.keys.p256dh,
+    auth: sub.keys.auth,
+    user_agent: userAgent.slice(0, 300) || null,
+  }
+  let { error } = await admin.from('push_subscriptions').upsert({ ...row, device_name: name }, { onConflict: 'endpoint' })
+  if (error && noNameColumn(error.message)) ({ error } = await admin.from('push_subscriptions').upsert(row, { onConflict: 'endpoint' }))
+  return { error: error ? error.message : null }
+}
+
+/**
+ * This device's saved name. `supported: false` on a database without device
+ * names yet, so the page doesn't ask for a name it can't save.
+ */
+export async function getDeviceName(endpoint: string): Promise<{ name: string | null; supported: boolean }> {
+  if (typeof endpoint !== 'string' || !endpoint) return { name: null, supported: false }
+  const ctx = await getActionContext()
+  const admin = createServiceRoleClient()
+  if (!ctx.ok || !admin) return { name: null, supported: false }
+  const { data, error } = await admin
+    .from('push_subscriptions')
+    .select('device_name')
+    .eq('endpoint', endpoint)
+    .eq('user_id', ctx.userId)
+    .maybeSingle()
+  if (error) return { name: null, supported: !noNameColumn(error.message) }
+  return { name: data?.device_name ?? null, supported: true }
+}
+
+/** Names (or renames) this device. */
+export async function saveDeviceName(endpoint: string, deviceName: string): Promise<ActionResult> {
+  const name = cleanDeviceName(deviceName)
+  if (!name) return { error: 'Give this device a name (up to 40 characters).' }
+  if (typeof endpoint !== 'string' || !endpoint) return { error: 'Turn notifications on first.' }
+  const ctx = await getActionContext()
+  if (!ctx.ok) return { error: ctx.error }
+  const admin = createServiceRoleClient()
+  if (!admin) return { error: NO_ADMIN_KEY }
+  const { error } = await admin.from('push_subscriptions').update({ device_name: name }).eq('endpoint', endpoint).eq('user_id', ctx.userId)
+  if (error && noNameColumn(error.message)) return { error: 'Device names need a database update first (supabase/updates/2026-10-26_device_names.sql).' }
   return { error: error ? error.message : null }
 }
 

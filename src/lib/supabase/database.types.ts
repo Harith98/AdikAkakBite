@@ -725,6 +725,7 @@ export interface Database {
           p256dh: string
           auth: string
           user_agent: string | null
+          device_name: string | null
           created_at: string
           updated_at: string
         }
@@ -736,6 +737,7 @@ export interface Database {
           p256dh: string
           auth: string
           user_agent?: string | null
+          device_name?: string | null
           created_at?: string
           updated_at?: string
         }

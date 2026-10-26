@@ -36,6 +36,8 @@ The file `2026-10-20_single_schema_file.sql` is the one that moved the live data
 | Catalogue opens (version 3) | `catalogue_opens`: opens per day of the menu PDF, counted by `/menu/catalogue` through `count_catalogue_open()` (service-role only), then redirected to the PDF. Settings → System estimates data transfer as opens × PDF size against the free 5 GB a month. |
 | Saved captions (version 4) | `saved_captions`: reusable captions and hashtag sets for the Content page (title, body up to 2,200 characters, Instagram's limit), shared by the team; `use_count` / `last_used_at` put the most used first. |
 | Threads on the checklist (version 5) | `content_platform` gains `'threads'`. Days before 2026-10-26 only needed Instagram, Facebook and WhatsApp to count as fully posted (`PLATFORM_SINCE` in `src/lib/content.ts`), so earlier streaks stay. |
+| Admin system status (version 6) | `app_system_status()` now allows the owner **or an admin** (was owner only); Settings → System is shown to both. |
+| Device names (version 7) | `push_subscriptions.device_name` (1–40 characters): the name a person gives a device when turning notifications on (or later, when prompted), shown in Settings → System status, since websites can't read a phone's model. |
 | Customer menu | `businesses.menu_pdf_url` and the social links; `get_public_menu()` is the only thing `/menu` reads (anon-callable, public info only). |
 | Other | `content_items`, `goals`, `business_activity_logs` (append-only; the daily jobs log here too), `app_system_status()` and `schema_version()` for Settings → System. |
 

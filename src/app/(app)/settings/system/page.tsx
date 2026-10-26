@@ -14,6 +14,7 @@ import {
   type Level,
 } from '@/lib/system-status'
 import clsx from '@/lib/clsx'
+import { canManageBusiness } from '@/lib/team'
 import { describeDevice } from '@/lib/device-label'
 import { Avatar } from '@/components/ui/Avatar'
 import { getBusinessNow } from '@/lib/time'
@@ -37,7 +38,7 @@ const LEVEL_STYLE: Record<Level, { icon: string; text: string; bar: string }> = 
 
 export default async function SystemStatusPage() {
   const { business, role, settings } = await getCurrentBusinessContext()
-  if (role !== 'owner') redirect('/settings')
+  if (!canManageBusiness(role)) redirect('/settings')
   const supabase = createClient()
 
   const admin = createServiceRoleClient()
@@ -52,13 +53,7 @@ export default async function SystemStatusPage() {
       .order('created_at', { ascending: false })
       .limit(20),
     // Every device with notifications on. Only the server can read everyone's (admin key).
-    admin
-      ? admin
-          .from('push_subscriptions')
-          .select('id, user_id, user_agent, created_at, updated_at')
-          .eq('business_id', business.id)
-          .order('updated_at', { ascending: false })
-      : Promise.resolve(null),
+    admin ? loadDevices(admin, business.id) : Promise.resolve(null),
     supabase.rpc('get_business_members', { p_business_id: business.id }),
   ])
   const status = statusRes.error ? null : (statusRes.data as unknown as SystemStatus)
@@ -135,7 +130,7 @@ export default async function SystemStatusPage() {
 
   return (
     <div className="mx-auto flex w-full max-w-2xl flex-col gap-6">
-      <PageHeader back={{ href: '/settings', label: 'Settings' }} title="System status" subtitle="Usage against the free plans, and anything that needs fixing. Only you (the owner) can see this." />
+      <PageHeader back={{ href: '/settings', label: 'Settings' }} title="System status" subtitle="Usage against the free plans, and anything that needs fixing. Only the owner and admins can see this." />
 
       <Card className={problems === 0 ? '!border-sage/40 !bg-sage-soft/40' : '!border-clay/40 !bg-clay-soft/40'}>
         <p className={clsx('font-medium', problems === 0 ? 'text-sage-dark' : 'text-clay-dark')}>
@@ -229,6 +224,7 @@ export default async function SystemStatusPage() {
                         <li key={d.id} className="flex items-center gap-1.5 text-xs text-ink-muted">
                           <span aria-hidden="true" className="h-1.5 w-1.5 shrink-0 rounded-pill bg-sage-dark" />
                           <span className="truncate">
+                            {d.device_name && <span className="font-medium text-ink">{d.device_name} · </span>}
                             {describeDevice(d.user_agent)} · on since {dayFormat.format(new Date(d.created_at))}
                           </span>
                         </li>
@@ -355,6 +351,17 @@ function StatusDot({ level }: { level: Level }) {
       {LEVEL_STYLE[level].icon}
     </span>
   )
+}
+
+/** Devices with notifications on, with their names; without names on a database that doesn't have them yet. */
+async function loadDevices(admin: NonNullable<ReturnType<typeof createServiceRoleClient>>, businessId: string) {
+  const query = (columns: string) =>
+    admin.from('push_subscriptions').select(columns).eq('business_id', businessId).order('updated_at', { ascending: false })
+  type Device = { id: string; user_id: string; user_agent: string | null; device_name: string | null; created_at: string }
+  const named = await query('id, user_id, user_agent, device_name, created_at')
+  if (!named.error) return { data: (named.data ?? []) as unknown as Device[], error: null }
+  const plain = await query('id, user_id, user_agent, created_at')
+  return plain.error ? { data: null, error: plain.error } : { data: ((plain.data ?? []) as unknown as Device[]).map((d) => ({ ...d, device_name: null })), error: null }
 }
 
 function UsageBar({ label, used, limit, format }: { label: string; used: number; limit: number; format: (n: number) => string }) {
