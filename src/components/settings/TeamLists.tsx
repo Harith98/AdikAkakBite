@@ -16,6 +16,7 @@ import {
 import type { BusinessMemberRole } from '@/lib/supabase/database.types'
 import { ROLE_LABELS } from '@/lib/team'
 import { CredentialsCard } from './AddMemberForm'
+import { useConfirm } from '@/components/ui/Feedback'
 
 const ROLE_TONE: Record<BusinessMemberRole, 'raspberry' | 'amber' | 'neutral'> = {
   owner: 'raspberry',
@@ -67,12 +68,20 @@ export interface MemberRowProps {
 
 export function MemberRow({ memberId, email, displayName, avatarUrl = null, role, joinedLabel, isYou, assignable }: MemberRowProps) {
   const { pending, error, run } = useTeamAction()
+  const ask = useConfirm()
   const canEdit = assignable.length > 0 && !isYou
   const label = displayName ?? email
   const [newCredentials, setNewCredentials] = useState<Credentials | null>(null)
 
-  function resetPassword() {
-    if (!confirm(`Give ${label} a new temporary password? Their current password stops working straight away.`)) return
+  async function resetPassword() {
+    if (
+      !(await ask({
+        title: `Reset ${label}'s password?`,
+        message: 'They get a new temporary password, and their current one stops working straight away.',
+        confirmLabel: 'Reset password',
+      }))
+    )
+      return
     void run(async () => {
       const result = await resetMemberPassword(memberId)
       if (result.credentials) setNewCredentials(result.credentials)
@@ -116,8 +125,15 @@ export function MemberRow({ memberId, email, displayName, avatarUrl = null, role
             variant="ghost"
             className="text-clay-dark"
             disabled={pending}
-            onClick={() => {
-              if (confirm(`Remove ${label} from the team? Their login is deleted and they can't sign in any more.`)) {
+            onClick={async () => {
+              if (
+                await ask({
+                  title: `Remove ${label} from the team?`,
+                  message: 'Their login is deleted and they can’t sign in any more.',
+                  confirmLabel: 'Remove',
+                  danger: true,
+                })
+              ) {
                 void run(() => removeMember(memberId))
               }
             }}
@@ -145,6 +161,7 @@ export function TransferOwnershipForm({
   candidates: { memberId: string; label: string; role: BusinessMemberRole }[]
 }) {
   const { pending, error, run } = useTeamAction()
+  const ask = useConfirm()
   const [memberId, setMemberId] = useState('')
   const chosen = candidates.find((c) => c.memberId === memberId)
 
@@ -183,7 +200,7 @@ export function TransferOwnershipForm({
           </option>
         ))}
       </select>
-      <Button type="button" variant="danger" disabled={!chosen || pending} onClick={submit} className="w-full">
+      <Button type="button" variant="danger" loading={pending} disabled={!chosen} onClick={submit} className="w-full">
         {pending ? 'Transferring…' : 'Transfer ownership'}
       </Button>
       {error && <p role="alert" className="text-sm text-clay-dark">{error}</p>}
@@ -193,15 +210,24 @@ export function TransferOwnershipForm({
 
 export function LeaveBusinessButton({ businessName }: { businessName: string }) {
   const { pending, error, run } = useTeamAction()
+  const ask = useConfirm()
   return (
     <div>
       <Button
         type="button"
         variant="ghost"
         className="w-full text-clay-dark"
-        disabled={pending}
-        onClick={() => {
-          if (!confirm(`Leave ${businessName}? You'll lose access until an owner or admin adds you back.`)) return
+        loading={pending}
+        onClick={async () => {
+          if (
+            !(await ask({
+              title: `Leave ${businessName}?`,
+              message: 'You’ll lose access until an owner or admin adds you back.',
+              confirmLabel: 'Leave',
+              danger: true,
+            }))
+          )
+            return
           void run(leaveBusiness).then((ok) => {
             // Full reload: every cached page for the old business must go.
             if (ok) window.location.assign('/no-access')

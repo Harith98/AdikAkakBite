@@ -6,6 +6,7 @@ import clsx from '@/lib/clsx'
 import { SectionLabel } from '@/components/ui/SectionLabel'
 import { Button } from '@/components/ui/Button'
 import { deleteCaption, markCaptionUsed, saveCaption, type SaveCaptionState } from '@/app/(app)/content/actions'
+import { useConfirm, useToast } from '@/components/ui/Feedback'
 
 export interface SavedCaption {
   id: string
@@ -41,6 +42,8 @@ export function SavedCaptions({ captions }: { captions: SavedCaption[] }) {
   const [copied, setCopied] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [, startTransition] = useTransition()
+  const ask = useConfirm()
+  const toast = useToast()
 
   async function copy(caption: SavedCaption) {
     setError(null)
@@ -49,12 +52,13 @@ export function SavedCaptions({ captions }: { captions: SavedCaption[] }) {
       return
     }
     setCopied(caption.id)
+    toast('Copied. Paste it in your post')
     setTimeout(() => setCopied((c) => (c === caption.id ? null : c)), 2000)
     startTransition(() => void markCaptionUsed(caption.id))
   }
 
-  function remove(caption: SavedCaption) {
-    if (!confirm(`Delete "${caption.title}"?`)) return
+  async function remove(caption: SavedCaption) {
+    if (!(await ask({ title: `Delete "${caption.title}"?`, confirmLabel: 'Delete', danger: true }))) return
     startTransition(async () => {
       const result = await deleteCaption(caption.id)
       if (result.error) setError(result.error)
@@ -172,7 +176,7 @@ function CaptionForm({ caption, onDone }: { caption: SavedCaption | null; onDone
 function SaveButton() {
   const { pending } = useFormStatus()
   return (
-    <Button type="submit" disabled={pending}>
+    <Button type="submit" loading={pending}>
       {pending ? 'Saving…' : 'Save'}
     </Button>
   )

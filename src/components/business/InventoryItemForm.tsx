@@ -4,12 +4,14 @@ import { useFormState, useFormStatus } from 'react-dom'
 import { Button } from '@/components/ui/Button'
 import { deleteInventoryItem, saveInventoryItem, type SaveItemState } from '@/app/(app)/business/inventory/actions'
 import type { InventoryItemView } from '@/lib/services/inventory'
+import { ConfirmForm, useSuccessToast } from '@/components/ui/Feedback'
 
 const initialState: SaveItemState = { error: null, nonce: 0 }
 const input = 'h-11 w-full rounded-card border border-ink/15 bg-base px-3 text-sm outline-none focus:border-raspberry'
 
 export function InventoryItemForm({ item }: { item?: InventoryItemView }) {
   const [state, formAction] = useFormState(saveInventoryItem, initialState)
+  useSuccessToast(state, 'Item saved')
 
   return (
     <div>
@@ -64,23 +66,20 @@ export function InventoryItemForm({ item }: { item?: InventoryItemView }) {
         </label>
 
         {state.error && <p role="alert" className="text-sm text-clay-dark">{state.error}</p>}
-        {state.nonce !== 0 && !state.error && <p className="text-sm text-sage-dark">Saved.</p>}
         <SubmitButton label={item ? 'Save changes' : 'Add item'} />
       </form>
 
       {item && (
-        <form
+        <ConfirmForm
           action={deleteInventoryItem}
-          onSubmit={(e) => {
-            if (!confirm(`Delete "${item.name}"? This also removes its transaction history.`)) e.preventDefault()
-          }}
+          confirm={{ title: `Delete "${item.name}"?`, message: 'Its stock history is deleted too. This can’t be undone.', confirmLabel: 'Delete', danger: true }}
           className="mt-2"
         >
           <input type="hidden" name="itemId" value={item.id} />
           <Button type="submit" variant="ghost" className="w-full text-clay-dark">
             Delete item
           </Button>
-        </form>
+        </ConfirmForm>
       )}
     </div>
   )
@@ -89,7 +88,7 @@ export function InventoryItemForm({ item }: { item?: InventoryItemView }) {
 function SubmitButton({ label }: { label: string }) {
   const { pending } = useFormStatus()
   return (
-    <Button type="submit" size="lg" disabled={pending} className="w-full">
+    <Button type="submit" size="lg" loading={pending} className="w-full">
       {pending ? 'Saving…' : label}
     </Button>
   )

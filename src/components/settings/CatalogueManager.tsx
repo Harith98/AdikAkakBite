@@ -7,6 +7,7 @@ import { CATALOGUE_BUCKET, CATALOGUE_LARGE_BYTES, CATALOGUE_MAX_BYTES } from '@/
 import { formatBytes } from '@/lib/system-status'
 import { removeCatalogue, saveCatalogue } from '@/app/(app)/settings/menu/actions'
 import { Button } from '@/components/ui/Button'
+import { useConfirm } from '@/components/ui/Feedback'
 
 interface Props {
   businessId: string
@@ -16,6 +17,7 @@ interface Props {
 
 /** Upload, replace or remove the PDF catalogue shown on the customer menu. */
 export function CatalogueManager({ businessId, currentUrl, updatedLabel }: Props) {
+  const ask = useConfirm()
   const router = useRouter()
   const fileInput = useRef<HTMLInputElement>(null)
   const [busy, setBusy] = useState<'upload' | 'remove' | null>(null)
@@ -63,7 +65,7 @@ export function CatalogueManager({ businessId, currentUrl, updatedLabel }: Props
   }
 
   async function remove() {
-    if (!window.confirm('Remove the catalogue from the customer menu? The order form stays.')) return
+    if (!(await ask({ title: 'Remove the catalogue?', message: 'Customers won’t see it on the menu. The order form stays.', confirmLabel: 'Remove', danger: true }))) return
     setBusy('remove')
     setMessage(null)
     const result = await removeCatalogue().catch(() => ({ error: 'Could not remove it. Check your connection.' }))

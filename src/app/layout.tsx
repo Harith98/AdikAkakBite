@@ -5,6 +5,7 @@ import { Suspense } from 'react'
 import { NavigationProgress } from '@/components/layout/NavigationProgress'
 import { siteUrl } from '@/lib/site-url'
 import { ServiceWorkerRegistration } from './service-worker-registration'
+import { FeedbackProvider } from '@/components/ui/Feedback'
 
 const fraunces = Fraunces({
   subsets: ['latin'],
@@ -75,7 +76,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <Suspense fallback={null}>
           <NavigationProgress />
         </Suspense>
-        {children}
+        <FeedbackProvider>{children}</FeedbackProvider>
         <ServiceWorkerRegistration />
       </body>
     </html>

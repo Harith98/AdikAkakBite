@@ -65,7 +65,7 @@ export default async function OrdersPage({ searchParams }: { searchParams: { sta
   const money = (n: number) => formatMoney(n, settings.currency)
 
   return (
-    <div className="flex max-w-2xl flex-col gap-6">
+    <div className="mx-auto flex w-full max-w-5xl flex-col gap-6">
       <PageHeader title="Orders" subtitle="Everything customers have asked for" action={<LinkButton href="/orders/new">New order</LinkButton>} />
 
       <nav aria-label="Filter orders" className="-mx-4 flex gap-2 overflow-x-auto px-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
@@ -90,7 +90,7 @@ export default async function OrdersPage({ searchParams }: { searchParams: { sta
       </nav>
 
       {/* Month switcher: ‹ October 2026 ›  [All time] */}
-      <div className="-mt-2 flex items-center gap-2">
+      <div className="-mt-2 flex items-center gap-2 lg:max-w-xl">
         <div className="flex flex-1 items-center justify-between rounded-pill bg-base-card px-1 py-1 shadow-card">
           <Link
             href={ordersHref(filter, shiftMonth(month ?? thisMonth, -1))}
@@ -152,7 +152,7 @@ export default async function OrdersPage({ searchParams }: { searchParams: { sta
                     {group.orders.length}
                   </span>
                 </p>
-                <ul className="flex flex-col gap-3">
+                <ul className="grid gap-3 lg:grid-cols-2">
                   {group.orders.map((order) => (
                     <OrderListCard key={order.id} order={order} group={group.key} money={money} />
                   ))}
@@ -162,7 +162,7 @@ export default async function OrdersPage({ searchParams }: { searchParams: { sta
           })}
         </div>
       ) : (
-        <ul className="flex flex-col gap-3">
+        <ul className="grid gap-3 lg:grid-cols-2">
           {orders.map((order) => (
             <OrderListCard key={order.id} order={order} group="all" money={money} />
           ))}

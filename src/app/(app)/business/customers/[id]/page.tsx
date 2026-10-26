@@ -37,7 +37,7 @@ export default async function CustomerPage({ params }: { params: { id: string } 
   const money = (n: number) => formatMoney(n, settings.currency)
 
   return (
-    <div className="flex max-w-2xl flex-col gap-6">
+    <div className="mx-auto flex w-full max-w-2xl flex-col gap-6">
       <PageHeader back={{ href: '/business/customers', label: 'Customers' }} title={<>{customer.name}</>}>
         {customer.isRepeatCustomer && <div className="mt-2"><Badge tone="sage">Repeat customer</Badge></div>}
       </PageHeader>

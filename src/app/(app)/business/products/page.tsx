@@ -44,7 +44,7 @@ export default async function ProductsPage({ searchParams }: { searchParams: { c
   )
 
   return (
-    <div className="flex max-w-2xl flex-col gap-6">
+    <div className="mx-auto flex w-full max-w-5xl flex-col gap-6">
       <PageHeader back={{ href: '/business', label: 'Business' }} title="Products" action={<LinkButton href="/business/products/new">Add product</LinkButton>} />
 
       {products.length === 0 ? (
@@ -106,7 +106,7 @@ export default async function ProductsPage({ searchParams }: { searchParams: { c
             <p className="text-sm text-ink-muted">No products match. Try another category or search.</p>
           </Card>
         ) : isFiltered || chips.length < 2 ? (
-          <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+          <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
             {shown.map((p) => (
               <ProductTile key={p.id} product={p} money={money} />
             ))}
@@ -125,7 +125,7 @@ export default async function ProductsPage({ searchParams }: { searchParams: { c
                       {inCategory.length} →
                     </Link>
                   </div>
-                  <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                  <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
                     {inCategory.map((p) => (
                       <ProductTile key={p.id} product={p} money={money} />
                     ))}

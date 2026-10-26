@@ -58,7 +58,7 @@ export function GenerateReceiptForm({
 function SubmitButton() {
   const { pending } = useFormStatus()
   return (
-    <Button type="submit" size="lg" disabled={pending} className="w-full">
+    <Button type="submit" size="lg" loading={pending} className="w-full">
       {pending ? 'Generating…' : 'Generate receipt'}
     </Button>
   )

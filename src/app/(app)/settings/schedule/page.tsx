@@ -21,7 +21,7 @@ export default async function SchedulePage() {
   if (error) throw new Error(`Could not load your schedule: ${error.message}`)
 
   return (
-    <div className="flex max-w-2xl flex-col gap-6">
+    <div className="mx-auto flex w-full max-w-2xl flex-col gap-6">
       <PageHeader back={{ href: '/settings', label: 'Settings' }} title="Daily schedule" subtitle="These blocks repeat every working day and drive the Today screen. Changes apply to tasks created from now on — tasks already created for today stay as they are." />
 
       <div className="flex flex-col gap-3">

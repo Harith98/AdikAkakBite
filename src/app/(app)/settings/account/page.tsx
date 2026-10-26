@@ -17,7 +17,7 @@ export default async function AccountPage({ searchParams }: { searchParams: { em
   const pendingEmail = session?.user.new_email ?? null
 
   return (
-    <div className="flex max-w-2xl flex-col gap-6">
+    <div className="mx-auto flex w-full max-w-2xl flex-col gap-6">
       <PageHeader back={{ href: '/settings', label: 'Settings' }} title="Your account" subtitle="Your photo, name, and how you sign in to the app." />
 
       <Card>

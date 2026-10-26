@@ -105,7 +105,7 @@ export default async function SystemStatusPage() {
   })
 
   return (
-    <div className="flex max-w-2xl flex-col gap-6">
+    <div className="mx-auto flex w-full max-w-2xl flex-col gap-6">
       <PageHeader back={{ href: '/settings', label: 'Settings' }} title="System status" subtitle="Usage against the free plans, and anything that needs fixing. Only you (the owner) can see this." />
 
       <Card className={problems === 0 ? '!border-sage/40 !bg-sage-soft/40' : '!border-clay/40 !bg-clay-soft/40'}>

@@ -24,7 +24,7 @@ export default async function NotificationsPage() {
   const ready = pushConfigured() && Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY)
 
   return (
-    <div className="flex max-w-2xl flex-col gap-6">
+    <div className="mx-auto flex w-full max-w-2xl flex-col gap-6">
       <PageHeader back={{ href: '/settings', label: 'Settings' }} title="Notifications" subtitle="Alerts on your phone’s lock screen, even when the app is closed." />
 
       {ready ? (

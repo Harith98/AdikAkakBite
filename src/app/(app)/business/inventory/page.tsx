@@ -63,7 +63,7 @@ export default async function InventoryPage({ searchParams }: { searchParams: { 
   )
 
   return (
-    <div className="flex max-w-2xl flex-col gap-6">
+    <div className="mx-auto flex w-full max-w-5xl flex-col gap-6">
       <PageHeader
         back={{ href: '/business', label: 'Business' }}
         title="Inventory"
@@ -165,7 +165,7 @@ export default async function InventoryPage({ searchParams }: { searchParams: { 
               <EmptyState compact emoji="🔍" title="Nothing matches" text="Try another name or filter." />
             </Card>
           ) : (
-            <ul className="grid gap-3 sm:grid-cols-2">
+            <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {shown.map((item) => (
                 <ItemCard key={item.id} item={item} />
               ))}

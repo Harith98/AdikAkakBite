@@ -9,6 +9,7 @@ import {
   saveScheduleBlock,
   type ScheduleFormState,
 } from '@/app/(app)/settings/schedule/actions'
+import { ConfirmForm, useSuccessToast } from '@/components/ui/Feedback'
 
 export interface ScheduleBlockFormValues {
   id: string
@@ -25,6 +26,7 @@ const inputClass = 'h-11 rounded-card border border-ink/15 bg-base px-3 text-sm 
 
 export function ScheduleBlockForm({ block }: { block?: ScheduleBlockFormValues }) {
   const [state, formAction] = useFormState(saveScheduleBlock, initialState)
+  useSuccessToast(state, 'Schedule saved')
   const formRef = useRef<HTMLFormElement>(null)
 
   // After adding a NEW block, clear the form. Editing keeps the values.
@@ -78,23 +80,20 @@ export function ScheduleBlockForm({ block }: { block?: ScheduleBlockFormValues }
             {state.error}
           </p>
         )}
-        {state.nonce !== 0 && !state.error && <p className="text-sm text-sage-dark">Saved.</p>}
         <SaveButton label={block ? 'Save changes' : 'Add block'} />
       </form>
 
       {block && (
-        <form
+        <ConfirmForm
           action={deleteScheduleBlock}
-          onSubmit={(e) => {
-            if (!confirm(`Delete "${block.title}"? Tasks already created for today will stay.`)) e.preventDefault()
-          }}
+          confirm={{ title: `Delete "${block.title}"?`, message: 'Tasks already created for today stay.', confirmLabel: 'Delete', danger: true }}
           className="mt-2"
         >
           <input type="hidden" name="id" value={block.id} />
           <Button type="submit" variant="ghost" className="w-full text-clay-dark">
             Delete block
           </Button>
-        </form>
+        </ConfirmForm>
       )}
     </div>
   )
@@ -103,7 +102,7 @@ export function ScheduleBlockForm({ block }: { block?: ScheduleBlockFormValues }
 function SaveButton({ label }: { label: string }) {
   const { pending } = useFormStatus()
   return (
-    <Button type="submit" disabled={pending} className="w-full">
+    <Button type="submit" loading={pending} className="w-full">
       {pending ? 'Saving…' : label}
     </Button>
   )

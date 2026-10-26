@@ -44,7 +44,7 @@ function Row() {
 
 export function PageSkeleton({ variant = 'list', back = true }: { variant?: Variant; back?: boolean }) {
   return (
-    <div className="flex max-w-2xl flex-col gap-5" aria-busy="true" aria-live="polite">
+    <div className="mx-auto flex w-full max-w-2xl flex-col gap-5" aria-busy="true" aria-live="polite">
       <span className="sr-only">Loading…</span>
 
       {variant === 'today' ? (

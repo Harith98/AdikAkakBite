@@ -52,7 +52,7 @@ export function TransactionForm({ itemId, unit }: { itemId: string; unit: string
 function SubmitButton() {
   const { pending } = useFormStatus()
   return (
-    <Button type="submit" variant="secondary" disabled={pending} className="w-full">
+    <Button type="submit" variant="secondary" loading={pending} className="w-full">
       {pending ? 'Recording…' : 'Log transaction'}
     </Button>
   )

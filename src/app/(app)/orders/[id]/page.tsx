@@ -32,7 +32,7 @@ export default async function OrderPage({ params }: { params: { id: string } }) 
   const money = (n: number) => formatMoney(n, settings.currency)
 
   return (
-    <div className="flex max-w-2xl flex-col gap-6">
+    <div className="mx-auto flex w-full max-w-2xl flex-col gap-6">
       <PageHeader back={{ href: '/orders', label: 'Orders' }} title={<>{orderData.customerName ?? 'Walk-in'}</>}>
         <div className="flex flex-wrap gap-2">
           <OrderStatusBadge status={orderData.status} />

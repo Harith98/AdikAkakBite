@@ -18,7 +18,7 @@ export default async function NewOrderPage() {
   if (customersRes.error) throw new Error(`Could not load customers: ${customersRes.error.message}`)
 
   return (
-    <div className="flex max-w-2xl flex-col gap-6">
+    <div className="mx-auto flex w-full max-w-2xl flex-col gap-6">
       <PageHeader back={{ href: '/orders', label: 'Orders' }} title="New order" />
       {products.length === 0 && (
         <Card className="border border-dashed border-ink/15 bg-transparent shadow-none">

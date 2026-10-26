@@ -9,6 +9,7 @@ import { saveOrder, type SaveOrderState } from '@/app/(app)/orders/actions'
 import type { OrderView } from '@/lib/services/orders'
 import { readyStockLabel } from '@/lib/calc/products'
 import { resolveCustomer, type CustomerMatch } from '@/lib/customer-identity'
+import { useSuccessToast } from '@/components/ui/Feedback'
 
 export interface ProductOption {
   id: string
@@ -68,6 +69,7 @@ export function OrderForm({
 }) {
   const start = order ? undefined : prefill
   const [state, formAction] = useFormState(saveOrder, initialState)
+  useSuccessToast(state, 'Order saved')
   const nextKey = useRef(1)
   const [items, setItems] = useState<ItemState[]>(() =>
     order && order.items.length > 0
@@ -334,7 +336,6 @@ export function OrderForm({
       </label>
 
       {state.error && <p role="alert" className="text-sm text-clay-dark">{state.error}</p>}
-      {state.nonce !== 0 && !state.error && <p className="text-sm text-sage-dark">Saved.</p>}
       <SubmitButton label={order ? 'Save changes' : pastSale ? 'Save past sale' : 'Create order'} />
     </form>
   )
@@ -364,7 +365,7 @@ function describeMatch(typedName: string, match: CustomerMatch): { text: string;
 function SubmitButton({ label }: { label: string }) {
   const { pending } = useFormStatus()
   return (
-    <Button type="submit" size="lg" disabled={pending} className="w-full">
+    <Button type="submit" size="lg" loading={pending} className="w-full">
       {pending ? 'Saving…' : label}
     </Button>
   )

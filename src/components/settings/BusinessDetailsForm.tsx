@@ -4,6 +4,7 @@ import { useFormState, useFormStatus } from 'react-dom'
 import { Button } from '@/components/ui/Button'
 import { updateBusinessDetails, type BusinessDetailsState } from '@/app/(app)/settings/actions'
 import { socialHandle } from '@/lib/social'
+import { useSuccessToast } from '@/components/ui/Feedback'
 
 const initialState: BusinessDetailsState = { error: null, nonce: 0 }
 const input = 'h-11 w-full rounded-card border border-ink/15 bg-base px-3 text-sm outline-none focus:border-raspberry'
@@ -32,6 +33,7 @@ const SOCIAL = [
 
 export function BusinessDetailsForm({ details }: { details: BusinessDetails }) {
   const [state, formAction] = useFormState(updateBusinessDetails, initialState)
+  useSuccessToast(state, 'Details saved')
   return (
     <form action={formAction} className="flex flex-col gap-3">
       <label className="flex flex-col gap-1 text-sm">
@@ -96,7 +98,6 @@ export function BusinessDetailsForm({ details }: { details: BusinessDetails }) {
         ))}
       </fieldset>
       {state.error && <p role="alert" className="text-sm text-clay-dark">{state.error}</p>}
-      {state.nonce !== 0 && !state.error && <p className="text-sm text-sage-dark">Saved.</p>}
       <SubmitButton />
     </form>
   )
@@ -105,7 +106,7 @@ export function BusinessDetailsForm({ details }: { details: BusinessDetails }) {
 function SubmitButton() {
   const { pending } = useFormStatus()
   return (
-    <Button type="submit" disabled={pending} className="w-full">
+    <Button type="submit" loading={pending} className="w-full">
       {pending ? 'Saving…' : 'Save details'}
     </Button>
   )

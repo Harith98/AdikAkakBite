@@ -7,6 +7,7 @@ import { readyStockLabel, readyStockState } from '@/lib/calc/products'
 import { changeReadyStock, type ReadyStockChange, type ReadyStockResult } from '@/app/(app)/business/products/actions'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
+import { useConfirm } from '@/components/ui/Feedback'
 
 const input = 'h-11 w-full rounded-card border border-ink/15 bg-base px-3 text-sm outline-none focus:border-raspberry'
 
@@ -16,6 +17,7 @@ export function ReadyStockCard({ productId, initialStock }: { productId: string;
   const [quantity, setQuantity] = useState('')
   const [busy, setBusy] = useState(false)
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null)
+  const ask = useConfirm()
 
   async function run(change: ReadyStockChange) {
     const value = change === 'untrack' ? 0 : Number(quantity)
@@ -23,7 +25,11 @@ export function ReadyStockCard({ productId, initialStock }: { productId: string;
       setMessage({ ok: false, text: 'Enter a whole number.' })
       return
     }
-    if (change === 'untrack' && !window.confirm('Stop tracking ready stock for this product? Orders won’t change its count anymore.')) return
+    if (
+      change === 'untrack' &&
+      !(await ask({ title: 'Stop tracking ready stock?', message: 'Orders won’t change its count any more. You can start tracking again later.', confirmLabel: 'Stop tracking' }))
+    )
+      return
     setBusy(true)
     setMessage(null)
     const result: ReadyStockResult = await changeReadyStock(productId, change, value).catch(() => ({

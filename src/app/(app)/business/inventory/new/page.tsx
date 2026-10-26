@@ -4,7 +4,7 @@ import { InventoryItemForm } from '@/components/business/InventoryItemForm'
 
 export default function NewInventoryItemPage() {
   return (
-    <div className="flex max-w-2xl flex-col gap-6">
+    <div className="mx-auto flex w-full max-w-2xl flex-col gap-6">
       <PageHeader back={{ href: '/business/inventory', label: 'Inventory' }} title="Add an item" />
       <Card>
         <InventoryItemForm />

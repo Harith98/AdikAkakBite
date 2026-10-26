@@ -40,7 +40,7 @@ export default async function ProductPage({ params, searchParams }: { params: { 
   const stockState = readyStockState(product.readyStock)
 
   return (
-    <div className="flex max-w-2xl flex-col gap-6">
+    <div className="mx-auto flex w-full max-w-2xl flex-col gap-6">
       <header className="flex flex-col gap-3">
         <BackLink href="/business/products" label="Products" />
         <div className="flex items-center gap-4">

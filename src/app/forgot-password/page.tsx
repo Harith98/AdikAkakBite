@@ -65,7 +65,7 @@ export default function ForgotPasswordPage() {
                 />
               </label>
               {error && <p role="alert" className="text-sm text-clay-dark">{error}</p>}
-              <Button type="submit" size="lg" disabled={pending} className="w-full">
+              <Button type="submit" size="lg" loading={pending} className="w-full">
                 {pending ? 'Sending…' : 'Send reset link'}
               </Button>
             </form>

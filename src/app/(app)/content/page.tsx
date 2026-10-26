@@ -126,123 +126,129 @@ export default async function ContentPage({ searchParams }: { searchParams: { mo
   const nav = 'flex h-9 w-9 items-center justify-center rounded-pill text-lg text-ink hover:bg-ink/5'
 
   return (
-    <div className="flex max-w-2xl flex-col gap-6">
+    <div className="mx-auto flex w-full max-w-5xl flex-col gap-6">
       <PageHeader title="Content" subtitle="Post on each platform every day, then tick it off." />
 
-      <Card className="!border-raspberry/20 !bg-raspberry-soft/40">
-        <SectionLabel icon="💡">What to post today</SectionLabel>
-        <div className="mt-3 flex items-start gap-3">
-          {suggestion.imageUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={productThumbUrl(suggestion.imageUrl) ?? ''} alt="" className="h-16 w-16 shrink-0 rounded-card object-cover shadow-card" />
-          ) : (
-            <span aria-hidden="true" className="flex h-16 w-16 shrink-0 items-center justify-center rounded-card bg-white text-3xl shadow-card">
-              {suggestion.emoji}
-            </span>
+      <div className="grid gap-6 lg:grid-cols-2 lg:items-start">
+        <div className="flex flex-col gap-6">
+          <Card className="!border-raspberry/20 !bg-raspberry-soft/40">
+            <SectionLabel icon="💡">What to post today</SectionLabel>
+            <div className="mt-3 flex items-start gap-3">
+              {suggestion.imageUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={productThumbUrl(suggestion.imageUrl) ?? ''} alt="" className="h-16 w-16 shrink-0 rounded-card object-cover shadow-card" />
+              ) : (
+                <span aria-hidden="true" className="flex h-16 w-16 shrink-0 items-center justify-center rounded-card bg-white text-3xl shadow-card">
+                  {suggestion.emoji}
+                </span>
+              )}
+              <div className="min-w-0">
+                <p className="font-display text-lg leading-tight text-ink">{suggestion.title}</p>
+                <p className="mt-1 text-sm text-ink-muted">{suggestion.text}</p>
+              </div>
+            </div>
+          </Card>
+
+          <Card>
+            {/* key resets the ticks when the day changes */}
+            <PostingChecklist key={now.isoDate} postedAt={postedAt} />
+          </Card>
+
+          {!captionsRes.error && (
+            <Card>
+              <SavedCaptions captions={captionsRes.data ?? []} />
+            </Card>
           )}
-          <div className="min-w-0">
-            <p className="font-display text-lg leading-tight text-ink">{suggestion.title}</p>
-            <p className="mt-1 text-sm text-ink-muted">{suggestion.text}</p>
-          </div>
+
         </div>
-      </Card>
+        <div className="flex flex-col gap-6">
+          <Card>
+            <div className="flex items-center justify-between gap-2">
+              <Link href={`/content?month=${shiftMonth(month, -1)}`} scroll={false} aria-label="Previous month" className={nav}>
+                ‹
+              </Link>
+              <div className="text-center">
+                <SectionLabel icon="📅" className="justify-center">Posting calendar</SectionLabel>
+                <p className="font-display text-lg text-ink">{monthLabel(month)}</p>
+              </div>
+              {month < thisMonth ? (
+                <Link href={`/content?month=${shiftMonth(month, 1)}`} scroll={false} aria-label="Next month" className={nav}>
+                  ›
+                </Link>
+              ) : (
+                <span aria-hidden="true" className={clsx(nav, 'opacity-30')}>
+                  ›
+                </span>
+              )}
+            </div>
 
-      <Card>
-        {/* key resets the ticks when the day changes */}
-        <PostingChecklist key={now.isoDate} postedAt={postedAt} />
-      </Card>
+            <div className="mt-3 grid grid-cols-2 gap-2 text-center">
+              <div className="rounded-card bg-amber-soft px-2 py-2">
+                <p className="font-display text-xl text-ink">🔥 {streak}</p>
+                <p className="text-[11px] text-ink-muted">day streak now</p>
+              </div>
+              <div className="rounded-card bg-sage-soft px-2 py-2">
+                <p className="font-display text-xl text-ink">🏅 {best}</p>
+                <p className="text-[11px] text-ink-muted">best streak this year</p>
+              </div>
+            </div>
 
-      {!captionsRes.error && (
-        <Card>
-          <SavedCaptions captions={captionsRes.data ?? []} />
-        </Card>
-      )}
-
-      <Card>
-        <div className="flex items-center justify-between gap-2">
-          <Link href={`/content?month=${shiftMonth(month, -1)}`} scroll={false} aria-label="Previous month" className={nav}>
-            ‹
-          </Link>
-          <div className="text-center">
-            <SectionLabel icon="📅" className="justify-center">Posting calendar</SectionLabel>
-            <p className="font-display text-lg text-ink">{monthLabel(month)}</p>
-          </div>
-          {month < thisMonth ? (
-            <Link href={`/content?month=${shiftMonth(month, 1)}`} scroll={false} aria-label="Next month" className={nav}>
-              ›
-            </Link>
-          ) : (
-            <span aria-hidden="true" className={clsx(nav, 'opacity-30')}>
-              ›
-            </span>
-          )}
-        </div>
-
-        <div className="mt-3 grid grid-cols-2 gap-2 text-center">
-          <div className="rounded-card bg-amber-soft px-2 py-2">
-            <p className="font-display text-xl text-ink">🔥 {streak}</p>
-            <p className="text-[11px] text-ink-muted">day streak now</p>
-          </div>
-          <div className="rounded-card bg-sage-soft px-2 py-2">
-            <p className="font-display text-xl text-ink">🏅 {best}</p>
-            <p className="text-[11px] text-ink-muted">best streak this year</p>
-          </div>
-        </div>
-
-        <div className="mt-4 grid grid-cols-7 gap-1 text-center">
-          {WEEKDAYS.map((d, i) => (
-            <span key={i} className="pb-1 text-[11px] font-medium text-ink-faint">
-              {d}
-            </span>
-          ))}
-          {cells.map((day, i) => {
-            if (!day) return <span key={`blank-${i}`} />
-            const future = day > now.isoDate
-            const today = day === now.isoDate
-            const posted = postedByDay.get(day)
-            const complete = isCompleteDay(day, postedByDay)
-            return (
-              <span
-                key={day}
-                title={future ? undefined : `${CHECKLIST_PLATFORMS.filter((p) => posted?.has(p)).length} of ${CHECKLIST_PLATFORMS.length} posted`}
-                className={clsx(
-                  'flex aspect-square flex-col items-center justify-center gap-1 rounded-card text-xs',
-                  complete ? 'bg-sage-soft text-ink' : future ? 'text-ink-faint' : 'bg-base-soft text-ink',
-                  today && 'ring-2 ring-raspberry'
-                )}
-              >
-                {Number(day.slice(8))}
-                {!future && (
-                  <span className="flex gap-0.5" aria-hidden="true">
-                    {CHECKLIST_PLATFORMS.map((p) => (
-                      <span key={p} className={clsx('h-1.5 w-1.5 rounded-pill', posted?.has(p) ? DOT[p] : 'bg-ink/10')} />
-                    ))}
+            <div className="mt-4 grid grid-cols-7 gap-1 text-center">
+              {WEEKDAYS.map((d, i) => (
+                <span key={i} className="pb-1 text-[11px] font-medium text-ink-faint">
+                  {d}
+                </span>
+              ))}
+              {cells.map((day, i) => {
+                if (!day) return <span key={`blank-${i}`} />
+                const future = day > now.isoDate
+                const today = day === now.isoDate
+                const posted = postedByDay.get(day)
+                const complete = isCompleteDay(day, postedByDay)
+                return (
+                  <span
+                    key={day}
+                    title={future ? undefined : `${CHECKLIST_PLATFORMS.filter((p) => posted?.has(p)).length} of ${CHECKLIST_PLATFORMS.length} posted`}
+                    className={clsx(
+                      'flex aspect-square flex-col items-center justify-center gap-1 rounded-card text-xs',
+                      complete ? 'bg-sage-soft text-ink' : future ? 'text-ink-faint' : 'bg-base-soft text-ink',
+                      today && 'ring-2 ring-raspberry'
+                    )}
+                  >
+                    {Number(day.slice(8))}
+                    {!future && (
+                      <span className="flex gap-0.5" aria-hidden="true">
+                        {CHECKLIST_PLATFORMS.map((p) => (
+                          <span key={p} className={clsx('h-1.5 w-1.5 rounded-pill', posted?.has(p) ? DOT[p] : 'bg-ink/10')} />
+                        ))}
+                      </span>
+                    )}
                   </span>
-                )}
-              </span>
-            )
-          })}
-        </div>
+                )
+              })}
+            </div>
 
-        <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-xs text-ink-muted">
-          <span className="flex flex-wrap gap-3">
-            {CHECKLIST_PLATFORMS.map((p) => (
-              <span key={p} className="flex items-center gap-1">
-                <span className={clsx('h-2 w-2 rounded-pill', DOT[p])} aria-hidden="true" />
-                {PLATFORM_LABELS[p]}
+            <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-xs text-ink-muted">
+              <span className="flex flex-wrap gap-3">
+                {CHECKLIST_PLATFORMS.map((p) => (
+                  <span key={p} className="flex items-center gap-1">
+                    <span className={clsx('h-2 w-2 rounded-pill', DOT[p])} aria-hidden="true" />
+                    {PLATFORM_LABELS[p]}
+                  </span>
+                ))}
               </span>
-            ))}
-          </span>
-          <span>
-            {completeDays} of {pastDays.length} day{pastDays.length === 1 ? '' : 's'} fully posted
-          </span>
-        </div>
-      </Card>
+              <span>
+                {completeDays} of {pastDays.length} day{pastDays.length === 1 ? '' : 's'} fully posted
+              </span>
+            </div>
+          </Card>
 
-      <p className="text-xs text-ink-muted">
-        Ticks are shared with the whole team. If anything isn&apos;t ticked by 8pm, you&apos;ll get a reminder (turn it off in Settings →
-        Notifications).
-      </p>
+          <p className="text-xs text-ink-muted">
+            Ticks are shared with the whole team. If anything isn&apos;t ticked by 8pm, you&apos;ll get a reminder (turn it off in Settings →
+            Notifications).
+          </p>
+        </div>
+      </div>
     </div>
   )
 }

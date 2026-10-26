@@ -24,7 +24,7 @@ export default async function ExportPage() {
   const today = getBusinessNow(settings.timezone).isoDate
 
   return (
-    <div className="flex max-w-2xl flex-col gap-6">
+    <div className="mx-auto flex w-full max-w-2xl flex-col gap-6">
       <PageHeader back={{ href: '/settings', label: 'Settings' }} title="Export data" subtitle="Download your data as spreadsheets (CSV). Opens in Excel or Google Sheets." />
 
       <Card>

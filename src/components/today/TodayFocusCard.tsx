@@ -11,6 +11,7 @@ import { Card } from '@/components/ui/Card'
 import { tapFeedback } from '@/lib/haptics'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { SectionLabel } from '@/components/ui/SectionLabel'
+import { Spinner } from '@/components/ui/Button'
 
 export interface PriorityTask {
   id: string
@@ -206,8 +207,9 @@ function AddButton() {
     <button
       type="submit"
       disabled={pending}
-      className="h-11 shrink-0 rounded-pill bg-raspberry px-5 text-sm font-medium text-white transition-colors hover:bg-raspberry-dark disabled:opacity-50"
+      className="inline-flex h-11 shrink-0 items-center gap-2 rounded-pill bg-raspberry px-5 text-sm font-medium text-white transition-colors hover:bg-raspberry-dark disabled:opacity-80"
     >
+      {pending && <Spinner />}
       {pending ? 'Adding…' : 'Add'}
     </button>
   )

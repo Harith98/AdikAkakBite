@@ -8,6 +8,7 @@ import { formatMoney, formatPercent } from '@/lib/constants'
 import { deleteProduct, saveProduct, type SaveProductState } from '@/app/(app)/business/products/actions'
 import type { ProductView } from '@/lib/services/products'
 import { ProductImagePicker } from './ProductImagePicker'
+import { ConfirmForm, useSuccessToast } from '@/components/ui/Feedback'
 
 const initialState: SaveProductState = { error: null, nonce: 0 }
 const input = 'h-11 w-full rounded-card border border-ink/15 bg-base px-3 text-sm outline-none focus:border-raspberry'
@@ -27,6 +28,7 @@ export function ProductForm({
   categories?: string[]
 }) {
   const [state, formAction] = useFormState(saveProduct, initialState)
+  useSuccessToast(state, 'Product saved')
   const [price, setPrice] = useState(product ? String(product.sellingPrice) : '')
   const [ingredient, setIngredient] = useState(product ? String(product.ingredientCost) : '')
   const [packaging, setPackaging] = useState(product ? String(product.packagingCost) : '')
@@ -119,23 +121,20 @@ export function ProductForm({
         </label>
 
         {state.error && <p role="alert" className="text-sm text-clay-dark">{state.error}</p>}
-        {state.nonce !== 0 && !state.error && <p className="text-sm text-sage-dark">Saved.</p>}
         <SubmitButton label={product ? 'Save changes' : 'Add product'} waiting={uploading} />
       </form>
 
       {product && (
-        <form
+        <ConfirmForm
           action={deleteProduct}
-          onSubmit={(e) => {
-            if (!confirm(`Delete "${product.name}"? Past orders keep their own copy of its name and price.`)) e.preventDefault()
-          }}
+          confirm={{ title: `Delete "${product.name}"?`, message: 'Past orders keep their own copy of its name and price.', confirmLabel: 'Delete', danger: true }}
           className="mt-2"
         >
           <input type="hidden" name="productId" value={product.id} />
           <Button type="submit" variant="ghost" className="w-full text-clay-dark">
             Delete product
           </Button>
-        </form>
+        </ConfirmForm>
       )}
     </div>
   )
@@ -144,7 +143,7 @@ export function ProductForm({
 function SubmitButton({ label, waiting }: { label: string; waiting: boolean }) {
   const { pending } = useFormStatus()
   return (
-    <Button type="submit" size="lg" disabled={pending || waiting} className="w-full">
+    <Button type="submit" size="lg" loading={pending} disabled={waiting} className="w-full">
       {pending ? 'Saving…' : waiting ? 'Uploading photo…' : label}
     </Button>
   )

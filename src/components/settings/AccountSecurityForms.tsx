@@ -79,7 +79,7 @@ export function ChangeEmailForm({ currentEmail, pendingEmail }: { currentEmail: 
           <input type="email" required autoComplete="email" maxLength={200} value={newEmail} onChange={(e) => setNewEmail(e.target.value)} className={input} />
         </label>
         <StatusLine status={status} />
-        <Button type="submit" variant="secondary" disabled={pending} className="w-full">
+        <Button type="submit" variant="secondary" loading={pending} className="w-full">
           {pending ? 'Sending…' : 'Change email'}
         </Button>
       </form>
@@ -151,7 +151,7 @@ export function ChangePasswordForm({ email }: { email: string }) {
           <input type="password" required autoComplete="new-password" value={confirm} onChange={(e) => setConfirm(e.target.value)} className={input} />
         </label>
         <StatusLine status={status} />
-        <Button type="submit" variant="secondary" disabled={pending} className="w-full">
+        <Button type="submit" variant="secondary" loading={pending} className="w-full">
           {pending ? 'Saving…' : 'Change password'}
         </Button>
       </form>

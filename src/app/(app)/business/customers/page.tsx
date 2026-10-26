@@ -79,7 +79,7 @@ export default async function CustomersPage({ searchParams }: { searchParams: { 
   }
 
   return (
-    <div className="flex max-w-2xl flex-col gap-6">
+    <div className="mx-auto flex w-full max-w-5xl flex-col gap-6">
       <PageHeader back={{ href: '/business', label: 'Business' }} title="Customers" subtitle="Added automatically when you create an order." />
 
       {customers.length > 0 && (
@@ -135,7 +135,7 @@ export default async function CustomersPage({ searchParams }: { searchParams: { 
               <EmptyState compact emoji="🔍" title="No one matches" text="Try another name, number or filter." />
             </Card>
           ) : (
-            <ul className="flex flex-col gap-3">
+            <ul className="grid gap-3 lg:grid-cols-2">
               {shown.map((c) => (
                 <CustomerCard key={c.customerId} customer={c} money={money} isTop={c.customerId === topSpender} />
               ))}

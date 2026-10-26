@@ -3,11 +3,13 @@
 import { useFormState, useFormStatus } from 'react-dom'
 import { Button } from '@/components/ui/Button'
 import { updateMyName, type ProfileState } from '@/app/(app)/settings/actions'
+import { useSuccessToast } from '@/components/ui/Feedback'
 
 const initialState: ProfileState = { error: null, nonce: 0 }
 
 export function ProfileForm({ displayName, email }: { displayName: string | null; email: string | null }) {
   const [state, formAction] = useFormState(updateMyName, initialState)
+  useSuccessToast(state, 'Name saved')
   return (
     <form action={formAction} className="flex flex-col gap-3">
       <label className="flex flex-col gap-1 text-sm">
@@ -25,7 +27,6 @@ export function ProfileForm({ displayName, email }: { displayName: string | null
         </span>
       </label>
       {state.error && <p role="alert" className="text-sm text-clay-dark">{state.error}</p>}
-      {state.nonce !== 0 && !state.error && <p className="text-sm text-sage-dark">Saved.</p>}
       <SubmitButton />
     </form>
   )
@@ -34,7 +35,7 @@ export function ProfileForm({ displayName, email }: { displayName: string | null
 function SubmitButton() {
   const { pending } = useFormStatus()
   return (
-    <Button type="submit" variant="secondary" disabled={pending} className="w-full">
+    <Button type="submit" variant="secondary" loading={pending} className="w-full">
       {pending ? 'Saving…' : 'Save name'}
     </Button>
   )

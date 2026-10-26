@@ -24,7 +24,7 @@ export default async function MenuSettingsPage() {
   const hasWhatsApp = Boolean(toWhatsAppNumber(business.phone))
 
   return (
-    <div className="flex max-w-2xl flex-col gap-6">
+    <div className="mx-auto flex w-full max-w-2xl flex-col gap-6">
       <PageHeader back={{ href: '/settings', label: 'Settings' }} title="Customer menu" subtitle="A page for customers: your catalogue, and an order form that sends your WhatsApp template to you." />
 
       {!hasWhatsApp && (

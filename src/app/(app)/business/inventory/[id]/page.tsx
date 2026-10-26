@@ -29,7 +29,7 @@ export default async function InventoryItemPage({ params }: { params: { id: stri
   if (!item) notFound()
 
   return (
-    <div className="flex max-w-2xl flex-col gap-6">
+    <div className="mx-auto flex w-full max-w-2xl flex-col gap-6">
       <PageHeader back={{ href: '/business/inventory', label: 'Inventory' }} title={<>{item.name}</>}>
         <div className="flex items-center gap-3">
           <InventoryStatusBadge status={item.status} />

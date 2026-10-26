@@ -62,7 +62,7 @@ export function ResendEmailButton({
 
   return (
     <div className="flex flex-col gap-2">
-      <Button type="button" variant="secondary" className="w-full" disabled={pending || secondsLeft > 0} onClick={resend}>
+      <Button type="button" variant="secondary" className="w-full" loading={pending} disabled={secondsLeft > 0} onClick={resend}>
         {pending ? 'Sending…' : secondsLeft > 0 ? `${label} in ${secondsLeft}s` : label}
       </Button>
       {status && (

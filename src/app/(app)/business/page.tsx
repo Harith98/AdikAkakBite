@@ -69,10 +69,10 @@ const COMING = ['Dashboard & goals', 'Forecasts']
 
 export default function BusinessPage() {
   return (
-    <div className="flex max-w-2xl flex-col gap-6">
+    <div className="mx-auto flex w-full max-w-3xl flex-col gap-6">
       <PageHeader title="Business" subtitle="The numbers behind your dessert business" />
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
         {AVAILABLE.map((item) => (
           <Link
             key={item.href}

@@ -7,6 +7,7 @@ import { EXPENSE_CATEGORIES } from '@/lib/expenses'
 import type { ExpenseCategory } from '@/lib/supabase/database.types'
 import { Button } from '@/components/ui/Button'
 import { addExpense, deleteExpense, stopRepeatingExpense, type AddExpenseState } from '@/app/(app)/business/expenses/actions'
+import { ConfirmForm, useSuccessToast } from '@/components/ui/Feedback'
 
 const initialState: AddExpenseState = { error: null, nonce: 0 }
 const input = 'h-11 w-full rounded-card border border-ink/15 bg-base px-3 text-sm outline-none focus:border-raspberry'
@@ -14,6 +15,7 @@ const input = 'h-11 w-full rounded-card border border-ink/15 bg-base px-3 text-s
 /** Add an overhead: what it was for, how much, when, and whether it repeats monthly (rent, bills). */
 export function ExpenseForm({ today }: { today: string }) {
   const [state, formAction] = useFormState(addExpense, initialState)
+  useSuccessToast(state, 'Expense added')
   // A fresh, empty form after each save.
   return <ExpenseFields key={state.nonce} today={today} formAction={formAction} state={state} />
 }
@@ -76,7 +78,6 @@ function ExpenseFields({ today, formAction, state }: { today: string; formAction
           {state.error}
         </p>
       )}
-      {state.nonce !== 0 && !state.error && <p className="text-sm text-sage-dark">Added ✓</p>}
       <SubmitButton />
     </form>
   )
@@ -85,7 +86,7 @@ function ExpenseFields({ today, formAction, state }: { today: string; formAction
 function SubmitButton() {
   const { pending } = useFormStatus()
   return (
-    <Button type="submit" disabled={pending}>
+    <Button type="submit" loading={pending}>
       {pending ? 'Adding…' : 'Add expense'}
     </Button>
   )
@@ -94,36 +95,38 @@ function SubmitButton() {
 /** Delete one expense (a repeating one goes from every month), after a confirm. */
 export function DeleteExpenseButton({ id, repeating }: { id: string; repeating: boolean }) {
   return (
-    <form
+    <ConfirmForm
       action={deleteExpense}
-      onSubmit={(e) => {
-        const message = repeating
-          ? 'Delete this monthly expense from EVERY month, including past ones? To only stop it from now on, use Stop instead.'
-          : 'Delete this expense?'
-        if (!confirm(message)) e.preventDefault()
-      }}
+      confirm={
+        repeating
+          ? {
+              title: 'Delete from every month?',
+              message: 'This monthly expense is removed from past months too. To only stop it from now on, use Stop instead.',
+              confirmLabel: 'Delete',
+              danger: true,
+            }
+          : { title: 'Delete this expense?', confirmLabel: 'Delete', danger: true }
+      }
     >
       <input type="hidden" name="expenseId" value={id} />
       <button type="submit" className="rounded-pill px-2.5 py-1 text-xs font-medium text-ink-muted hover:bg-clay-soft hover:text-clay-dark">
         Delete
       </button>
-    </form>
+    </ConfirmForm>
   )
 }
 
 /** Stop a monthly expense after this month; past months keep it. */
 export function StopRepeatingButton({ id }: { id: string }) {
   return (
-    <form
+    <ConfirmForm
       action={stopRepeatingExpense}
-      onSubmit={(e) => {
-        if (!confirm('Stop this monthly expense after this month? Past months keep it.')) e.preventDefault()
-      }}
+      confirm={{ title: 'Stop after this month?', message: 'Past months keep it; from next month it’s no longer counted.', confirmLabel: 'Stop it' }}
     >
       <input type="hidden" name="expenseId" value={id} />
       <button type="submit" className="rounded-pill bg-base-soft px-2.5 py-1 text-xs font-medium text-ink hover:bg-amber-soft">
         Stop
       </button>
-    </form>
+    </ConfirmForm>
   )
 }

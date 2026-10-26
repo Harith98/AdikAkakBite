@@ -76,7 +76,7 @@ export function AddMemberForm({ roles }: { roles: BusinessMemberRole[] }) {
 function SubmitButton() {
   const { pending } = useFormStatus()
   return (
-    <Button type="submit" disabled={pending} className="w-full">
+    <Button type="submit" loading={pending} className="w-full">
       {pending ? 'Creating account…' : 'Create account'}
     </Button>
   )

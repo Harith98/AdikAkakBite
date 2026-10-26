@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { Button } from '@/components/ui/Button'
 import { setOrderStatus } from '@/app/(app)/today/actions'
 import type { OrderStatus } from '@/lib/supabase/database.types'
+import { useConfirm } from '@/components/ui/Feedback'
 
 const NEXT: Partial<Record<OrderStatus, { status: OrderStatus; label: string }>> = {
   new: { status: 'preparing', label: 'Start preparing' },
@@ -13,6 +14,7 @@ const NEXT: Partial<Record<OrderStatus, { status: OrderStatus; label: string }>>
 }
 
 export function OrderStatusControls({ orderId, status }: { orderId: string; status: OrderStatus }) {
+  const ask = useConfirm()
   const [pending, setPending] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const next = NEXT[status]
@@ -50,8 +52,9 @@ export function OrderStatusControls({ orderId, status }: { orderId: string; stat
         <Button
           variant="ghost"
           disabled={pending}
-          onClick={() => {
-            if (confirm('Cancel this order? You can reopen it later.')) void change('cancelled')
+          onClick={async () => {
+            if (await ask({ title: 'Cancel this order?', message: 'You can reopen it later.', confirmLabel: 'Cancel order', cancelLabel: 'Keep it', danger: true }))
+              void change('cancelled')
           }}
         >
           Cancel order
