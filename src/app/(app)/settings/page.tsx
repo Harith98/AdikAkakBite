@@ -3,10 +3,9 @@ import Link from 'next/link'
 import type { ReactNode } from 'react'
 import { getCurrentBusinessContext } from '@/lib/services/current-business'
 import { Card } from '@/components/ui/Card'
-import { Button } from '@/components/ui/Button'
 import { Avatar } from '@/components/ui/Avatar'
 import { canManageBusiness, ROLE_LABELS } from '@/lib/team'
-import { signOut } from './actions'
+import { SignOutButton } from '@/components/settings/SignOutButton'
 
 /** How Settings is grouped: the business (shop and team), and the app (alerts, data, health). */
 const GROUPS: { title: string; hrefs: string[] }[] = [
@@ -156,11 +155,7 @@ export default async function SettingsPage() {
         return rows.length > 0 ? <Group key={group.title} title={group.title} rows={rows} /> : null
       })}
 
-      <form action={signOut}>
-        <Button type="submit" variant="secondary" className="w-full">
-          Sign out
-        </Button>
-      </form>
+      <SignOutButton />
     </div>
   )
 }

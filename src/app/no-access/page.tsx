@@ -1,9 +1,8 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { hasMembership, isAppSetUp } from '@/lib/services/setup'
-import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
-import { signOut } from '@/app/(app)/settings/actions'
+import { SignOutButton } from '@/components/settings/SignOutButton'
 
 /**
  * Signed in, but not on the team (removed, left, or never added). This is a
@@ -36,11 +35,7 @@ export default async function NoAccessPage() {
           <p className="mt-2 text-sm text-ink-muted">
             Ask the owner or an admin to add you in Settings → Team.
           </p>
-          <form action={signOut} className="mt-5">
-            <Button type="submit" variant="secondary" className="w-full">
-              Sign in with a different account
-            </Button>
-          </form>
+          <SignOutButton label="Sign in with a different account" className="mt-5" />
         </Card>
       </div>
     </div>

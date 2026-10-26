@@ -63,22 +63,30 @@ export async function saveSubscription(sub: DeviceSubscription, userAgent: strin
 }
 
 /**
- * This device's saved name. `supported: false` on a database without device
- * names yet, so the page doesn't ask for a name it can't save.
+ * Whose notifications this browser gets: yours, another account's (the phone
+ * is shared, or someone else used it before), or nobody's (not saved). Plus its
+ * name, when it's yours. `namesSupported: false` on a database without device names yet.
  */
-export async function getDeviceName(endpoint: string): Promise<{ name: string | null; supported: boolean }> {
-  if (typeof endpoint !== 'string' || !endpoint) return { name: null, supported: false }
+export async function getDeviceStatus(
+  endpoint: string
+): Promise<{ owner: 'me' | 'other' | 'none'; name: string | null; namesSupported: boolean }> {
+  const none = { owner: 'none' as const, name: null, namesSupported: false }
+  if (typeof endpoint !== 'string' || !endpoint) return none
   const ctx = await getActionContext()
   const admin = createServiceRoleClient()
-  if (!ctx.ok || !admin) return { name: null, supported: false }
-  const { data, error } = await admin
-    .from('push_subscriptions')
-    .select('device_name')
-    .eq('endpoint', endpoint)
-    .eq('user_id', ctx.userId)
-    .maybeSingle()
-  if (error) return { name: null, supported: !noNameColumn(error.message) }
-  return { name: data?.device_name ?? null, supported: true }
+  if (!ctx.ok || !admin) return none
+  const lookup = (columns: string) => admin.from('push_subscriptions').select(columns).eq('endpoint', endpoint).maybeSingle()
+  let namesSupported = true
+  let res = await lookup('user_id, device_name')
+  if (res.error && noNameColumn(res.error.message)) {
+    namesSupported = false
+    res = await lookup('user_id')
+  }
+  const row = res.data as { user_id: string; device_name?: string | null } | null
+  if (res.error || !row) return { ...none, namesSupported }
+  return row.user_id === ctx.userId
+    ? { owner: 'me', name: row.device_name ?? null, namesSupported }
+    : { owner: 'other', name: null, namesSupported }
 }
 
 /** Names (or renames) this device. */

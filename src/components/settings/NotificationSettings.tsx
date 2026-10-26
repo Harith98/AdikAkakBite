@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { NOTIFICATION_KINDS, type NotificationKind } from '@/lib/notifications/messages'
 import {
-  getDeviceName,
+  getDeviceStatus,
   removeSubscription,
   saveDeviceName,
   saveNotificationPreference,
@@ -68,6 +68,8 @@ export function NotificationSettings({ vapidPublicKey, preferences }: Props) {
   const [nameDraft, setNameDraft] = useState('')
   const [naming, setNaming] = useState(false)
   const [namesSupported, setNamesSupported] = useState(true)
+  // On in this browser, but for another account that used this phone.
+  const [otherAccount, setOtherAccount] = useState(false)
 
   useEffect(() => {
     const supported = 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window
@@ -83,15 +85,24 @@ export function NotificationSettings({ vapidPublicKey, preferences }: Props) {
     getRegistration()
       .then((reg) => reg.pushManager.getSubscription())
       .then(async (sub) => {
-        const on = Boolean(sub && Notification.permission === 'granted')
-        setDevice(on ? 'on' : 'off')
-        if (!on || !sub) return
+        if (!sub || Notification.permission !== 'granted') {
+          setDevice('off')
+          return
+        }
+        // The browser has notifications on, but are they yours?
+        const status = await getDeviceStatus(sub.endpoint).catch(() => ({ owner: 'none' as const, name: null, namesSupported: false }))
+        setNamesSupported(status.namesSupported)
+        if (status.owner !== 'me') {
+          // Another account's (or not saved): "Turn on" makes them yours.
+          setOtherAccount(status.owner === 'other')
+          setDevice('off')
+          return
+        }
         setEndpoint(sub.endpoint)
-        const saved = await getDeviceName(sub.endpoint).catch(() => ({ name: null, supported: false }))
-        setNamesSupported(saved.supported)
-        setDeviceName(saved.name)
+        setDeviceName(status.name)
+        setDevice('on')
         // Already on but never named: ask now.
-        if (saved.supported && !saved.name) setNaming(true)
+        if (status.namesSupported && !status.name) setNaming(true)
       })
       .catch(() => setDevice('off'))
   }, [])
@@ -123,6 +134,7 @@ export function NotificationSettings({ vapidPublicKey, preferences }: Props) {
         return
       }
       setDevice('on')
+      setOtherAccount(false)
       setEndpoint(sub.endpoint)
       setDeviceName(name)
       setNaming(false)
@@ -237,6 +249,10 @@ export function NotificationSettings({ vapidPublicKey, preferences }: Props) {
                     </button>
                   )}
                 </>
+              ) : otherAccount ? (
+                <span className="block rounded-card bg-amber-soft px-3 py-2 text-amber-dark">
+                  This phone gets notifications for another account that used it. Turn them on below to get yours here instead.
+                </span>
               ) : (
                 'Notifications are off for this device.'
               )}
@@ -274,7 +290,7 @@ export function NotificationSettings({ vapidPublicKey, preferences }: Props) {
             <div className="flex flex-wrap gap-2">
               {device === 'off' ? (
                 <Button type="button" onClick={turnOn} loading={busy} disabled={!nameDraft.trim()}>
-                  {busy ? 'Turning on…' : 'Turn on notifications'}
+                  {busy ? 'Turning on…' : otherAccount ? 'Turn on for me' : 'Turn on notifications'}
                 </Button>
               ) : (
                 <>
