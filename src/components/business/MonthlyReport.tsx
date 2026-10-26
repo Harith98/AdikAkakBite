@@ -1,7 +1,8 @@
 import Link from 'next/link'
 import clsx from '@/lib/clsx'
-import { percentChange, shiftMonth } from '@/lib/calc/sales'
+import { monthRange, percentChange, shiftMonth } from '@/lib/calc/sales'
 import { formatDateShort } from '@/lib/time'
+import { expenseCategory } from '@/lib/expenses'
 import type { MonthSalesReport } from '@/lib/services/sales'
 import { Card } from '@/components/ui/Card'
 import { EmptyState } from '@/components/ui/EmptyState'
@@ -11,15 +12,19 @@ interface Props {
   report: MonthSalesReport
   /** The current month (YYYY-MM): no stepping past it. */
   currentMonth: string
+  /** YYYY-MM-DD, so the current month's downloads stop at today. */
+  today: string
   money: (n: number) => string
+  /** Owners and admins can download the month's reports. */
+  canExport?: boolean
 }
 
 const monthLabel = (month: string) =>
   new Date(`${month}-01T00:00:00Z`).toLocaleDateString('en-GB', { timeZone: 'UTC', month: 'long', year: 'numeric' })
 
 /** A month of sales: totals vs the month before, sales per day, and best sellers. */
-export function MonthlyReport({ report, currentMonth, money }: Props) {
-  const { month, totals, profit, previous, days, topProducts, bestDay, wasteValue } = report
+export function MonthlyReport({ report, currentMonth, today, money, canExport = false }: Props) {
+  const { month, totals, profit, previous, days, topProducts, bestDay, wasteValue, overheads, netProfit } = report
   const change = percentChange(totals.revenue, previous.revenue)
   const isCurrent = month === currentMonth
   const peak = Math.max(...days.map((d) => d.revenue), 0)
@@ -81,6 +86,26 @@ export function MonthlyReport({ report, currentMonth, money }: Props) {
               <p className={clsx('font-display text-base', profit.profit >= 0 ? 'text-sage-dark' : 'text-clay-dark')}>{money(profit.profit)}</p>
             </div>
           </div>
+          {/* Net profit: gross profit minus overheads (Expenses). */}
+          <Link
+            href={`/business/expenses?month=${month}`}
+            className="mt-2 flex items-center justify-between gap-3 rounded-card border border-ink/10 px-3 py-2.5 text-sm transition-colors hover:bg-base-soft"
+          >
+            <span className="min-w-0">
+              <span className="block text-ink-muted">
+                − Overheads <span className="text-ink">{money(overheads.total)}</span>
+              </span>
+              <span className="block truncate text-[11px] text-ink-faint">
+                {overheads.byCategory.length > 0
+                  ? overheads.byCategory.map((b) => `${expenseCategory(b.category).label} ${money(b.amount)}`).join(' · ')
+                  : 'None recorded. Add rent, bills, petrol in Expenses →'}
+              </span>
+            </span>
+            <span className="shrink-0 text-right">
+              <span className="block text-[11px] text-ink-muted">Net profit</span>
+              <span className={clsx('font-display text-lg', netProfit >= 0 ? 'text-sage-dark' : 'text-clay-dark')}>{money(netProfit)}</span>
+            </span>
+          </Link>
           {profit.missingCost.length > 0 && (
             <p className="mt-2 rounded-card bg-amber-soft px-3 py-2 text-xs text-amber-dark">
               ⚠️ {profit.missingCost.length} item{profit.missingCost.length === 1 ? ' has' : 's have'} no cost entered, so profit looks higher than it is:{' '}
@@ -152,9 +177,33 @@ export function MonthlyReport({ report, currentMonth, money }: Props) {
         <EmptyState compact className="mt-2" emoji="📭" title={`No completed orders${isCurrent ? ' yet' : ''}`} text="Sales show up here once orders are completed." />
       )}
 
+      {canExport && hasSales && (
+        <div className="mt-5 grid grid-cols-2 gap-2">
+          {(
+            [
+              ['finance-summary', '📊 Summary'],
+              ['sales-detail', '🔎 Sales detail'],
+            ] as const
+          ).map(([kind, label]) => {
+            const { start, end } = monthRange(month)
+            return (
+              <a
+                key={kind}
+                href={`/api/export/${kind}?from=${start}&to=${end < today ? end : today}`}
+                download
+                className="flex h-11 items-center justify-center rounded-pill border border-raspberry/20 bg-base-card text-sm font-medium text-raspberry-dark shadow-card hover:bg-base-soft"
+              >
+                {label} ↓
+              </a>
+            )
+          })}
+        </div>
+      )}
+
       <p className="mt-4 text-xs text-ink-muted">
+        {canExport && hasSales && 'Sales detail lists every item behind these numbers, to check them. '}
         Sales count on the day an order is completed. Profit is sales minus what the products cost to make (each at the cost it had on
-        the day of the sale), not rent or other bills. Best-seller amounts are before order discounts and delivery fees.
+        the day of the sale); net profit also takes off the month&apos;s overheads from Expenses. Best-seller amounts are before order discounts and delivery fees.
       </p>
     </Card>
   )

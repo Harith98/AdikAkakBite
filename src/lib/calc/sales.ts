@@ -161,3 +161,109 @@ export function buildMonthReport(orders: MonthOrder[], month: string, topCount =
     bestDay: best,
   }
 }
+
+// ---------------------------------------------------------------------------
+// Financial report (Settings → Export data, and the monthly report's download)
+// ---------------------------------------------------------------------------
+
+/** A completed order with what the finance report needs, each item already priced at its cost on the sale day. */
+export interface FinanceOrder {
+  /** YYYY-MM-DD the order was completed: the day it counts as a sale. */
+  saleDate: string
+  /** Items before discount and delivery. */
+  subtotal: number
+  discount: number
+  deliveryFee: number
+  /** What the customer paid: subtotal − discount + delivery fee. */
+  total: number
+  /** unitCost null = no cost entered for that product. */
+  items: { quantity: number; unitCost: number | null }[]
+}
+
+export interface FinanceRow {
+  /** "2026-09", or "TOTAL" for the total row. */
+  month: string
+  orders: number
+  itemSales: number
+  discounts: number
+  deliveryFees: number
+  /** Order totals: item sales − discounts + delivery fees. */
+  sales: number
+  /** What the items sold cost to make (items with a cost only). */
+  cost: number
+  /** sales − cost */
+  grossProfit: number
+  /** Gross profit as a % of sales, one decimal; null with no sales. */
+  margin: number | null
+  averageOrder: number
+  /** Units sold whose product had no cost entered (so cost is too low by those). */
+  unitsWithoutCost: number
+  /** Rent, bills, petrol… (Expenses). */
+  overheads: number
+  /** grossProfit − overheads: what the shop kept. */
+  netProfit: number
+}
+
+/** An overhead paid on a date (see expandExpenses). */
+export interface FinanceOverhead {
+  date: string
+  amount: number
+}
+
+function financeRow(month: string, orders: FinanceOrder[], overheadList: FinanceOverhead[]): FinanceRow {
+  let itemSales = 0
+  let discounts = 0
+  let deliveryFees = 0
+  let sales = 0
+  let cost = 0
+  let unitsWithoutCost = 0
+  for (const o of orders) {
+    itemSales += o.subtotal
+    discounts += o.discount
+    deliveryFees += o.deliveryFee
+    sales += o.total
+    for (const i of o.items) {
+      if (i.unitCost === null) unitsWithoutCost += i.quantity
+      else cost += i.unitCost * i.quantity
+    }
+  }
+  sales = round2(sales)
+  cost = round2(cost)
+  const grossProfit = round2(sales - cost)
+  const overheads = round2(overheadList.reduce((sum, e) => sum + e.amount, 0))
+  return {
+    month,
+    orders: orders.length,
+    itemSales: round2(itemSales),
+    discounts: round2(discounts),
+    deliveryFees: round2(deliveryFees),
+    sales,
+    cost,
+    grossProfit,
+    margin: sales > 0 ? Math.round((grossProfit / sales) * 1000) / 10 : null,
+    averageOrder: orders.length > 0 ? round2(sales / orders.length) : 0,
+    unitsWithoutCost,
+    overheads,
+    netProfit: round2(grossProfit - overheads),
+  }
+}
+
+/**
+ * One row per month that had sales or overheads (oldest first), plus a TOTAL
+ * row computed from everything, so it always equals the sum of the months.
+ */
+export function financeByMonth(orders: FinanceOrder[], overheads: FinanceOverhead[] = []): FinanceRow[] {
+  const byMonth = new Map<string, { orders: FinanceOrder[]; overheads: FinanceOverhead[] }>()
+  const bucket = (date: string) => {
+    const key = date.slice(0, 7)
+    const b = byMonth.get(key) ?? { orders: [], overheads: [] }
+    byMonth.set(key, b)
+    return b
+  }
+  for (const o of orders) bucket(o.saleDate).orders.push(o)
+  for (const e of overheads) bucket(e.date).overheads.push(e)
+  const months = Array.from(byMonth.keys())
+    .sort()
+    .map((m) => financeRow(m, byMonth.get(m)!.orders, byMonth.get(m)!.overheads))
+  return [...months, financeRow('TOTAL', orders, overheads)]
+}

@@ -96,3 +96,68 @@ describe('monthly report', () => {
     expect(percentChange(50, 0)).toBeNull()
   })
 })
+
+describe('financial report', () => {
+  const order = (saleDate: string, subtotal: number, items: { quantity: number; unitCost: number | null }[], discount = 0, deliveryFee = 0) => ({
+    saleDate,
+    subtotal,
+    discount,
+    deliveryFee,
+    total: subtotal - discount + deliveryFee,
+    items,
+  })
+
+  it('sums each month and adds a TOTAL row that equals the months together', async () => {
+    const { financeByMonth } = await import('@/lib/calc/sales')
+    const rows = financeByMonth([
+      order('2026-10-02', 80, [{ quantity: 2, unitCost: 15 }], 5, 7),
+      order('2026-09-04', 40, [{ quantity: 1, unitCost: 15 }]),
+      order('2026-09-26', 105, [{ quantity: 1, unitCost: 22.5 }, { quantity: 1, unitCost: null }]),
+    ])
+    expect(rows.map((r) => r.month)).toEqual(['2026-09', '2026-10', 'TOTAL'])
+    expect(rows[0]).toEqual({
+      month: '2026-09',
+      orders: 2,
+      itemSales: 145,
+      discounts: 0,
+      deliveryFees: 0,
+      sales: 145,
+      cost: 37.5,
+      grossProfit: 107.5,
+      margin: 74.1,
+      averageOrder: 72.5,
+      unitsWithoutCost: 1,
+      overheads: 0,
+      netProfit: 107.5,
+    })
+    expect(rows[1]).toMatchObject({ orders: 1, itemSales: 80, discounts: 5, deliveryFees: 7, sales: 82, cost: 30, grossProfit: 52 })
+    const total = rows[2]!
+    for (const key of ['orders', 'itemSales', 'discounts', 'deliveryFees', 'sales', 'cost', 'grossProfit', 'unitsWithoutCost'] as const) {
+      expect(total[key]).toBeCloseTo(rows[0]![key] + rows[1]![key], 2)
+    }
+  })
+
+  it('takes overheads off gross profit, including months with no sales', async () => {
+    const { financeByMonth } = await import('@/lib/calc/sales')
+    const rows = financeByMonth(
+      [order('2026-10-02', 100, [{ quantity: 2, unitCost: 15 }])],
+      [
+        { date: '2026-09-10', amount: 400 },
+        { date: '2026-10-10', amount: 400 },
+        { date: '2026-10-15', amount: 35.5 },
+      ]
+    )
+    expect(rows.map((r) => [r.month, r.grossProfit, r.overheads, r.netProfit])).toEqual([
+      ['2026-09', 0, 400, -400],
+      ['2026-10', 70, 435.5, -365.5],
+      ['TOTAL', 70, 835.5, -765.5],
+    ])
+  })
+
+  it('still has a TOTAL row when there are no sales', async () => {
+    const { financeByMonth } = await import('@/lib/calc/sales')
+    expect(financeByMonth([])).toEqual([
+      { month: 'TOTAL', orders: 0, itemSales: 0, discounts: 0, deliveryFees: 0, sales: 0, cost: 0, grossProfit: 0, margin: null, averageOrder: 0, unitsWithoutCost: 0, overheads: 0, netProfit: 0 },
+    ])
+  })
+})

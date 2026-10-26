@@ -412,6 +412,27 @@ create table daily_reviews (
   unique (business_id, review_date)
 );
 
+-- Overheads: rent, bills, petrol… NOT ingredients or packaging (those are in each
+-- product's cost; logging them here would count them twice). A repeating row
+-- (rent) counts every month from expense_date, on that day, until ends_on.
+create table expenses (
+  id uuid primary key default gen_random_uuid(),
+  business_id uuid not null references businesses(id) on delete cascade,
+  expense_date date not null,
+  amount numeric(12,2) not null,
+  category text not null,
+  note text,
+  repeats_monthly boolean not null default false,
+  ends_on date,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  constraint expenses_amount_positive check (amount > 0),
+  constraint expenses_category_valid check (category in ('rent', 'utilities', 'petrol', 'equipment', 'marketing', 'other')),
+  constraint expenses_note_length check (note is null or length(note) <= 200),
+  constraint expenses_ends_after_start check (ends_on is null or ends_on >= expense_date)
+);
+comment on table expenses is 'Overheads (not product costs). A repeating row counts monthly from expense_date until ends_on.';
+
 create table business_activity_logs (
   id uuid primary key default gen_random_uuid(),
   business_id uuid not null references businesses(id) on delete cascade,
@@ -535,6 +556,8 @@ create index idx_goals_business_id on goals(business_id);
 create index idx_goals_active_range on goals(business_id, start_date, end_date);
 
 create index idx_daily_reviews_business_date on daily_reviews(business_id, review_date);
+
+create index idx_expenses_business_date on expenses(business_id, expense_date);
 
 create index idx_activity_logs_business_id on business_activity_logs(business_id, created_at desc);
 
@@ -1100,9 +1123,9 @@ create or replace function schema_version()
 returns integer
 language sql
 immutable
-as $$
-  select 1;
-$$;
+as $
+  select 2;
+$;
 
 revoke all on function schema_version() from public;
 grant execute on function schema_version() to authenticated;
@@ -1459,6 +1482,12 @@ create policy "members can access their content_items"
 alter table goals enable row level security;
 create policy "members can access their goals"
   on goals for all
+  using (is_business_member(business_id))
+  with check (is_business_member(business_id));
+
+alter table expenses enable row level security;
+create policy "members can access their expenses"
+  on expenses for all
   using (is_business_member(business_id))
   with check (is_business_member(business_id));
 

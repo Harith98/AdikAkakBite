@@ -8,6 +8,10 @@ import { canManageBusiness } from '@/lib/team'
 import { formatReceiptNumber } from '@/lib/receipts'
 import { getBusinessNow } from '@/lib/time'
 import { toCsv, type CsvColumn } from '@/lib/csv'
+import { getSalesDetail, type SaleDetail } from '@/lib/services/sales'
+import { financeByMonth, type FinanceRow } from '@/lib/calc/sales'
+import { getExpenseEntries } from '@/lib/services/expenses'
+import { expenseCategory, type ExpenseEntry } from '@/lib/expenses'
 
 export const dynamic = 'force-dynamic'
 
@@ -128,11 +132,95 @@ const HISTORY_COLUMNS: CsvColumn<TransactionRow>[] = [
   { header: 'Notes', value: (t) => t.notes },
 ]
 
-const KINDS = ['orders', 'customers', 'products', 'inventory', 'stock-history'] as const
+const FINANCE_COLUMNS: CsvColumn<FinanceRow>[] = [
+  { header: 'Month', value: (r) => r.month },
+  { header: 'Orders', value: (r) => r.orders },
+  { header: 'Item sales', value: (r) => r.itemSales },
+  { header: 'Discounts', value: (r) => r.discounts },
+  { header: 'Delivery fees', value: (r) => r.deliveryFees },
+  { header: 'Sales (order totals)', value: (r) => r.sales },
+  { header: 'Cost of products', value: (r) => r.cost },
+  { header: 'Gross profit', value: (r) => r.grossProfit },
+  { header: 'Margin %', value: (r) => r.margin },
+  { header: 'Average order', value: (r) => r.averageOrder },
+  { header: 'Units with no cost entered', value: (r) => r.unitsWithoutCost },
+  { header: 'Overheads', value: (r) => r.overheads },
+  { header: 'Net profit', value: (r) => r.netProfit },
+]
+
+/** One row per expense entry (a monthly one appears once per month), then a TOTAL row. */
+type ExpenseRow = { entry?: ExpenseEntry; total?: { amount: number; count: number } }
+
+const EXPENSE_COLUMNS: CsvColumn<ExpenseRow>[] = [
+  { header: 'Date', value: (r) => r.entry?.date ?? (r.total ? 'TOTAL' : null) },
+  { header: 'Type', value: (r) => (r.entry ? expenseCategory(r.entry.category).label : r.total ? `${r.total.count} expenses` : null) },
+  { header: 'Amount', value: (r) => r.entry?.amount ?? r.total?.amount },
+  { header: 'Note', value: (r) => r.entry?.note },
+  { header: 'Repeats monthly', value: (r) => (r.entry ? r.entry.repeating : null) },
+]
+
+/** One row per item sold; order-level money only on the order's first row, so each column adds up. */
+type DetailRow = {
+  sale?: SaleDetail
+  item?: SaleDetail['items'][number]
+  first: boolean
+  total?: { quantity: number; lineTotal: number; cost: number; discount: number; deliveryFee: number; orderTotal: number; orders: number }
+}
+
+const round2 = (n: number) => Math.round(n * 100) / 100
+
+const DETAIL_COLUMNS: CsvColumn<DetailRow>[] = [
+  { header: 'Sale date', value: (r) => r.sale?.saleDate ?? (r.total ? 'TOTAL' : null) },
+  { header: 'Order ref', value: (r) => (r.sale ? r.sale.orderId.slice(0, 8).toUpperCase() : r.total ? `${r.total.orders} orders` : null) },
+  { header: 'Receipt no.', value: (r) => (r.first && r.sale?.receiptNumber != null ? formatReceiptNumber(r.sale.receiptNumber) : null) },
+  { header: 'Customer', value: (r) => (r.sale ? r.sale.customer ?? 'Walk-in' : null) },
+  { header: 'Item', value: (r) => r.item?.name },
+  { header: 'Qty', value: (r) => r.item?.quantity ?? r.total?.quantity },
+  { header: 'Unit price', value: (r) => r.item?.unitPrice },
+  { header: 'Line total', value: (r) => (r.item ? round2(r.item.quantity * r.item.unitPrice) : r.total?.lineTotal) },
+  { header: 'Unit cost used', value: (r) => r.item?.unitCost },
+  { header: 'Cost', value: (r) => (r.item ? (r.item.unitCost === null ? null : round2(r.item.unitCost * r.item.quantity)) : r.total?.cost) },
+  { header: 'Discount', value: (r) => (r.first ? r.sale?.discount : r.total?.discount) },
+  { header: 'Delivery fee', value: (r) => (r.first ? r.sale?.deliveryFee : r.total?.deliveryFee) },
+  { header: 'Order total', value: (r) => (r.first ? r.sale?.total : r.total?.orderTotal) },
+  { header: 'Note', value: (r) => (r.item && r.item.unitCost === null ? 'No cost entered for this product' : null) },
+]
+
+function detailRows(sales: SaleDetail[]): DetailRow[] {
+  const rows: DetailRow[] = sales.flatMap((sale): DetailRow[] =>
+    sale.items.length > 0 ? sale.items.map((item, i) => ({ sale, item, first: i === 0 })) : [{ sale, first: true }]
+  )
+  const total = { quantity: 0, lineTotal: 0, cost: 0, discount: 0, deliveryFee: 0, orderTotal: 0, orders: sales.length }
+  for (const sale of sales) {
+    total.discount += sale.discount
+    total.deliveryFee += sale.deliveryFee
+    total.orderTotal += sale.total
+    for (const item of sale.items) {
+      total.quantity += item.quantity
+      total.lineTotal += item.quantity * item.unitPrice
+      if (item.unitCost !== null) total.cost += item.unitCost * item.quantity
+    }
+  }
+  for (const key of ['lineTotal', 'cost', 'discount', 'deliveryFee', 'orderTotal'] as const) total[key] = round2(total[key])
+  return [...rows, { first: false, total }]
+}
+
+const ISO_DATE = /^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/
+
+/** ?from=…&to=… (sale days, inclusive); this month so far when missing. */
+function dateRange(request: NextRequest, today: string): { from: string; to: string } | null {
+  const from = request.nextUrl.searchParams.get('from') || `${today.slice(0, 7)}-01`
+  const to = request.nextUrl.searchParams.get('to') || today
+  if (!ISO_DATE.test(from) || !ISO_DATE.test(to) || from > to) return null
+  return { from, to }
+}
+
+const KINDS = ['orders', 'customers', 'products', 'inventory', 'stock-history', 'finance-summary', 'sales-detail', 'expenses'] as const
+const DATED: readonly string[] = ['finance-summary', 'sales-detail', 'expenses']
 type Kind = (typeof KINDS)[number]
 
 /** Settings → Export data: one CSV per kind, for owners and admins. */
-export async function GET(_request: NextRequest, { params }: { params: { kind: string } }) {
+export async function GET(request: NextRequest, { params }: { params: { kind: string } }) {
   if (!KINDS.includes(params.kind as Kind)) return NextResponse.json({ error: 'Unknown export' }, { status: 404 })
   const kind = params.kind as Kind
 
@@ -142,9 +230,32 @@ export async function GET(_request: NextRequest, { params }: { params: { kind: s
   const { supabase, businessId, timezone } = ctx
   const today = getBusinessNow(timezone).isoDate
 
+  const range = DATED.includes(kind) ? dateRange(request, today) : null
+  if (DATED.includes(kind) && !range) {
+    return NextResponse.json({ error: 'Choose a valid date range (the From date can’t be after the To date).' }, { status: 400 })
+  }
+
   try {
     let csv: string
-    if (kind === 'orders') {
+    let filename = `adikakak-${kind}-${today}.csv`
+    if (range) {
+      // Overheads only up to today: a monthly one later this month isn't paid yet.
+      const expenseTo = range.to < today ? range.to : today
+      if (kind === 'expenses') {
+        const entries = await getExpenseEntries(supabase, businessId, range.from, expenseTo)
+        const total = { amount: Math.round(entries.reduce((sum, e) => sum + e.amount, 0) * 100) / 100, count: entries.length }
+        csv = toCsv(EXPENSE_COLUMNS, [...entries.map((entry) => ({ entry })), { total }])
+      } else if (kind === 'finance-summary') {
+        const [sales, entries] = await Promise.all([
+          getSalesDetail(supabase, businessId, range.from, range.to),
+          getExpenseEntries(supabase, businessId, range.from, expenseTo),
+        ])
+        csv = toCsv(FINANCE_COLUMNS, financeByMonth(sales, entries))
+      } else {
+        csv = toCsv(DETAIL_COLUMNS, detailRows(await getSalesDetail(supabase, businessId, range.from, range.to)))
+      }
+      filename = `adikakak-${kind}-${range.from}-to-${range.to}.csv`
+    } else if (kind === 'orders') {
       const rows = await fetchAll<OrderRowWithRelations>((from, to) =>
         supabase.from('orders').select(ORDER_SELECT).eq('business_id', businessId).order('order_date', { ascending: false }).order('created_at', { ascending: false }).range(from, to)
       )
@@ -177,7 +288,7 @@ export async function GET(_request: NextRequest, { params }: { params: { kind: s
     return new NextResponse(csv, {
       headers: {
         'Content-Type': 'text/csv; charset=utf-8',
-        'Content-Disposition': `attachment; filename="adikakak-${kind}-${today}.csv"`,
+        'Content-Disposition': `attachment; filename="${filename}"`,
         'Cache-Control': 'no-store',
       },
     })

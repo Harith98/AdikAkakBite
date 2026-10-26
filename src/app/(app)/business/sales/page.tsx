@@ -5,12 +5,13 @@ import { getCurrentBusinessContext } from '@/lib/services/current-business'
 import { getMonthSalesReport, getSalesSummary } from '@/lib/services/sales'
 import { isMonthKey } from '@/lib/calc/sales'
 import { MonthlyReport } from '@/components/business/MonthlyReport'
+import { canManageBusiness } from '@/lib/team'
 import { getBusinessNow } from '@/lib/time'
 import { formatMoney } from '@/lib/constants'
 import { Card } from '@/components/ui/Card'
 
 export default async function SalesPage({ searchParams }: { searchParams: { month?: string } }) {
-  const { business, settings } = await getCurrentBusinessContext()
+  const { business, settings, role } = await getCurrentBusinessContext()
   const supabase = createClient()
   const today = getBusinessNow(settings.timezone).isoDate
   const money = (n: number) => formatMoney(n, settings.currency)
@@ -21,7 +22,7 @@ export default async function SalesPage({ searchParams }: { searchParams: { mont
 
   const [summary, monthReport] = await Promise.all([
     getSalesSummary(supabase, business.id, today),
-    getMonthSalesReport(supabase, business.id, month),
+    getMonthSalesReport(supabase, business.id, month, today),
   ])
 
   return (
@@ -40,7 +41,7 @@ export default async function SalesPage({ searchParams }: { searchParams: { mont
         ))}
       </div>
 
-      <MonthlyReport report={monthReport} currentMonth={currentMonth} money={money} />
+      <MonthlyReport report={monthReport} currentMonth={currentMonth} today={today} money={money} canExport={canManageBusiness(role)} />
     </div>
   )
 }

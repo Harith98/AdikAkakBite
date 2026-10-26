@@ -6,6 +6,7 @@
 // the rest of the app gets real type-checking from day one.
 
 export type BusinessMemberRole = 'owner' | 'admin' | 'staff'
+export type ExpenseCategory = 'rent' | 'utilities' | 'petrol' | 'equipment' | 'marketing' | 'other'
 
 export type TaskStatus = 'not_started' | 'in_progress' | 'paused' | 'completed' | 'skipped'
 export type TaskCategory =
@@ -573,6 +574,34 @@ export interface Database {
           updated_at?: string
         }
         Update: Partial<Database['public']['Tables']['daily_reviews']['Insert']>
+        Relationships: []
+      }
+      expenses: {
+        Row: {
+          id: string
+          business_id: string
+          expense_date: string
+          amount: number
+          category: ExpenseCategory
+          note: string | null
+          repeats_monthly: boolean
+          ends_on: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          business_id: string
+          expense_date: string
+          amount: number
+          category: ExpenseCategory
+          note?: string | null
+          repeats_monthly?: boolean
+          ends_on?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: Partial<Database['public']['Tables']['expenses']['Insert']>
         Relationships: []
       }
       business_activity_logs: {

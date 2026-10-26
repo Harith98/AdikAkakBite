@@ -50,6 +50,19 @@ const AVAILABLE: { href: string; title: string; text: string; tone: string; icon
     tone: 'bg-raspberry-soft text-raspberry-dark',
     icon: <path d="M4 19v-7M10 19V6M16 19v-9M3 21h18" />,
   },
+  {
+    href: '/business/expenses',
+    title: 'Expenses',
+    text: 'Rent, bills, petrol & net profit',
+    tone: 'bg-base-soft text-ink',
+    icon: (
+      <>
+        <rect x="3" y="6" width="18" height="13" rx="2.5" />
+        <path d="M3 10h18" />
+        <path d="M16 14.5h2" />
+      </>
+    ),
+  },
 ]
 
 const COMING = ['Dashboard & goals', 'Forecasts']
