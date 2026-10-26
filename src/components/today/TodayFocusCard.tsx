@@ -3,7 +3,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useFormState, useFormStatus } from 'react-dom'
 import clsx from '@/lib/clsx'
-import { TASK_CATEGORY_OPTIONS } from '@/lib/constants'
 import { addTask, savePriority, setTaskStatus, type AddTaskState } from '@/app/(app)/today/actions'
 import type { TaskStatus } from '@/lib/supabase/database.types'
 import type { PrioritySuggestion } from '@/lib/services/priorities'
@@ -24,13 +23,12 @@ const MAX_PRIORITIES = 3
 const initialState: AddTaskState = { error: null, nonce: 0 }
 
 /**
- * Today's priorities and adding tasks, in one card. Priorities are real tasks
- * you tick off; the box underneath adds any task, starred to make it a priority.
+ * Today's priorities: up to three things that matter most, ticked off as
+ * they're done. Add your own, or tap a suggestion.
  */
 export function TodayFocusCard({ priorities, suggestions }: { priorities: PriorityTask[]; suggestions: PrioritySuggestion[] }) {
   const [state, formAction] = useFormState(addTask, initialState)
   const formRef = useRef<HTMLFormElement>(null)
-  const [starred, setStarred] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   /** The priority just ticked, so only it plays the pop. */
@@ -42,14 +40,8 @@ export function TodayFocusCard({ priorities, suggestions }: { priorities: Priori
   const done = sorted.filter((p) => p.status === 'completed').length
 
   useEffect(() => {
-    if (state.nonce !== 0) {
-      formRef.current?.reset()
-      setStarred(false)
-    }
+    if (state.nonce !== 0) formRef.current?.reset()
   }, [state.nonce])
-  useEffect(() => {
-    if (slotsLeft === 0) setStarred(false)
-  }, [slotsLeft])
 
   async function run(action: () => Promise<{ error: string | null }>) {
     if (typeof navigator !== 'undefined' && !navigator.onLine) {
@@ -80,7 +72,7 @@ export function TodayFocusCard({ priorities, suggestions }: { priorities: Priori
       </div>
 
       {sorted.length === 0 ? (
-        <EmptyState compact emoji="🎯" title="What matters most today?" text="Pick up to three. Star a task below, or tap a suggestion." />
+        <EmptyState compact emoji="🎯" title="What matters most today?" text="Pick up to three: add your own below, or tap a suggestion." />
       ) : (
         <ol className="mt-2 flex flex-col">
           {sorted.map((task) => {
@@ -146,51 +138,22 @@ export function TodayFocusCard({ priorities, suggestions }: { priorities: Priori
         </div>
       )}
 
-      <form ref={formRef} action={formAction} className="mt-4 flex flex-col gap-2 border-t border-ink/10 pt-4">
-        <div className="flex gap-2">
+      {slotsLeft > 0 && (
+        <form ref={formRef} action={formAction} className="mt-4 flex gap-2 border-t border-ink/10 pt-4">
+          {/* Always one of today's priorities (the next free number). */}
+          <input type="hidden" name="asPriority" value="on" />
+          <input type="hidden" name="category" value="business" />
           <input
             name="title"
             required
             maxLength={120}
-            placeholder="Add a task for today…"
-            aria-label="Task name"
+            placeholder="Add a priority for today…"
+            aria-label="Priority"
             className="h-11 min-w-0 flex-1 rounded-card border border-ink/15 bg-base px-3 text-sm outline-none focus:border-raspberry"
           />
           <AddButton />
-        </div>
-        <div className="flex items-center gap-2">
-          <select
-            name="category"
-            defaultValue="business"
-            aria-label="Category"
-            className="h-10 min-w-0 flex-1 rounded-card border border-ink/15 bg-base px-2 text-sm outline-none focus:border-raspberry"
-          >
-            {TASK_CATEGORY_OPTIONS.map((c) => (
-              <option key={c.value} value={c.value}>
-                {c.label}
-              </option>
-            ))}
-          </select>
-          <label
-            className={clsx(
-              'flex h-10 shrink-0 cursor-pointer select-none items-center gap-1.5 rounded-pill border px-3 text-sm font-medium transition-colors',
-              starred ? 'border-raspberry bg-raspberry-soft text-raspberry-dark' : 'border-ink/15 text-ink-muted',
-              slotsLeft === 0 && 'cursor-not-allowed opacity-40'
-            )}
-            title={slotsLeft === 0 ? 'You already have 3 priorities today' : 'Make this one of today’s priorities'}
-          >
-            <input
-              type="checkbox"
-              name="asPriority"
-              checked={starred}
-              disabled={slotsLeft === 0}
-              onChange={(e) => setStarred(e.target.checked)}
-              className="sr-only"
-            />
-            <span aria-hidden="true">{starred ? '★' : '☆'}</span> Priority
-          </label>
-        </div>
-      </form>
+        </form>
+      )}
 
       {(error || state.error) && (
         <p role="alert" className="mt-2 text-sm text-clay-dark">

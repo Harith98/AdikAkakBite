@@ -22,7 +22,7 @@ export default async function SchedulePage() {
 
   return (
     <div className="mx-auto flex w-full max-w-2xl flex-col gap-6">
-      <PageHeader back={{ href: '/settings', label: 'Settings' }} title="Daily schedule" subtitle="These blocks repeat every working day and drive the Today screen. Changes apply to tasks created from now on — tasks already created for today stay as they are." />
+      <PageHeader back={{ href: '/settings', label: 'Settings' }} title="Daily schedule" subtitle="These blocks repeat every working day and make the timetable on Today: what each time is for, with a few ideas. Nothing to tick off." />
 
       <div className="flex flex-col gap-3">
         {(blocks ?? []).map((block) => (

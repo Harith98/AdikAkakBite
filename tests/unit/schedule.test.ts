@@ -77,3 +77,13 @@ describe('getBlockProgress', () => {
     expect(getBlockProgress(BLOCKS[3]!, [], '15:00').percent).toBe(100)
   })
 })
+
+describe('getUpcomingBlocks', () => {
+  it('lists the next blocks that have not started, earliest first', async () => {
+    const { getUpcomingBlocks } = await import('@/lib/services/schedule')
+    const b = (id: string, startTime: string, endTime: string) => ({ id, title: id, category: 'business', startTime, endTime, sortOrder: 0 })
+    const blocks = [b('closing', '19:15', '20:00'), b('marketing', '14:30', '15:30'), b('production', '15:30', '17:00'), b('prep', '17:00', '19:15')]
+    expect(getUpcomingBlocks(blocks, '15:14').map((x) => x.id)).toEqual(['production', 'prep'])
+    expect(getUpcomingBlocks(blocks, '19:30')).toEqual([])
+  })
+})

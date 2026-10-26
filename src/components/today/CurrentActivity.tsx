@@ -1,40 +1,30 @@
+import Link from 'next/link'
 import clsx from '@/lib/clsx'
 import { Card } from '@/components/ui/Card'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { SectionLabel } from '@/components/ui/SectionLabel'
-import { ProgressRing } from '@/components/ui/ProgressRing'
 import { formatTime12 } from '@/lib/time'
-import type { RecommendedTask } from '@/lib/services/types'
-import type { BlockProgress, ScheduleBlockLike, TaskLike } from '@/lib/services/schedule'
-import { TaskRow } from './TaskRow'
+import type { BlockProgress, ScheduleBlockLike } from '@/lib/services/schedule'
 import { categoryStyle } from '@/lib/category-style'
 
 interface CurrentActivityProps {
   time: string
   block: ScheduleBlockLike | null
-  blockTasks: TaskLike[]
+  /** Time-based: how far into the block we are. */
   progress: BlockProgress | null
-  recommendation: RecommendedTask
-  focusTask: TaskLike | null
-  /** True when an urgent order is asking for attention first. */
-  deprioritized: boolean
-  nextBlock: ScheduleBlockLike | null
+  /** The rest of the day: the next block, then the one after. */
+  upcoming: ScheduleBlockLike[]
+  /** When an order is due soon, e.g. "Sharifah's order is due at 5:00 PM.", so it comes first. */
+  orderFirst: string | null
 }
 
 /**
- * The current schedule block at a glance: where you are, how far along, and
- * its tasks. Informational — ticking a task's circle is the only action. The
- * recommended task is marked "Next" in the list instead of repeated in a panel.
+ * The timetable at a glance: what this time of day is for, how long is left,
+ * and what comes next. Nothing to tick: the block's tasks are shown as ideas.
  */
-export function CurrentActivity({ time, block, blockTasks, progress, focusTask, deprioritized, nextBlock }: CurrentActivityProps) {
-  // A recommended task from outside this block (e.g. an overdue priority) joins the list at the top.
-  const outside = focusTask && !blockTasks.some((t) => t.id === focusTask.id) ? focusTask : null
-  const tasks = outside ? [outside, ...blockTasks] : blockTasks
-  const open = tasks.filter((t) => t.status !== 'completed' && t.status !== 'skipped').length
-  const openInBlock = blockTasks.filter((t) => t.status !== 'completed' && t.status !== 'skipped').length
-
+export function CurrentActivity({ time, block, progress, upcoming, orderFirst }: CurrentActivityProps) {
   const style = categoryStyle(block?.category, block?.title)
-  const next = nextBlock ? categoryStyle(nextBlock.category, nextBlock.title) : null
+  const ideas = block?.ideas ?? []
 
   return (
     <Card className={clsx('!border-l-4', style.stripe)}>
@@ -52,57 +42,49 @@ export function CurrentActivity({ time, block, blockTasks, progress, focusTask, 
                 {formatTime12(block.startTime)} – {formatTime12(block.endTime)}
               </p>
             </div>
-            {progress && (
-              <ProgressRing
-                percent={progress.percent}
-                // Tasks: "2/4". A block without tasks (e.g. a break) fills with time instead.
-                label={blockTasks.length > 0 ? `${blockTasks.length - openInBlock}/${blockTasks.length}` : `${progress.percent}%`}
-                ariaLabel={progress.label}
-                colorClass={style.accent}
-              />
-            )}
           </div>
+
+          {progress && (
+            <div className="mt-3">
+              <div className="h-2 overflow-hidden rounded-pill bg-ink/10" role="meter" aria-valuenow={progress.percent} aria-valuemin={0} aria-valuemax={100} aria-label={progress.label}>
+                <div className={clsx('h-full rounded-pill bg-current transition-[width]', style.accent)} style={{ width: `${Math.max(progress.percent, 2)}%` }} />
+              </div>
+              <p className="mt-1 text-xs text-ink-muted">{progress.label}</p>
+            </div>
+          )}
+
+          {ideas.length > 0 && (
+            <p className="mt-3 text-sm text-ink-muted">
+              <span className="font-medium text-ink">Ideas for this time:</span> {ideas.join(' · ')}
+            </p>
+          )}
         </div>
       ) : (
         <EmptyState compact emoji="🌿" title="Nothing scheduled right now" text="Free time. Check what's coming up, or take a breather." />
       )}
 
-      {deprioritized && (
-        <p className="mt-3 rounded-card bg-clay-soft px-3 py-2 text-sm text-clay-dark">
-          An order is due soon. It&apos;s at the top of the page; these tasks will wait.
-        </p>
+      {orderFirst && (
+        <Link href="#orders-due" className="mt-3 block rounded-card bg-clay-soft px-3 py-2 text-sm text-clay-dark">
+          ⚠️ {orderFirst} Do that first.
+        </Link>
       )}
 
-      {tasks.length > 0 ? (
-        <ul className={clsx('mt-3 flex flex-col', deprioritized && 'opacity-60')}>
-          {tasks.map((task) => (
-            <TaskRow
-              key={task.id}
-              id={task.id}
-              title={task.title}
-              status={task.status}
-              isPriority={task.dailyPriorityRank !== null}
-              tag={task.id === outside?.id ? 'Overdue' : !deprioritized && task.id === focusTask?.id ? 'Next' : undefined}
-            />
-          ))}
+      {upcoming.length > 0 && (
+        <ul className="mt-4 flex flex-col gap-1.5 border-t border-ink/5 pt-3">
+          {upcoming.map((b, i) => {
+            const s = categoryStyle(b.category, b.title)
+            return (
+              <li key={b.id} className="flex items-center gap-2 text-xs text-ink-muted">
+                <span className="w-9 shrink-0 font-medium uppercase tracking-wide text-ink-faint">{i === 0 ? 'Next' : 'Later'}</span>
+                <span aria-hidden="true" className={clsx('flex h-6 w-6 shrink-0 items-center justify-center rounded-pill text-sm', s.soft)}>
+                  {s.emoji}
+                </span>
+                <span className="font-medium text-ink">{b.title}</span>
+                <span>· {formatTime12(b.startTime)}</span>
+              </li>
+            )
+          })}
         </ul>
-      ) : (
-        block && <p className="mt-3 text-sm text-ink-muted">No tasks in this block. Enjoy it ☕</p>
-      )}
-
-      {tasks.length > 0 && open === 0 && (
-        <p className="celebrate-in mt-3 rounded-card bg-sage-soft px-3 py-2.5 text-center text-sm font-medium text-sage-dark">
-          🎉 {block ? `${block.title} done!` : 'All done!'} Nice work.
-        </p>
-      )}
-
-      {nextBlock && next && (
-        <p className="mt-4 flex items-center gap-2 border-t border-ink/5 pt-3 text-xs text-ink-muted">
-          <span aria-hidden="true" className={clsx('flex h-6 w-6 items-center justify-center rounded-pill text-sm', next.soft)}>
-            {next.emoji}
-          </span>
-          Then <span className="font-medium text-ink">{nextBlock.title}</span> at {formatTime12(nextBlock.startTime)}
-        </p>
       )}
     </Card>
   )

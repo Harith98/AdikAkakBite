@@ -9,6 +9,8 @@ export interface ScheduleBlockLike {
   startTime: string
   endTime: string
   sortOrder: number
+  /** What the block is for ("Reply to comments", …), shown as ideas, not tasks to tick. */
+  ideas?: string[]
 }
 
 export interface TaskLike {
@@ -42,6 +44,14 @@ export function getCurrentBlock<T extends ScheduleBlockLike>(blocks: T[], time: 
 
 export function getNextBlock<T extends ScheduleBlockLike>(blocks: T[], time: string): T | null {
   return [...blocks].sort(byStart).find((b) => b.startTime.slice(0, 5) > time) ?? null
+}
+
+/** The next `count` blocks that haven't started yet, earliest first (the rest of the day's timetable). */
+export function getUpcomingBlocks<T extends ScheduleBlockLike>(blocks: T[], time: string, count = 2): T[] {
+  return [...blocks]
+    .sort(byStart)
+    .filter((b) => b.startTime.slice(0, 5) > time)
+    .slice(0, count)
 }
 
 /**

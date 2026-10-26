@@ -29,8 +29,8 @@ export interface DayFacts {
   overdueOrders: number
   ordersDueToday: number
   lowStock: number
-  tasksDone: number
-  tasksSoFar: number
+  /** Orders due in the next week (after today). */
+  ordersComingUp: number
   isWorkingDay: boolean
   /** YYYY-MM-DD, so the quiet-day line changes daily but not on every refresh. */
   isoDate: string
@@ -58,8 +58,9 @@ export function dayHeadline(f: DayFacts): string {
   if (f.lowStock > 0) {
     return `📦 ${f.lowStock} item${f.lowStock === 1 ? ' needs' : 's need'} restocking soon.`
   }
-  if (f.tasksSoFar > 0 && f.tasksDone >= f.tasksSoFar) return '🎉 All caught up. Nice work!'
-  if (f.tasksSoFar > 0 && f.tasksDone / f.tasksSoFar >= 0.5) return `💪 ${f.tasksDone} of ${f.tasksSoFar} done. Keep going!`
+  if (f.ordersComingUp > 0) {
+    return `📅 ${f.ordersComingUp} order${f.ordersComingUp === 1 ? '' : 's'} coming up this week. Plan your baking!`
+  }
   const [y, m, d] = f.isoDate.split('-').map(Number)
   const dayNumber = Math.floor(Date.UTC(y ?? 0, (m ?? 1) - 1, d ?? 1) / 86_400_000)
   return QUIET_LINES[dayNumber % QUIET_LINES.length]!

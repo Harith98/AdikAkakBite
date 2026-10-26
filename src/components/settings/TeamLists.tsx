@@ -161,7 +161,6 @@ export function TransferOwnershipForm({
   candidates: { memberId: string; label: string; role: BusinessMemberRole }[]
 }) {
   const { pending, error, run } = useTeamAction()
-  const ask = useConfirm()
   const [memberId, setMemberId] = useState('')
   const chosen = candidates.find((c) => c.memberId === memberId)
 

@@ -7,7 +7,6 @@ import type { ScheduleBlockLike, TaskLike } from './schedule'
 
 type Client = SupabaseClient<Database>
 type TaskRow = Database['public']['Tables']['tasks']['Row']
-type TaskInsert = Database['public']['Tables']['tasks']['Insert']
 
 export interface TodayOrder extends EngineOrder {
   paymentStatus: PaymentStatus
@@ -49,10 +48,10 @@ function toTaskLike(row: TaskRow): TaskLike {
 /**
  * Everything the Today screen needs, in as few round trips as possible.
  *
- * Tasks loaded: everything scheduled for today, plus unfinished MANUAL tasks
- * from earlier days (so a forgotten high-priority task can still surface as
- * overdue). Unfinished schedule-generated tasks from earlier days are not
- * carried over — the Closing block's "Review unfinished tasks" covers those.
+ * The timetable comes from the schedule blocks (their task lists are shown as
+ * ideas; no task rows are created for them). Tasks loaded: today's (mainly the
+ * three priorities), plus unfinished manual tasks from earlier days, so a
+ * forgotten high-priority one can still be suggested.
  */
 export async function getTodayData(
   supabase: Client,
@@ -94,44 +93,9 @@ export async function getTodayData(
   ])
 
   const blockRows = must(blocksRes, 'schedule')
-  let taskRows = must(tasksRes, 'tasks')
+  const taskRows = must(tasksRes, 'tasks')
   const orderViews = toOrderViews(must(ordersRes, 'orders') as unknown as OrderRowWithRelations[])
   const inventoryRows = must(inventoryRes, 'inventory')
-
-  // Create today's tasks from each block's default tasks the first time the
-  // day is viewed. Idempotent: a unique index + ignoreDuplicates means a
-  // repeat or racing request cannot create duplicates.
-  if (isWorkingDay) {
-    const existing = new Set(
-      taskRows
-        .filter((t) => t.schedule_block_id && t.scheduled_date === today)
-        .map((t) => `${t.schedule_block_id}::${t.title}`)
-    )
-    const missing: TaskInsert[] = blockRows.flatMap((block) =>
-      Array.from(new Set(block.default_tasks.map((t) => t.trim()).filter(Boolean)))
-        .map((title, index): TaskInsert => ({
-          business_id: businessId,
-          title,
-          category: block.category,
-          priority: 0,
-          scheduled_date: today,
-          scheduled_time: block.start_time,
-          status: 'not_started',
-          is_recurring: true,
-          source: 'schedule',
-          schedule_block_id: block.id,
-          sort_order: index,
-        }))
-        .filter((row) => !existing.has(`${row.schedule_block_id}::${row.title}`))
-    )
-    if (missing.length > 0) {
-      const { error } = await supabase
-        .from('tasks')
-        .upsert(missing, { onConflict: 'business_id,scheduled_date,schedule_block_id,title', ignoreDuplicates: true })
-      if (error) throw new Error(`Could not create today's tasks: ${error.message}`)
-      taskRows = must(await fetchTasks(), 'tasks')
-    }
-  }
 
   const orders: TodayOrder[] = orderViews.map((o) => ({
     id: o.id,
@@ -159,14 +123,18 @@ export async function getTodayData(
     }))
 
   return {
-    blocks: blockRows.map((b) => ({
-      id: b.id,
-      title: b.title,
-      category: b.category,
-      startTime: b.start_time.slice(0, 5),
-      endTime: b.end_time.slice(0, 5),
-      sortOrder: b.sort_order,
-    })),
+    // Days off have no timetable.
+    blocks: isWorkingDay
+      ? blockRows.map((b) => ({
+          id: b.id,
+          title: b.title,
+          category: b.category,
+          startTime: b.start_time.slice(0, 5),
+          endTime: b.end_time.slice(0, 5),
+          sortOrder: b.sort_order,
+          ideas: Array.from(new Set(b.default_tasks.map((t) => t.trim()).filter(Boolean))),
+        }))
+      : [],
     tasks: taskRows.map(toTaskLike),
     orders,
     inventoryAlerts,

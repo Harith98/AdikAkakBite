@@ -4,8 +4,8 @@ import { createClient } from '@/lib/supabase/server'
 import { getCurrentBusinessContext } from '@/lib/services/current-business'
 import { getTodayData } from '@/lib/services/today'
 import { formatTime12, getBusinessNow } from '@/lib/time'
-import { getBlockCandidates, getBlockProgress, getCurrentBlock, getNextBlock } from '@/lib/services/schedule'
-import { getNextRecommendedTask, getOrderUrgency } from '@/lib/services/recommendation'
+import { getBlockProgress, getCurrentBlock, getUpcomingBlocks } from '@/lib/services/schedule'
+import { getOrderUrgency } from '@/lib/services/recommendation'
 import { getSuggestedPriorities } from '@/lib/services/priorities'
 import { getReadyStock } from '@/lib/services/products'
 import { getUpcomingOrders } from '@/lib/services/orders'
@@ -15,7 +15,6 @@ import { ComingUpCard } from '@/components/today/ComingUpCard'
 import { dayHeadline, dayPart } from '@/lib/today-greeting'
 import { ReadyStockStrip } from '@/components/business/ReadyStockStrip'
 import { Card } from '@/components/ui/Card'
-import { LinkButton } from '@/components/ui/LinkButton'
 import { AlertsCard } from '@/components/today/AlertsCard'
 import { CurrentActivity } from '@/components/today/CurrentActivity'
 import { OrderCard } from '@/components/today/OrderCard'
@@ -50,7 +49,6 @@ export default async function TodayPage() {
   const orderRows = data.orders
     .map((order) => ({ order, urgency: getOrderUrgency(order, now.isoDate, now.time) }))
     .sort((a, b) => Number(b.urgency.isOverdue) - Number(a.urgency.isOverdue))
-  const hasUrgentOrder = orderRows.some((row) => row.urgency.isUrgent)
 
   // ---- Schedule + recommendation (deterministic, no AI) ----
   const engineInput = {
@@ -61,12 +59,20 @@ export default async function TodayPage() {
     orders: data.orders,
     inventoryAlerts: data.inventoryAlerts,
   }
-  const recommendation = getNextRecommendedTask(engineInput)
   const block = getCurrentBlock(data.blocks, now.time)
-  const nextBlock = getNextBlock(data.blocks, now.time)
-  const blockTasks = block ? getBlockCandidates(block, data.tasks, now.isoDate) : []
-  const progress = block ? getBlockProgress(block, blockTasks, now.time) : null
-  const focusTask = recommendation.taskId ? data.tasks.find((t) => t.id === recommendation.taskId) ?? null : null
+  const progress = block ? getBlockProgress(block, [], now.time) : null // time-based: no tasks to tick
+  const upcomingBlocks = getUpcomingBlocks(data.blocks, now.time)
+  // An order due soon comes before whatever the timetable says.
+  const urgent = orderRows.find((row) => row.urgency.isUrgent)
+  const orderFirst = urgent
+    ? `${urgent.order.customerName ?? 'A walk-in'}'s order ${
+        urgent.urgency.isOverdue
+          ? 'is overdue.'
+          : urgent.order.requiredTime
+            ? `is due at ${formatTime12(urgent.order.requiredTime)}.`
+            : 'is due today.'
+      }`
+    : null
 
   // ---- Today's three priorities ----
   const priorities = data.tasks
@@ -79,12 +85,6 @@ export default async function TodayPage() {
   })
 
   // ---- Summary tiles ----
-  // Only tasks whose block has started (plus manual ones) count, so the morning
-  // doesn't open on "0/27": the rest of the day isn't due yet.
-  const tasksSoFar = data.tasks.filter(
-    (t) => t.scheduledDate === now.isoDate && (!t.scheduledTime || t.scheduledTime.slice(0, 5) <= now.time)
-  )
-  const tasksDone = tasksSoFar.filter((t) => t.status === 'completed' || t.status === 'skipped').length
   const ordersToday = data.orders.filter((o) => o.requiredDate === now.isoDate).length
 
   // ---- Header personality: time-of-day greeting + one line about the day ----
@@ -93,8 +93,7 @@ export default async function TodayPage() {
     overdueOrders: orderRows.filter((row) => row.urgency.isOverdue).length,
     ordersDueToday: ordersToday,
     lowStock: data.inventoryAlerts.length,
-    tasksDone,
-    tasksSoFar: tasksSoFar.length,
+    ordersComingUp: upcoming.length,
     isWorkingDay,
     isoDate: now.isoDate,
   })
@@ -153,7 +152,7 @@ export default async function TodayPage() {
 
         <div className="relative mt-3 grid grid-cols-3 gap-2">
           <Stat emoji="🧾" label="Orders today" value={String(ordersToday)} href="/orders" />
-          <Stat emoji="✅" label="Tasks so far" value={tasksSoFar.length > 0 ? `${tasksDone}/${tasksSoFar.length}` : '—'} />
+          <Stat emoji="📅" label={`Next ${UPCOMING_DAYS} days`} value={String(upcoming.length)} href="/orders" />
           <Stat
             emoji="📦"
             label="Low stock"
@@ -172,7 +171,7 @@ export default async function TodayPage() {
       <div className="flex flex-col gap-6 md:grid md:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)] md:items-start">
         <div className="flex flex-col gap-6">
           {orderRows.length > 0 && (
-            <section aria-label="Orders that need you" className="flex flex-col gap-3">
+            <section id="orders-due" aria-label="Orders that need you" className="flex scroll-mt-4 flex-col gap-3">
               {orderRows.slice(0, MAX_ORDER_CARDS).map(({ order, urgency }) => (
                 <OrderCard key={order.id} order={order} urgency={urgency} today={now.isoDate} currency={settings.currency} />
               ))}
@@ -183,16 +182,7 @@ export default async function TodayPage() {
           )}
 
           {isWorkingDay ? (
-            <CurrentActivity
-              time={now.time}
-              block={block}
-              blockTasks={blockTasks}
-              progress={progress}
-              recommendation={recommendation}
-              focusTask={focusTask}
-              deprioritized={hasUrgentOrder}
-              nextBlock={nextBlock}
-            />
+            <CurrentActivity time={now.time} block={block} progress={progress} upcoming={upcomingBlocks} orderFirst={orderFirst} />
           ) : null}
 
           <ComingUpCard orders={upcoming} today={now.isoDate} days={UPCOMING_DAYS} money={(n) => formatMoney(n, settings.currency)} />

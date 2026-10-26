@@ -63,7 +63,7 @@ export function ScheduleBlockForm({ block }: { block?: ScheduleBlockFormValues }
           </label>
         </div>
         <label className="flex flex-col gap-1 text-sm">
-          <span className="font-medium text-ink">Tasks (one per line)</span>
+          <span className="font-medium text-ink">Ideas for this time (one per line)</span>
           <textarea
             name="defaultTasks"
             rows={5}
@@ -86,7 +86,7 @@ export function ScheduleBlockForm({ block }: { block?: ScheduleBlockFormValues }
       {block && (
         <ConfirmForm
           action={deleteScheduleBlock}
-          confirm={{ title: `Delete "${block.title}"?`, message: 'Tasks already created for today stay.', confirmLabel: 'Delete', danger: true }}
+          confirm={{ title: `Delete "${block.title}"?`, message: 'It’s removed from the timetable on Today.', confirmLabel: 'Delete', danger: true }}
           className="mt-2"
         >
           <input type="hidden" name="id" value={block.id} />
