@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { updateSession } from '@/lib/supabase/middleware'
 import { menuHostname } from '@/lib/site-url'
+import { CATALOGUE_PATH } from '@/lib/catalogue'
 
 export async function middleware(request: NextRequest) {
   const menuHost = menuHostname()
@@ -12,7 +13,7 @@ export async function middleware(request: NextRequest) {
     // (/today, /login, /api/…) shows the menu; no app page, login or API is
     // reachable, and no session cookie is read or set.
     if (host === menuHost) {
-      if (pathname === '/menu') return NextResponse.next()
+      if (pathname === '/menu' || pathname === CATALOGUE_PATH) return NextResponse.next()
       const url = request.nextUrl.clone()
       url.pathname = '/menu'
       url.search = ''

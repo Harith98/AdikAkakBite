@@ -50,6 +50,7 @@ export async function updateSession(request: NextRequest) {
     path.startsWith('/api/auth') || // email-confirmation / magic-link callback must work signed out
     path.startsWith('/api/cron') || // Vercel Cron; the route checks CRON_SECRET itself
     path === '/menu' || // public customer menu (catalogue + WhatsApp order form)
+    path === '/menu/catalogue' || // counts a catalogue open, then sends on to the PDF
     path.startsWith('/manifest.json') ||
     path.startsWith('/sw.js') ||
     path.startsWith('/icons') ||

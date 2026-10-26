@@ -576,6 +576,20 @@ export interface Database {
         Update: Partial<Database['public']['Tables']['daily_reviews']['Insert']>
         Relationships: []
       }
+      catalogue_opens: {
+        Row: {
+          business_id: string
+          day: string
+          opens: number
+        }
+        Insert: {
+          business_id: string
+          day: string
+          opens?: number
+        }
+        Update: Partial<Database['public']['Tables']['catalogue_opens']['Insert']>
+        Relationships: []
+      }
       expenses: {
         Row: {
           id: string
@@ -734,6 +748,10 @@ export interface Database {
       get_public_menu: {
         Args: Record<string, never>
         Returns: unknown
+      }
+      count_catalogue_open: {
+        Args: Record<string, never>
+        Returns: undefined
       }
       app_system_status: {
         Args: Record<string, never>

@@ -433,6 +433,16 @@ create table expenses (
 );
 comment on table expenses is 'Overheads (not product costs). A repeating row counts monthly from expense_date until ends_on.';
 
+-- Catalogue PDF opens per day (via /menu/catalogue), for the data-transfer
+-- estimate in Settings → System: opens × PDF size against the free 5 GB/month.
+create table catalogue_opens (
+  business_id uuid not null references businesses(id) on delete cascade,
+  day date not null,
+  opens integer not null default 0,
+  primary key (business_id, day)
+);
+comment on table catalogue_opens is 'Catalogue PDF opens per business-local day, for the data-transfer estimate in Settings → System.';
+
 create table business_activity_logs (
   id uuid primary key default gen_random_uuid(),
   business_id uuid not null references businesses(id) on delete cascade,
@@ -1114,6 +1124,28 @@ $$;
 revoke all on function get_public_menu() from public;
 grant execute on function get_public_menu() to anon, authenticated;
 
+-- +1 catalogue open for today (business-local day), atomically. Only the
+-- server (service-role key) may call it, so the count can't be inflated.
+create or replace function count_catalogue_open()
+returns void
+language sql
+security definer
+set search_path = public
+as $$
+  insert into catalogue_opens (business_id, day, opens)
+  select
+    b.id,
+    (now() at time zone coalesce((select s.timezone from business_settings s where s.business_id = b.id), 'Asia/Kuala_Lumpur'))::date,
+    1
+  from businesses b
+  order by b.created_at
+  limit 1
+  on conflict (business_id, day) do update set opens = catalogue_opens.opens + 1;
+$$;
+
+revoke all on function count_catalogue_open() from public, anon, authenticated;
+grant execute on function count_catalogue_open() to service_role;
+
 -- ---- system status ---------------------------------------------------------
 
 -- The database's version. Settings → System compares it with the version the
@@ -1123,9 +1155,9 @@ create or replace function schema_version()
 returns integer
 language sql
 immutable
-as $
-  select 2;
-$;
+as $$
+  select 3;
+$$;
 
 revoke all on function schema_version() from public;
 grant execute on function schema_version() to authenticated;
@@ -1484,6 +1516,11 @@ create policy "members can access their goals"
   on goals for all
   using (is_business_member(business_id))
   with check (is_business_member(business_id));
+
+alter table catalogue_opens enable row level security;
+create policy "members can view catalogue opens"
+  on catalogue_opens for select
+  using (is_business_member(business_id));
 
 alter table expenses enable row level security;
 create policy "members can access their expenses"

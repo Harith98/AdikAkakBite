@@ -14,6 +14,7 @@ import {
   type Level,
 } from '@/lib/system-status'
 import clsx from '@/lib/clsx'
+import { getBusinessNow } from '@/lib/time'
 import { Card } from '@/components/ui/Card'
 
 export const metadata = { title: 'System status' }
@@ -52,6 +53,19 @@ export default async function SystemStatusPage() {
   const status = statusRes.error ? null : (statusRes.data as unknown as SystemStatus)
   const lastRun = (action: string) => (cronRes.data ?? []).find((r) => r.action === action)?.created_at ?? null
   const devices = devicesRes && !devicesRes.error ? devicesRes.count ?? 0 : null
+
+  // ---- Catalogue PDF: opens this month × its size, against the free data transfer ----
+  const monthStart = `${getBusinessNow(settings.timezone).isoDate.slice(0, 7)}-01`
+  const [opensRes, pdfBytes] = await Promise.all([
+    supabase.from('catalogue_opens').select('opens').eq('business_id', business.id).gte('day', monthStart),
+    business.menu_pdf_url
+      ? fetch(business.menu_pdf_url, { method: 'HEAD', cache: 'no-store' })
+          .then((r) => Number(r.headers.get('content-length')) || 0)
+          .catch(() => 0)
+      : Promise.resolve(0),
+  ])
+  const catalogue =
+    pdfBytes > 0 && !opensRes.error ? { bytes: pdfBytes, opens: (opensRes.data ?? []).reduce((sum, r) => sum + r.opens, 0) } : null
 
   // ---- Health checks: everything here is yes/no; secret values are never shown ----
   const schema = schemaCheck(versionRes.error ? null : Number(versionRes.data))
@@ -141,9 +155,25 @@ export default async function SystemStatusPage() {
                 </div>
               ))}
             </dl>
+            {catalogue && (
+              <div>
+                <UsageBar
+                  label="Catalogue PDF downloads this month (estimate)"
+                  used={catalogue.opens * catalogue.bytes}
+                  limit={PLAN_LIMITS.supabase.egressBytes}
+                  format={formatBytes}
+                />
+                <p className="mt-1 text-xs text-ink-muted">
+                  {catalogue.opens.toLocaleString('en-GB')} open{catalogue.opens === 1 ? '' : 's'} × {formatBytes(catalogue.bytes)} PDF. About{' '}
+                  {Math.max(0, Math.floor((PLAN_LIMITS.supabase.egressBytes - catalogue.opens * catalogue.bytes) / catalogue.bytes)).toLocaleString('en-GB')}{' '}
+                  more opens fit this month. It&apos;s an upper estimate: a customer opening it again is usually served from their phone.
+                </p>
+              </div>
+            )}
             <p className="text-xs text-ink-muted">
-              Not measurable from here: data transfer ({PLAN_LIMITS.supabase.egressPerMonth}/month on the free plan). Free projects
-              pause after {PLAN_LIMITS.supabase.pausesAfterInactiveDays} days without use; the daily reminders keep yours active.
+              Data transfer ({PLAN_LIMITS.supabase.egressPerMonth}/month on the free plan) is only estimated above for the catalogue; the
+              exact total, including the app itself and product photos, is on the Supabase usage page. Free projects pause after{' '}
+              {PLAN_LIMITS.supabase.pausesAfterInactiveDays} days without use; the daily reminders keep yours active.
             </p>
           </div>
         ) : (

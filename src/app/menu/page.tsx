@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { createClient } from '@supabase/supabase-js'
+import { CATALOGUE_PATH } from '@/lib/catalogue'
 import { toWhatsAppNumber } from '@/lib/receipts'
 import { MenuOrderForm } from '@/components/menu/MenuOrderForm'
 
@@ -116,7 +117,7 @@ export default async function MenuPage() {
           <Step number={1} title="See the menu" />
           {menu?.menu_pdf_url ? (
             <a
-              href={menu.menu_pdf_url}
+              href={CATALOGUE_PATH}
               target="_blank"
               rel="noopener noreferrer"
               className="group mt-3 flex items-center gap-4 overflow-hidden rounded-card bg-gradient-to-br from-raspberry to-raspberry-dark p-4 text-white shadow-card transition-transform active:scale-[0.98]"

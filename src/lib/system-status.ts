@@ -20,6 +20,7 @@ export const PLAN_LIMITS = {
     storageBytes: 1024 * 1024 * 1024, // 1 GB
     monthlyActiveUsers: 50_000,
     egressPerMonth: '5 GB',
+    egressBytes: 5 * 1024 * 1024 * 1024,
     pausesAfterInactiveDays: 7,
   },
   vercel: {
@@ -66,7 +67,7 @@ export function cronLevel(lastRunIso: string | null, now: Date = new Date()): Le
  * version; each file in supabase/updates/ raises it by one (schema_version()).
  * Bump it together with the update file that needs it.
  */
-export const SCHEMA_VERSION = 2
+export const SCHEMA_VERSION = 3
 
 /** What Settings → System says about the database version (null = schema_version() isn't there yet). */
 export function schemaCheck(version: number | null): { level: Level; detail: string } {

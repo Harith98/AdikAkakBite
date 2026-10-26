@@ -1,3 +1,6 @@
+/** The menu's catalogue button: counts the open, then redirects to the PDF (app/menu/catalogue/route.ts). */
+export const CATALOGUE_PATH = '/menu/catalogue'
+
 /** Supabase Storage bucket for the customer menu's PDF catalogue (see supabase/schema.sql). */
 export const CATALOGUE_BUCKET = 'catalogue'
 
