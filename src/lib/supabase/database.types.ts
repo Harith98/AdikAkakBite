@@ -576,6 +576,30 @@ export interface Database {
         Update: Partial<Database['public']['Tables']['daily_reviews']['Insert']>
         Relationships: []
       }
+      saved_captions: {
+        Row: {
+          id: string
+          business_id: string
+          title: string
+          body: string
+          use_count: number
+          last_used_at: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          business_id: string
+          title: string
+          body: string
+          use_count?: number
+          last_used_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: Partial<Database['public']['Tables']['saved_captions']['Insert']>
+        Relationships: []
+      }
       catalogue_opens: {
         Row: {
           business_id: string

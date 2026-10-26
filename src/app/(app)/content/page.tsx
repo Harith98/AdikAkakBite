@@ -21,6 +21,7 @@ import type { ContentPlatform } from '@/lib/supabase/database.types'
 import clsx from '@/lib/clsx'
 import { Card } from '@/components/ui/Card'
 import { PostingChecklist } from '@/components/content/PostingChecklist'
+import { SavedCaptions } from '@/components/content/SavedCaptions'
 
 /** Each platform's own colour, for its dot in the calendar. */
 const DOT: Record<ChecklistPlatform, string> = {
@@ -56,12 +57,20 @@ export default async function ContentPage({ searchParams }: { searchParams: { mo
       .lte('content_date', to)
       .order('created_at', { ascending: true })
   const range = monthRange(month)
-  const [postsRes, monthRes, readyStock, recentSales] = await Promise.all([
+  const [postsRes, monthRes, readyStock, recentSales, captionsRes] = await Promise.all([
     ticks(addDaysISO(now.isoDate, -(STREAK_WINDOW_DAYS - 1)), now.isoDate),
     ticks(range.start, range.end),
     // Optional extras for the suggestion: never let them take the page down.
     getReadyStock(supabase, business.id).catch(() => []),
     getCompletedOrdersInRange(supabase, business.id, addDaysISO(now.isoDate, -29), now.isoDate).catch(() => []),
+    // Most used first. Errors (no table before the database update) just hide the list.
+    supabase
+      .from('saved_captions')
+      .select('id, title, body')
+      .eq('business_id', business.id)
+      .order('use_count', { ascending: false })
+      .order('last_used_at', { ascending: false, nullsFirst: false })
+      .order('created_at', { ascending: false }),
   ])
   const rows = postsRes.data ?? []
 
@@ -142,6 +151,12 @@ export default async function ContentPage({ searchParams }: { searchParams: { mo
         {/* key resets the ticks when the day changes */}
         <PostingChecklist key={now.isoDate} postedAt={postedAt} />
       </Card>
+
+      {!captionsRes.error && (
+        <Card>
+          <SavedCaptions captions={captionsRes.data ?? []} />
+        </Card>
+      )}
 
       <Card>
         <div className="flex items-center justify-between gap-2">

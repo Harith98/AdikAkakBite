@@ -443,6 +443,21 @@ create table catalogue_opens (
 );
 comment on table catalogue_opens is 'Catalogue PDF opens per business-local day, for the data-transfer estimate in Settings → System.';
 
+-- Reusable captions and hashtag sets for posting (Content page), most used first.
+create table saved_captions (
+  id uuid primary key default gen_random_uuid(),
+  business_id uuid not null references businesses(id) on delete cascade,
+  title text not null,
+  body text not null,
+  use_count integer not null default 0,
+  last_used_at timestamptz,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  constraint saved_captions_title_length check (length(title) between 1 and 60),
+  constraint saved_captions_body_length check (length(body) between 1 and 2200)
+);
+comment on table saved_captions is 'Reusable captions and hashtag sets for posting (Content page).';
+
 create table business_activity_logs (
   id uuid primary key default gen_random_uuid(),
   business_id uuid not null references businesses(id) on delete cascade,
@@ -568,6 +583,8 @@ create index idx_goals_active_range on goals(business_id, start_date, end_date);
 create index idx_daily_reviews_business_date on daily_reviews(business_id, review_date);
 
 create index idx_expenses_business_date on expenses(business_id, expense_date);
+
+create index idx_saved_captions_business on saved_captions(business_id);
 
 create index idx_activity_logs_business_id on business_activity_logs(business_id, created_at desc);
 
@@ -1156,7 +1173,7 @@ returns integer
 language sql
 immutable
 as $$
-  select 3;
+  select 4;
 $$;
 
 revoke all on function schema_version() from public;
@@ -1514,6 +1531,12 @@ create policy "members can access their content_items"
 alter table goals enable row level security;
 create policy "members can access their goals"
   on goals for all
+  using (is_business_member(business_id))
+  with check (is_business_member(business_id));
+
+alter table saved_captions enable row level security;
+create policy "members can access their saved captions"
+  on saved_captions for all
   using (is_business_member(business_id))
   with check (is_business_member(business_id));
 

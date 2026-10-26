@@ -64,3 +64,66 @@ export async function setPostedToday(platform: ChecklistPlatform, posted: boolea
   revalidatePath('/content')
   return { error: null }
 }
+
+// ---------------------------------------------------------------------------
+// Saved captions
+// ---------------------------------------------------------------------------
+
+export interface SaveCaptionState {
+  error: string | null
+  nonce: number
+}
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
+/** Adds a caption, or edits one when `captionId` is sent. The text is kept exactly as typed (emojis, line breaks). */
+export async function saveCaption(_prev: SaveCaptionState, formData: FormData): Promise<SaveCaptionState> {
+  const id = String(formData.get('captionId') ?? '')
+  const title = String(formData.get('title') ?? '').trim()
+  const body = String(formData.get('body') ?? '').replace(/\r\n/g, '\n').trim()
+  if (id && !UUID.test(id)) return { error: 'Invalid caption.', nonce: 0 }
+  if (!title) return { error: 'Give it a short name, e.g. "Order info".', nonce: 0 }
+  if (title.length > 60) return { error: 'Keep the name under 60 characters.', nonce: 0 }
+  if (!body) return { error: 'Write the caption.', nonce: 0 }
+  if (body.length > 2200) return { error: 'Instagram allows up to 2,200 characters. Make it a little shorter.', nonce: 0 }
+
+  const ctx = await getActionContext()
+  if (!ctx.ok) return { error: ctx.error, nonce: 0 }
+  const { error } = id
+    ? await ctx.supabase.from('saved_captions').update({ title, body }).eq('id', id).eq('business_id', ctx.businessId)
+    : await ctx.supabase.from('saved_captions').insert({ business_id: ctx.businessId, title, body })
+  if (error) {
+    return {
+      error: /saved_captions/.test(error.message)
+        ? 'Saved captions need a database update first: run supabase/updates/2026-10-26_saved_captions.sql in Supabase.'
+        : error.message,
+      nonce: 0,
+    }
+  }
+  revalidatePath('/content')
+  return { error: null, nonce: Date.now() }
+}
+
+export async function deleteCaption(id: string): Promise<ActionResult> {
+  if (!UUID.test(id)) return { error: 'Invalid caption.' }
+  const ctx = await getActionContext()
+  if (!ctx.ok) return { error: ctx.error }
+  const { error } = await ctx.supabase.from('saved_captions').delete().eq('id', id).eq('business_id', ctx.businessId)
+  if (error) return { error: error.message }
+  revalidatePath('/content')
+  return { error: null }
+}
+
+/** Counts a copy, so the most used captions come first (on the next visit, not while you're copying). */
+export async function markCaptionUsed(id: string): Promise<void> {
+  if (!UUID.test(id)) return
+  const ctx = await getActionContext()
+  if (!ctx.ok) return
+  const { data } = await ctx.supabase.from('saved_captions').select('use_count').eq('id', id).eq('business_id', ctx.businessId).maybeSingle()
+  if (!data) return
+  await ctx.supabase
+    .from('saved_captions')
+    .update({ use_count: data.use_count + 1, last_used_at: new Date().toISOString() })
+    .eq('id', id)
+    .eq('business_id', ctx.businessId)
+}
