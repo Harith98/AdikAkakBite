@@ -11,6 +11,7 @@ import { PlatformIcon } from './PlatformIcon'
 function platformHref(platform: ChecklistPlatform, touch: boolean): string {
   if (platform === 'instagram') return 'https://www.instagram.com/'
   if (platform === 'facebook') return 'https://www.facebook.com/'
+  if (platform === 'threads') return 'https://www.threads.net/'
   return touch ? 'whatsapp://' : 'https://web.whatsapp.com/'
 }
 

@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { bestStreak, isChecklistPlatform, postingStreak, postSuggestion } from '@/lib/content'
 import type { ContentPlatform } from '@/lib/supabase/database.types'
 
+// Days before Threads joined the checklist (2026-10-26) only need the original three.
 const all = new Set<ContentPlatform>(['instagram', 'facebook', 'whatsapp'])
 const days = ['2026-10-02', '2026-10-01', '2026-09-30', '2026-09-29']
 
@@ -62,9 +63,26 @@ describe('postSuggestion', () => {
   })
 })
 
+describe('platforms per day', () => {
+  it('needs Threads only from the day it was added', async () => {
+    const { isCompleteDay, platformsForDay } = await import('@/lib/content')
+    expect(platformsForDay('2026-10-25')).toEqual(['instagram', 'facebook', 'whatsapp'])
+    expect(platformsForDay('2026-10-26')).toEqual(['instagram', 'threads', 'facebook', 'whatsapp'])
+    const posted = new Map([
+      ['2026-10-25', all],
+      ['2026-10-26', all],
+      ['2026-10-27', new Set<ContentPlatform>([...all, 'threads'])],
+    ])
+    expect(isCompleteDay('2026-10-25', posted)).toBe(true)
+    expect(isCompleteDay('2026-10-26', posted)).toBe(false)
+    expect(isCompleteDay('2026-10-27', posted)).toBe(true)
+  })
+})
+
 describe('isChecklistPlatform', () => {
-  it('accepts only the three checklist platforms', () => {
+  it('accepts only the checklist platforms', () => {
     expect(isChecklistPlatform('instagram')).toBe(true)
+    expect(isChecklistPlatform('threads')).toBe(true)
     expect(isChecklistPlatform('tiktok')).toBe(false)
   })
 })

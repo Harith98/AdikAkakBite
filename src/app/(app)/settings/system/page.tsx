@@ -14,6 +14,8 @@ import {
   type Level,
 } from '@/lib/system-status'
 import clsx from '@/lib/clsx'
+import { describeDevice } from '@/lib/device-label'
+import { Avatar } from '@/components/ui/Avatar'
 import { getBusinessNow } from '@/lib/time'
 import { Card } from '@/components/ui/Card'
 
@@ -38,7 +40,8 @@ export default async function SystemStatusPage() {
   if (role !== 'owner') redirect('/settings')
   const supabase = createClient()
 
-  const [statusRes, versionRes, cronRes, devicesRes] = await Promise.all([
+  const admin = createServiceRoleClient()
+  const [statusRes, versionRes, cronRes, devicesRes, membersRes] = await Promise.all([
     supabase.rpc('app_system_status'),
     supabase.rpc('schema_version'),
     supabase
@@ -48,11 +51,37 @@ export default async function SystemStatusPage() {
       .in('action', Object.values(CRON_ACTIONS))
       .order('created_at', { ascending: false })
       .limit(20),
-    createServiceRoleClient()?.from('push_subscriptions').select('id', { count: 'exact', head: true }) ?? Promise.resolve(null),
+    // Every device with notifications on. Only the server can read everyone's (admin key).
+    admin
+      ? admin
+          .from('push_subscriptions')
+          .select('id, user_id, user_agent, created_at, updated_at')
+          .eq('business_id', business.id)
+          .order('updated_at', { ascending: false })
+      : Promise.resolve(null),
+    supabase.rpc('get_business_members', { p_business_id: business.id }),
   ])
   const status = statusRes.error ? null : (statusRes.data as unknown as SystemStatus)
   const lastRun = (action: string) => (cronRes.data ?? []).find((r) => r.action === action)?.created_at ?? null
-  const devices = devicesRes && !devicesRes.error ? devicesRes.count ?? 0 : null
+  const deviceRows = devicesRes && !devicesRes.error ? devicesRes.data ?? [] : null
+  const devices = deviceRows ? deviceRows.length : null
+  // Grouped by person, in team order (owner first), with each person's devices newest first.
+  const members = membersRes.error ? [] : membersRes.data ?? []
+  const deviceGroups = deviceRows
+    ? [
+        ...members.map((m) => ({
+          userId: m.user_id,
+          name: m.display_name || m.email,
+          avatarUrl: m.avatar_url ?? null,
+          devices: deviceRows.filter((d) => d.user_id === m.user_id),
+        })),
+        // A device whose person has since left the team (cleaned up when they sign in elsewhere).
+        ...Array.from(new Set(deviceRows.map((d) => d.user_id)))
+          .filter((id) => !members.some((m) => m.user_id === id))
+          .map((id) => ({ userId: id, name: 'Former team member', avatarUrl: null, devices: deviceRows.filter((d) => d.user_id === id) })),
+      ]
+    : []
+  const dayFormat = new Intl.DateTimeFormat('en-GB', { timeZone: settings.timezone, day: 'numeric', month: 'short', year: 'numeric' })
 
   // ---- Catalogue PDF: opens this month × its size, against the free data transfer ----
   const monthStart = `${getBusinessNow(settings.timezone).isoDate.slice(0, 7)}-01`
@@ -179,6 +208,44 @@ export default async function SystemStatusPage() {
         ) : (
           <p className="mt-3 text-sm text-ink-muted">Usage shows here once the database is up to date (see the check above).</p>
         )}
+      </Card>
+
+      <Card>
+        <SectionLabel icon="📱">Notifications on</SectionLabel>
+        {deviceRows === null ? (
+          <p className="mt-3 text-sm text-ink-muted">Add the admin key (SUPABASE_SERVICE_ROLE_KEY) to see which devices get notifications.</p>
+        ) : (
+          <ul className="mt-3 flex flex-col divide-y divide-ink/5">
+            {deviceGroups.map((person) => (
+              <li key={person.userId} className="flex items-start gap-3 py-3 first:pt-0 last:pb-0">
+                <Avatar url={person.avatarUrl} name={person.name} size={36} />
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium text-ink">{person.name}</p>
+                  {person.devices.length === 0 ? (
+                    <p className="text-xs text-ink-faint">No device. Turn on in Settings → Notifications on their phone.</p>
+                  ) : (
+                    <ul className="mt-0.5 flex flex-col gap-0.5">
+                      {person.devices.map((d) => (
+                        <li key={d.id} className="flex items-center gap-1.5 text-xs text-ink-muted">
+                          <span aria-hidden="true" className="h-1.5 w-1.5 shrink-0 rounded-pill bg-sage-dark" />
+                          <span className="truncate">
+                            {describeDevice(d.user_agent)} · on since {dayFormat.format(new Date(d.created_at))}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+                <span className={clsx('shrink-0 rounded-pill px-2 py-0.5 text-xs font-medium', person.devices.length > 0 ? 'bg-sage-soft text-sage-dark' : 'bg-ink/5 text-ink-muted')}>
+                  {person.devices.length > 0 ? `${person.devices.length} on` : 'Off'}
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
+        <p className="mt-3 text-xs text-ink-muted">
+          A device drops off this list by itself the next time a notification can’t reach it (turned off, or the app removed). On iPhone, only the app added to the Home Screen can get them.
+        </p>
       </Card>
 
       <Card>

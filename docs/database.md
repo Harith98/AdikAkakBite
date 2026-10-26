@@ -35,6 +35,7 @@ The file `2026-10-20_single_schema_file.sql` is the one that moved the live data
 | Expenses (version 2) | `expenses`: overheads only (rent, utilities, petrol, equipment, marketing, other), never ingredients or packaging, which are already in product costs. A repeating row (`repeats_monthly`) counts every month on its day until `ends_on`; `expandExpenses()` in `src/lib/expenses.ts` turns rows into monthly entries. Net profit = gross profit − overheads. |
 | Catalogue opens (version 3) | `catalogue_opens`: opens per day of the menu PDF, counted by `/menu/catalogue` through `count_catalogue_open()` (service-role only), then redirected to the PDF. Settings → System estimates data transfer as opens × PDF size against the free 5 GB a month. |
 | Saved captions (version 4) | `saved_captions`: reusable captions and hashtag sets for the Content page (title, body up to 2,200 characters, Instagram's limit), shared by the team; `use_count` / `last_used_at` put the most used first. |
+| Threads on the checklist (version 5) | `content_platform` gains `'threads'`. Days before 2026-10-26 only needed Instagram, Facebook and WhatsApp to count as fully posted (`PLATFORM_SINCE` in `src/lib/content.ts`), so earlier streaks stay. |
 | Customer menu | `businesses.menu_pdf_url` and the social links; `get_public_menu()` is the only thing `/menu` reads (anon-callable, public info only). |
 | Other | `content_items`, `goals`, `business_activity_logs` (append-only; the daily jobs log here too), `app_system_status()` and `schema_version()` for Settings → System. |
 

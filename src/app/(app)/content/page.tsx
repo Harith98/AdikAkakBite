@@ -1,4 +1,3 @@
-import Link from 'next/link'
 import { productThumbUrl } from '@/lib/product-images'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { SectionLabel } from '@/components/ui/SectionLabel'
@@ -7,59 +6,42 @@ import { getCurrentBusinessContext } from '@/lib/services/current-business'
 import { getReadyStock } from '@/lib/services/products'
 import { getCompletedOrdersInRange } from '@/lib/services/orders'
 import { addDaysISO, getBusinessNow } from '@/lib/time'
-import { isMonthKey, monthRange, shiftMonth } from '@/lib/calc/sales'
 import {
   bestStreak,
   CHECKLIST_PLATFORMS,
   isCompleteDay,
+  platformsForDay,
   PLATFORM_LABELS,
   postingStreak,
   postSuggestion,
   type ChecklistPlatform,
 } from '@/lib/content'
 import type { ContentPlatform } from '@/lib/supabase/database.types'
-import clsx from '@/lib/clsx'
 import { Card } from '@/components/ui/Card'
+import { PlatformIcon } from '@/components/content/PlatformIcon'
 import { PostingChecklist } from '@/components/content/PostingChecklist'
 import { SavedCaptions } from '@/components/content/SavedCaptions'
 
-/** Each platform's own colour, for its dot in the calendar. */
-const DOT: Record<ChecklistPlatform, string> = {
-  instagram: 'bg-[#DD2A7B]',
-  facebook: 'bg-[#1877F2]',
-  whatsapp: 'bg-[#25D366]',
-}
-
-const WEEKDAYS = ['M', 'T', 'W', 'T', 'F', 'S', 'S']
 /** How far back streaks look: 330 days × 3 platforms stays under 1000 rows. */
 const STREAK_WINDOW_DAYS = 330
 
-const monthLabel = (month: string) =>
-  new Date(`${month}-01T00:00:00Z`).toLocaleDateString('en-GB', { timeZone: 'UTC', month: 'long', year: 'numeric' })
-
-export default async function ContentPage({ searchParams }: { searchParams: { month?: string } }) {
+export default async function ContentPage() {
   const { business, settings } = await getCurrentBusinessContext()
   const now = getBusinessNow(settings.timezone)
-  const thisMonth = now.isoDate.slice(0, 7)
-  const month = isMonthKey(searchParams.month) && searchParams.month <= thisMonth ? searchParams.month : thisMonth
   const supabase = createClient()
 
-  // Checklist ticks (up to 3 a day): the past year for the streaks, kept under
-  // Supabase's 1000-rows-per-request limit, plus the month the calendar shows.
-  const ticks = (from: string, to: string) =>
+  const [postsRes, readyStock, recentSales, captionsRes] = await Promise.all([
+    // Checklist ticks (up to 3 a day) for the past year: streaks and this month's
+    // summary, kept under Supabase's 1000-rows-per-request limit.
     supabase
       .from('content_items')
       .select('platform, content_date, created_at')
       .eq('business_id', business.id)
       .eq('status', 'posted')
       .in('platform', [...CHECKLIST_PLATFORMS])
-      .gte('content_date', from)
-      .lte('content_date', to)
-      .order('created_at', { ascending: true })
-  const range = monthRange(month)
-  const [postsRes, monthRes, readyStock, recentSales, captionsRes] = await Promise.all([
-    ticks(addDaysISO(now.isoDate, -(STREAK_WINDOW_DAYS - 1)), now.isoDate),
-    ticks(range.start, range.end),
+      .gte('content_date', addDaysISO(now.isoDate, -(STREAK_WINDOW_DAYS - 1)))
+      .lte('content_date', now.isoDate)
+      .order('created_at', { ascending: true }),
     // Optional extras for the suggestion: never let them take the page down.
     getReadyStock(supabase, business.id).catch(() => []),
     getCompletedOrdersInRange(supabase, business.id, addDaysISO(now.isoDate, -29), now.isoDate).catch(() => []),
@@ -75,7 +57,7 @@ export default async function ContentPage({ searchParams }: { searchParams: { mo
   const rows = postsRes.data ?? []
 
   const postedByDay = new Map<string, Set<ContentPlatform>>()
-  for (const row of [...rows, ...(monthRes.data ?? [])]) {
+  for (const row of rows) {
     const set = postedByDay.get(row.content_date) ?? new Set<ContentPlatform>()
     set.add(row.platform)
     postedByDay.set(row.content_date, set)
@@ -99,9 +81,17 @@ export default async function ContentPage({ searchParams }: { searchParams: { mo
   const backDays: string[] = []
   for (let day = now.isoDate; day >= earliest && backDays.length < 1000; day = addDaysISO(day, -1)) backDays.push(day)
   const streak = postingStreak(backDays, postedByDay)
-  // Best within the past year (older months shown in the calendar don't count, so it's the same on every month).
-  const yearByDay = new Map(Array.from(postedByDay).filter(([day]) => day >= addDaysISO(now.isoDate, -(STREAK_WINDOW_DAYS - 1))))
-  const best = Math.max(bestStreak(yearByDay), streak)
+  const best = Math.max(bestStreak(postedByDay), streak)
+
+  // ---- This month so far ----
+  const monthDays = Array.from({ length: Number(now.isoDate.slice(8, 10)) }, (_, i) => `${now.isoDate.slice(0, 7)}-${String(i + 1).padStart(2, '0')}`)
+  const fullDays = monthDays.filter((d) => isCompleteDay(d, postedByDay)).length
+  // Per platform, out of the days it was on the checklist (Threads joined mid-month).
+  const platformMonth = (platform: ChecklistPlatform) => {
+    const counted = monthDays.filter((d) => platformsForDay(d).includes(platform))
+    return { posted: counted.filter((d) => postedByDay.get(d)?.has(platform)).length, of: counted.length }
+  }
+  const monthName = new Date(`${now.isoDate}T00:00:00Z`).toLocaleDateString('en-GB', { timeZone: 'UTC', month: 'long' })
 
   // ---- What to post today ----
   const sold = new Map<string, number>()
@@ -114,16 +104,6 @@ export default async function ContentPage({ searchParams }: { searchParams: { mo
     bestSeller: top ? { name: top[0], quantity: top[1] } : null,
     isoDate: now.isoDate,
   })
-
-  // ---- Month calendar (Monday first) ----
-  const firstWeekday = (new Date(`${range.start}T00:00:00Z`).getUTCDay() + 6) % 7 // Mon = 0
-  const cells: (string | null)[] = [
-    ...Array<null>(firstWeekday).fill(null),
-    ...Array.from({ length: range.days }, (_, i) => `${month}-${String(i + 1).padStart(2, '0')}`),
-  ]
-  const pastDays = cells.filter((d): d is string => d !== null && d <= now.isoDate)
-  const completeDays = pastDays.filter((d) => isCompleteDay(d, postedByDay)).length
-  const nav = 'flex h-9 w-9 items-center justify-center rounded-pill text-lg text-ink hover:bg-ink/5'
 
   return (
     <div className="mx-auto flex w-full max-w-5xl flex-col gap-6">
@@ -159,88 +139,44 @@ export default async function ContentPage({ searchParams }: { searchParams: { mo
               <SavedCaptions captions={captionsRes.data ?? []} />
             </Card>
           )}
-
         </div>
         <div className="flex flex-col gap-6">
           <Card>
-            <div className="flex items-center justify-between gap-2">
-              <Link href={`/content?month=${shiftMonth(month, -1)}`} scroll={false} aria-label="Previous month" className={nav}>
-                ‹
-              </Link>
-              <div className="text-center">
-                <SectionLabel icon="📅" className="justify-center">Posting calendar</SectionLabel>
-                <p className="font-display text-lg text-ink">{monthLabel(month)}</p>
-              </div>
-              {month < thisMonth ? (
-                <Link href={`/content?month=${shiftMonth(month, 1)}`} scroll={false} aria-label="Next month" className={nav}>
-                  ›
-                </Link>
-              ) : (
-                <span aria-hidden="true" className={clsx(nav, 'opacity-30')}>
-                  ›
-                </span>
-              )}
-            </div>
-
-            <div className="mt-3 grid grid-cols-2 gap-2 text-center">
-              <div className="rounded-card bg-amber-soft px-2 py-2">
+            <SectionLabel icon="📊">{monthName} so far</SectionLabel>
+            <div className="mt-3 grid grid-cols-3 gap-2 text-center">
+              <div className="rounded-card bg-amber-soft px-1 py-2">
                 <p className="font-display text-xl text-ink">🔥 {streak}</p>
-                <p className="text-[11px] text-ink-muted">day streak now</p>
+                <p className="text-[11px] text-ink-muted">day streak</p>
               </div>
-              <div className="rounded-card bg-sage-soft px-2 py-2">
+              <div className="rounded-card bg-sage-soft px-1 py-2">
+                <p className="font-display text-xl text-ink">
+                  {fullDays}
+                  <span className="text-sm text-ink-muted">/{monthDays.length}</span>
+                </p>
+                <p className="text-[11px] text-ink-muted">days all posted</p>
+              </div>
+              <div className="rounded-card bg-base-soft px-1 py-2">
                 <p className="font-display text-xl text-ink">🏅 {best}</p>
-                <p className="text-[11px] text-ink-muted">best streak this year</p>
+                <p className="text-[11px] text-ink-muted">best streak</p>
               </div>
             </div>
-
-            <div className="mt-4 grid grid-cols-7 gap-1 text-center">
-              {WEEKDAYS.map((d, i) => (
-                <span key={i} className="pb-1 text-[11px] font-medium text-ink-faint">
-                  {d}
-                </span>
-              ))}
-              {cells.map((day, i) => {
-                if (!day) return <span key={`blank-${i}`} />
-                const future = day > now.isoDate
-                const today = day === now.isoDate
-                const posted = postedByDay.get(day)
-                const complete = isCompleteDay(day, postedByDay)
+            <ul className="mt-4 flex flex-col gap-2.5">
+              {CHECKLIST_PLATFORMS.map((platform) => {
+                const { posted: days, of } = platformMonth(platform)
                 return (
-                  <span
-                    key={day}
-                    title={future ? undefined : `${CHECKLIST_PLATFORMS.filter((p) => posted?.has(p)).length} of ${CHECKLIST_PLATFORMS.length} posted`}
-                    className={clsx(
-                      'flex aspect-square flex-col items-center justify-center gap-1 rounded-card text-xs',
-                      complete ? 'bg-sage-soft text-ink' : future ? 'text-ink-faint' : 'bg-base-soft text-ink',
-                      today && 'ring-2 ring-raspberry'
-                    )}
-                  >
-                    {Number(day.slice(8))}
-                    {!future && (
-                      <span className="flex gap-0.5" aria-hidden="true">
-                        {CHECKLIST_PLATFORMS.map((p) => (
-                          <span key={p} className={clsx('h-1.5 w-1.5 rounded-pill', posted?.has(p) ? DOT[p] : 'bg-ink/10')} />
-                        ))}
-                      </span>
-                    )}
-                  </span>
+                  <li key={platform} className="flex items-center gap-3 text-sm">
+                    <PlatformIcon platform={platform} size={22} />
+                    <span className="w-20 shrink-0 text-ink">{PLATFORM_LABELS[platform]}</span>
+                    <span className="h-2 flex-1 overflow-hidden rounded-pill bg-ink/10">
+                      <span className="block h-full rounded-pill bg-sage-dark" style={{ width: `${of > 0 ? (days / of) * 100 : 0}%` }} />
+                    </span>
+                    <span className="w-14 shrink-0 text-right text-xs text-ink-muted">
+                      {days} day{days === 1 ? '' : 's'}
+                    </span>
+                  </li>
                 )
               })}
-            </div>
-
-            <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-xs text-ink-muted">
-              <span className="flex flex-wrap gap-3">
-                {CHECKLIST_PLATFORMS.map((p) => (
-                  <span key={p} className="flex items-center gap-1">
-                    <span className={clsx('h-2 w-2 rounded-pill', DOT[p])} aria-hidden="true" />
-                    {PLATFORM_LABELS[p]}
-                  </span>
-                ))}
-              </span>
-              <span>
-                {completeDays} of {pastDays.length} day{pastDays.length === 1 ? '' : 's'} fully posted
-              </span>
-            </div>
+            </ul>
           </Card>
 
           <p className="text-xs text-ink-muted">

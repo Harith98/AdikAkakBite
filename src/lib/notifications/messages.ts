@@ -153,7 +153,7 @@ export function postingReminderMessage(missing: string[], streak: number): PushM
     body:
       streak > 0
         ? `Still to post today: ${list}. Tick them off on the Content page once they’re up.`
-        : `Not posted yet today: ${list}. Post on all three to start a streak.`,
+        : `Not posted yet today: ${list}. Post on all of them to start a streak.`,
     url: '/content',
     tag: 'posting-reminder',
   }

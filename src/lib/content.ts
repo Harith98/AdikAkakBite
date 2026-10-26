@@ -2,13 +2,27 @@ import type { ContentPlatform } from '@/lib/supabase/database.types'
 import { addDaysISO } from '@/lib/time'
 
 /** Platforms on the Content page's daily posting checklist, in display order. */
-export const CHECKLIST_PLATFORMS = ['instagram', 'facebook', 'whatsapp'] as const
+export const CHECKLIST_PLATFORMS = ['instagram', 'threads', 'facebook', 'whatsapp'] as const
 export type ChecklistPlatform = (typeof CHECKLIST_PLATFORMS)[number]
 
 export const PLATFORM_LABELS: Record<ChecklistPlatform, string> = {
   instagram: 'Instagram',
+  threads: 'Threads',
   facebook: 'Facebook',
   whatsapp: 'WhatsApp',
+}
+
+/**
+ * Platforms added to the checklist later only count from the day they were
+ * added, so older days (and the streaks built on them) stay complete.
+ */
+export const PLATFORM_SINCE: Partial<Record<ChecklistPlatform, string>> = {
+  threads: '2026-10-26',
+}
+
+/** The platforms a day needed to be fully posted. */
+export function platformsForDay(day: string): ChecklistPlatform[] {
+  return CHECKLIST_PLATFORMS.filter((p) => !PLATFORM_SINCE[p] || day >= PLATFORM_SINCE[p]!)
 }
 
 /** Marks content_items rows created by the checklist (as opposed to a planned post). */
@@ -20,7 +34,7 @@ export function isChecklistPlatform(value: string): value is ChecklistPlatform {
 
 /** True when every checklist platform was posted that day. */
 export function isCompleteDay(day: string, postedByDay: Map<string, Set<ContentPlatform>>): boolean {
-  return CHECKLIST_PLATFORMS.every((p) => postedByDay.get(day)?.has(p))
+  return platformsForDay(day).every((p) => postedByDay.get(day)?.has(p))
 }
 
 /** Longest run of consecutive complete days ever. */
@@ -100,7 +114,7 @@ export function postSuggestion(input: {
  * the platforms posted that day; `days` lists dates newest first.
  */
 export function postingStreak(days: string[], postedByDay: Map<string, Set<ContentPlatform>>): number {
-  const complete = (day: string) => CHECKLIST_PLATFORMS.every((p) => postedByDay.get(day)?.has(p))
+  const complete = (day: string) => isCompleteDay(day, postedByDay)
   let streak = 0
   for (const [index, day] of days.entries()) {
     if (complete(day)) streak++

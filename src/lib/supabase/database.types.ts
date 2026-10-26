@@ -30,7 +30,7 @@ export type PaymentMethod = 'cash' | 'bank_transfer' | 'duitnow_qr' | 'card' | '
 export type InventoryStatus = 'ok' | 'low' | 'reorder' | 'out_of_stock'
 export type InventoryTransactionType = 'purchase' | 'usage' | 'waste' | 'adjustment'
 
-export type ContentPlatform = 'instagram' | 'tiktok' | 'facebook' | 'whatsapp' | 'other'
+export type ContentPlatform = 'instagram' | 'tiktok' | 'facebook' | 'whatsapp' | 'other' | 'threads'
 export type ContentType =
   | 'product_photo'
   | 'reel'

@@ -5,7 +5,7 @@
  * Looks at today's posting checklist (content_items posted today for the
  * checklist platforms) and, if anything is missing, tells the team which
  * platforms are left and how long a streak is at stake. Sends nothing once
- * all three are ticked.
+ * every platform is ticked.
  */
 import { createServiceRoleClient } from '@/lib/supabase/server'
 import { CRON_ACTIONS } from '@/lib/system-status'

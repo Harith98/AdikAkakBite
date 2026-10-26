@@ -55,7 +55,7 @@ create type payment_status as enum ('unpaid', 'deposit_paid', 'fully_paid');
 create type inventory_status as enum ('ok', 'low', 'reorder', 'out_of_stock');
 create type inventory_transaction_type as enum ('purchase', 'usage', 'waste', 'adjustment');
 
-create type content_platform as enum ('instagram', 'tiktok', 'facebook', 'whatsapp', 'other');
+create type content_platform as enum ('instagram', 'tiktok', 'facebook', 'whatsapp', 'other', 'threads');
 create type content_type as enum (
   'product_photo', 'reel', 'tiktok', 'behind_the_scenes',
   'customer_review', 'educational', 'promotion', 'story'
@@ -1173,7 +1173,7 @@ returns integer
 language sql
 immutable
 as $$
-  select 4;
+  select 5;
 $$;
 
 revoke all on function schema_version() from public;
