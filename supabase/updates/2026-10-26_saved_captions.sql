@@ -5,8 +5,23 @@
 -- copy it in one tap whenever you post. Shared with the whole team. The most
 -- used ones are listed first (use_count, last_used_at).
 --
--- Run once in the Supabase SQL Editor (after 2026-10-26_catalogue_opens.sql). Safe to run again.
+-- Run once in the Supabase SQL Editor (after 2026-10-26_catalogue_opens.sql). Running it twice is refused, changing nothing.
 -- ============================================================================
+
+-- Guard: refuses (and changes nothing) if this update is already applied, or
+-- if the update before it hasn't been run. The whole file is one transaction.
+do $guard$
+declare
+  v_version integer := case when to_regprocedure('public.schema_version()') is null then 0 else schema_version() end;
+begin
+  if v_version >= 4 then
+    raise exception 'Already done: this database is at version %, and this file is version 4. Nothing was changed.', v_version;
+  end if;
+  if v_version < 3 then
+    raise exception 'Run the earlier update files first: this database is at version %, and this file needs version 3. Nothing was changed.', v_version;
+  end if;
+end;
+$guard$;
 
 create table if not exists saved_captions (
   id uuid primary key default gen_random_uuid(),

@@ -10,8 +10,23 @@
 -- counts every month from expense_date (on the same day of the month) until
 -- ends_on, if set. Nothing is copied month to month.
 --
--- Run once in the Supabase SQL Editor. Safe to run again.
+-- Run once in the Supabase SQL Editor. Running it twice is refused, changing nothing.
 -- ============================================================================
+
+-- Guard: refuses (and changes nothing) if this update is already applied, or
+-- if the update before it hasn't been run. The whole file is one transaction.
+do $guard$
+declare
+  v_version integer := case when to_regprocedure('public.schema_version()') is null then 0 else schema_version() end;
+begin
+  if v_version >= 2 then
+    raise exception 'Already done: this database is at version %, and this file is version 2. Nothing was changed.', v_version;
+  end if;
+  if v_version < 1 then
+    raise exception 'Run the earlier update files first: this database is at version %, and this file needs version 1. Nothing was changed.', v_version;
+  end if;
+end;
+$guard$;
 
 create table if not exists expenses (
   id uuid primary key default gen_random_uuid(),

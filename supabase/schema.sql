@@ -1349,7 +1349,7 @@ returns integer
 language sql
 immutable
 as $$
-  select 9;
+  select 10;
 $$;
 
 revoke all on function schema_version() from public;

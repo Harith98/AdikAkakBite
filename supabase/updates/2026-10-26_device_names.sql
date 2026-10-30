@@ -5,8 +5,23 @@
 -- iPad"), asked for when turning notifications on. Websites can't read a
 -- phone's model, so this is how Settings → System status tells devices apart.
 --
--- Run once in the Supabase SQL Editor (after 2026-10-26_admin_system_status.sql). Safe to run again.
+-- Run once in the Supabase SQL Editor (after 2026-10-26_admin_system_status.sql). Running it twice is refused, changing nothing.
 -- ============================================================================
+
+-- Guard: refuses (and changes nothing) if this update is already applied, or
+-- if the update before it hasn't been run. The whole file is one transaction.
+do $guard$
+declare
+  v_version integer := case when to_regprocedure('public.schema_version()') is null then 0 else schema_version() end;
+begin
+  if v_version >= 7 then
+    raise exception 'Already done: this database is at version %, and this file is version 7. Nothing was changed.', v_version;
+  end if;
+  if v_version < 6 then
+    raise exception 'Run the earlier update files first: this database is at version %, and this file needs version 6. Nothing was changed.', v_version;
+  end if;
+end;
+$guard$;
 
 alter table push_subscriptions add column if not exists device_name text;
 

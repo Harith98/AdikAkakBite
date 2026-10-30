@@ -13,7 +13,7 @@ Never run `schema.sql` on a database that's already set up: it creates tables an
 Every change is made in **two places**, in the same commit:
 
 1. **`supabase/schema.sql`** — edit it so it still describes the whole database as it is now (a new column goes in its `create table`, a changed function replaces the old one). A new setup always runs just this file.
-2. **A new file in `supabase/updates/`**, named `YYYY-MM-DD_what_it_does.sql`, that makes the same change to an existing database (`add column if not exists`, `create or replace function`, …). Write it so running it twice is harmless. Its last change bumps `schema_version()` by one.
+2. **A new file in `supabase/updates/`**, named `YYYY-MM-DD_what_it_does.sql`, that makes the same change to an existing database (`add column if not exists`, `create or replace function`, …). Start it with the same **guard** as the existing files (it refuses, changing nothing, if the update is already applied or the one before it is missing; Supabase runs the file as one transaction), and end it by bumping `schema_version()` by one. Never edit an update file that has already been run: fix things in a new one.
 
 Then raise `SCHEMA_VERSION` in `src/lib/system-status.ts` to the same number. Settings → System compares the two and says when the live database is behind, so run the update file in the SQL Editor **before** deploying the code that needs it.
 
@@ -40,6 +40,7 @@ The file `2026-10-20_single_schema_file.sql` is the one that moved the live data
 | Device names (version 7) | `push_subscriptions.device_name` (1–40 characters): the name a person gives a device when turning notifications on (or later, when prompted), shown in Settings → System status, since websites can't read a phone's model. |
 | All-or-nothing saves (version 8) | `create_order_with_items()`, `update_order_with_items()` and `save_recipe()` (SECURITY INVOKER) save an order with its items, an order edit, and a recipe in one transaction, so a failure part-way changes nothing. The app falls back to step-by-step saves (stopping at the first error) on a database without them. |
 | Catalogue safety net (version 9) | `businesses.catalogue_link_url` / `catalogue_mode` (auto · upload · link) / `menu_pdf_bytes` / `catalogue_alerted_month`, `catalogue_opens.link_opens`. `open_catalogue()` (service role only) decides PDF or link per tap (auto switches to the link at 80% of the month's 5 GB of PDF downloads), counts it, and flags the once-a-month alert to owners and admins. `get_public_menu()` returns the link. |
+| Admin system status, again (version 10) | Restores the owner-or-admin `app_system_status()` after an older update file re-run had brought back the owner-only one. From here on every update file starts with a guard against running twice or out of order. |
 | Customer menu | `businesses.menu_pdf_url` and the social links; `get_public_menu()` is the only thing `/menu` reads (anon-callable, public info only). |
 | Other | `content_items`, `goals`, `business_activity_logs` (append-only; the daily jobs log here too), `app_system_status()` and `schema_version()` for Settings → System. |
 

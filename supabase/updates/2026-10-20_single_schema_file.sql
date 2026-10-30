@@ -12,6 +12,18 @@
 -- applied and stops, changing nothing, if one is missing.
 -- ============================================================================
 
+-- Guard: refuses (and changes nothing) if this update is already applied, or
+-- if the update before it hasn't been run. The whole file is one transaction.
+do $guard$
+declare
+  v_version integer := case when to_regprocedure('public.schema_version()') is null then 0 else schema_version() end;
+begin
+  if v_version >= 1 then
+    raise exception 'Already done: this database is at version %, and this file is version 1. Nothing was changed.', v_version;
+  end if;
+end;
+$guard$;
+
 do $$
 declare
   v_missing text[] := array[]::text[];
