@@ -38,12 +38,14 @@ export default async function TodayPage() {
     now.time >= settings.working_hours_start.slice(0, 5) &&
     now.time < settings.working_hours_end.slice(0, 5)
 
-  const [data, readyStock, upcoming] = await Promise.all([
+  const [data, readyStock, upcomingRes] = await Promise.all([
     getTodayData(supabase, business.id, now.isoDate, isWorkingDay),
     // Optional extras: never let them take the Today page down.
     getReadyStock(supabase, business.id).catch(() => []),
-    getUpcomingOrders(supabase, business.id, now.isoDate, addDaysISO(now.isoDate, UPCOMING_DAYS)).catch(() => []),
+    // null = couldn't load: shown as "—", never as a misleading 0.
+    getUpcomingOrders(supabase, business.id, now.isoDate, addDaysISO(now.isoDate, UPCOMING_DAYS)).catch(() => null),
   ])
+  const upcoming = upcomingRes ?? []
 
   // ---- Orders, most pressing first (overdue, then by due date/time) ----
   const orderRows = data.orders
@@ -93,7 +95,7 @@ export default async function TodayPage() {
     overdueOrders: orderRows.filter((row) => row.urgency.isOverdue).length,
     ordersDueToday: ordersToday,
     lowStock: data.inventoryAlerts.length,
-    ordersComingUp: upcoming.length,
+    ordersComingUp: upcomingRes ? upcoming.length : 0,
     isWorkingDay,
     isoDate: now.isoDate,
   })
@@ -152,7 +154,7 @@ export default async function TodayPage() {
 
         <div className="relative mt-3 grid grid-cols-3 gap-2">
           <Stat emoji="🧾" label="Orders today" value={String(ordersToday)} href="/orders" />
-          <Stat emoji="📅" label={`Next ${UPCOMING_DAYS} days`} value={String(upcoming.length)} href="/orders" />
+          <Stat emoji="📅" label={`Next ${UPCOMING_DAYS} days`} value={upcomingRes ? String(upcoming.length) : '—'} href="/orders" />
           <Stat
             emoji="📦"
             label="Low stock"

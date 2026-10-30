@@ -55,7 +55,9 @@ export default async function CustomerPage({ params }: { params: { id: string } 
       </Card>
 
       <Card>
-        <SectionLabel icon="🧾" className="mb-3">Orders</SectionLabel>
+        <SectionLabel icon="🧾" className="mb-3">
+          {orders.length === 50 ? 'Latest 50 orders' : 'Orders'}
+        </SectionLabel>
         {orders.length === 0 ? (
           <p className="text-sm text-ink-muted">No orders yet.</p>
         ) : (

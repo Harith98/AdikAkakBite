@@ -6,6 +6,7 @@ import type { Database } from '@/lib/supabase/database.types'
 import { getActionContext } from '@/lib/services/action-context'
 import { parseProductForm } from '@/lib/validation/products'
 import { PRODUCT_IMAGE_BUCKET, productImagePath, productThumbUrl } from '@/lib/product-images'
+import { isMissingFunction } from '@/lib/services/db-helpers'
 import { recipeCostPerUnit } from '@/lib/calc/recipes'
 import { getRecipe } from '@/lib/services/recipes'
 import { alertNewlyLowStock, snapshotStock } from '@/lib/notifications/low-stock'
@@ -91,17 +92,18 @@ export async function saveProduct(_prev: SaveProductState, formData: FormData): 
   if (before?.image_url && before.image_url !== p.imageUrl) await removeProductImage(supabase, before.image_url)
 
   // Only touch cost history if a cost actually changed.
-  const { data: costs } = await supabase
+  const { data: costs, error: costsError } = await supabase
     .from('product_costs')
     .select('*')
     .eq('product_id', idRaw)
     .is('effective_to', null)
+  if (costsError) return { error: `Saved the details, but couldn’t check the costs: ${costsError.message}`, nonce: 0 }
   const current = (costs ?? []).sort((a: any, b: any) => b.effective_from.localeCompare(a.effective_from))[0]
   const changed =
     !current ||
-    current.ingredient_cost !== p.ingredientCost ||
-    current.packaging_cost !== p.packagingCost ||
-    current.other_cost !== p.otherCost
+    Number(current.ingredient_cost) !== p.ingredientCost ||
+    Number(current.packaging_cost) !== p.packagingCost ||
+    Number(current.other_cost) !== p.otherCost
   if (changed) {
     // Insert the new cost first, then close the old one, so a failure never leaves no cost at all.
     const costInsert: Database['public']['Tables']['product_costs']['Insert'] = { product_id: idRaw, ...costFields }
@@ -278,19 +280,31 @@ export async function saveRecipe(productId: string, recipeYield: number, lines: 
     if ((items ?? []).length !== ids.length) return { error: 'One of the ingredients no longer exists. Reload and try again.' }
   }
 
-  const { error: yieldError } = await supabase
-    .from('products')
-    .update({ recipe_yield: recipeYield })
-    .eq('id', productId)
-    .eq('business_id', businessId)
-  if (yieldError) return { error: yieldError.message }
-  const { error: clearError } = await supabase.from('product_recipe_items').delete().eq('product_id', productId)
-  if (clearError) return { error: clearError.message }
-  if (lines.length > 0) {
-    const { error: insertError } = await supabase.from('product_recipe_items').insert(
-      lines.map((l) => ({ product_id: productId, inventory_item_id: l.inventoryItemId, quantity: Math.round(l.quantity * 1000) / 1000 }))
-    )
-    if (insertError) return { error: insertError.message }
+  const recipeRows = lines.map((l) => ({ inventory_item_id: l.inventoryItemId, quantity: Math.round(l.quantity * 1000) / 1000 }))
+  // Batch size and ingredients in ONE transaction: a failure never loses the recipe.
+  const { error: saveError } = await supabase.rpc('save_recipe', {
+    p_product_id: productId,
+    p_business_id: businessId,
+    p_yield: recipeYield,
+    p_items: recipeRows,
+  })
+  if (saveError && !isMissingFunction(saveError)) return { error: saveError.message }
+  if (saveError) {
+    // Database not updated yet (2026-10-30_atomic_saves.sql): step by step.
+    const { data: before, error: beforeError } = await supabase.from('product_recipe_items').select('inventory_item_id, quantity').eq('product_id', productId)
+    if (beforeError) return { error: beforeError.message }
+    const { error: yieldError } = await supabase.from('products').update({ recipe_yield: recipeYield }).eq('id', productId).eq('business_id', businessId)
+    if (yieldError) return { error: yieldError.message }
+    const { error: clearError } = await supabase.from('product_recipe_items').delete().eq('product_id', productId)
+    if (clearError) return { error: clearError.message }
+    if (recipeRows.length > 0) {
+      const { error: insertError } = await supabase.from('product_recipe_items').insert(recipeRows.map((r) => ({ product_id: productId, ...r })))
+      if (insertError) {
+        // Put the old recipe back rather than leave it empty.
+        if ((before ?? []).length > 0) await supabase.from('product_recipe_items').insert((before ?? []).map((r: { inventory_item_id: string; quantity: number }) => ({ product_id: productId, ...r })))
+        return { error: insertError.message }
+      }
+    }
   }
 
   await supabase.from('business_activity_logs').insert({
@@ -316,7 +330,8 @@ export async function applyRecipeCost(productId: string): Promise<{ error: strin
   if (recipe.lines.length === 0) return { error: 'Add ingredients to the recipe first.', ingredientCost: null }
   const ingredientCost = recipeCostPerUnit(recipe.lines, recipe.recipeYield)
 
-  const { data: costs } = await supabase.from('product_costs').select('*').eq('product_id', productId).is('effective_to', null)
+  const { data: costs, error: costsError } = await supabase.from('product_costs').select('*').eq('product_id', productId).is('effective_to', null)
+  if (costsError) return { error: costsError.message, ingredientCost: null }
   const current = (costs ?? []).sort((a: any, b: any) => b.effective_from.localeCompare(a.effective_from))[0]
   if (current && Number(current.ingredient_cost) === ingredientCost) return { error: null, ingredientCost }
 

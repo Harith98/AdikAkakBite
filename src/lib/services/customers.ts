@@ -3,10 +3,12 @@ import type { Database, OrderStatus } from '@/lib/supabase/database.types'
 import { calculateOrderTotals } from '@/lib/calc/orders'
 import { computeCustomerMetrics, type CustomerOrderInput } from '@/lib/calc/customers'
 import { isWalkInName, normalizePhone, resolveCustomer, type CustomerCandidate } from '@/lib/customer-identity'
-import { escapeLike, groupBy } from './db-helpers'
+import { escapeLike, groupBy, fetchAllPages } from './db-helpers'
 import type { CustomerMetrics } from './types'
 
 type Client = SupabaseClient<Database>
+
+type CustomerRow = Database['public']['Tables']['customers']['Row']
 
 export interface CustomerView extends CustomerMetrics {
   phone: string | null
@@ -27,26 +29,33 @@ export async function getCustomerMetrics(
   /** Limit to one customer (e.g. the detail page) instead of loading everyone's orders. */
   customerId?: string
 ): Promise<CustomerView[]> {
-  let customersQuery = supabase.from('customers').select('*').eq('business_id', businessId)
-  let ordersQuery = supabase
-    .from('orders')
-    // Line items come back embedded, so totals need no second round trip.
-    .select('id, customer_id, order_date, status, discount, delivery_fee, order_items(quantity, unit_price)')
-    .eq('business_id', businessId)
-  if (customerId) {
-    customersQuery = customersQuery.eq('id', customerId)
-    ordersQuery = ordersQuery.eq('customer_id', customerId)
-  } else {
-    ordersQuery = ordersQuery.not('customer_id', 'is', null)
+  // Every row, page by page: Supabase silently stops at 1000 rows per request,
+  // which would make totals undercount once the shop has that many orders.
+  const customersQuery = () => {
+    const q = supabase.from('customers').select('*').eq('business_id', businessId)
+    return customerId ? q.eq('id', customerId) : q
+  }
+  const ordersQuery = () => {
+    const q = supabase
+      .from('orders')
+      // Line items come back embedded, so totals need no second round trip.
+      .select('id, customer_id, order_date, status, discount, delivery_fee, order_items(quantity, unit_price)')
+      .eq('business_id', businessId)
+    return customerId ? q.eq('customer_id', customerId) : q.not('customer_id', 'is', null)
   }
 
-  const [customersRes, ordersRes] = await Promise.all([customersQuery.order('name', { ascending: true }), ordersQuery])
-  if (customersRes.error) throw new Error(`Could not load customers: ${customersRes.error.message}`)
-  if (ordersRes.error) throw new Error(`Could not load orders: ${ordersRes.error.message}`)
+  const [customerRows, orderRows] = await Promise.all([
+    fetchAllPages<CustomerRow>((from, to) => customersQuery().order('name', { ascending: true }).order('id').range(from, to)).catch((e: Error) => {
+      throw new Error(`Could not load customers: ${e.message}`)
+    }),
+    fetchAllPages<unknown>((from, to) => ordersQuery().order('id').range(from, to)).catch((e: Error) => {
+      throw new Error(`Could not load orders: ${e.message}`)
+    }),
+  ])
   // Old "Walk-in" records (from before walk-ins were saved without a customer)
   // aren't a real person, so they'd skew repeat-customer figures.
-  const customers = (customersRes.data ?? []).filter((c) => customerId || !isWalkInName(c.name))
-  const orders = (ordersRes.data ?? []) as unknown as {
+  const customers = customerRows.filter((c) => customerId || !isWalkInName(c.name))
+  const orders = orderRows as unknown as {
     id: string
     customer_id: string | null
     order_date: string

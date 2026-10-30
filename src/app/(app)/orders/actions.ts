@@ -10,6 +10,7 @@ import { isValidISODate } from '@/lib/validation/common'
 import { derivePaymentStatus } from '@/lib/calc/orders'
 import { isPaymentMethod } from '@/lib/receipts'
 import { getOrder } from '@/lib/services/orders'
+import { isMissingFunction } from '@/lib/services/db-helpers'
 
 export interface SaveOrderState {
   error: string | null
@@ -65,23 +66,37 @@ export async function saveOrder(_prev: SaveOrderState, formData: FormData): Prom
     if (existingError) return { error: existingError.message, nonce: 0 }
     if (!existing) return { error: 'That order could not be found.', nonce: 0 }
 
-    const { data: oldItems } = await supabase.from('order_items').select('id').eq('order_id', orderIdRaw)
-
-    // Add the new items FIRST, then remove the old ones, so a failure part-way
-    // never leaves the order without items.
-    const { data: inserted, error: insertError } = await supabase.from('order_items').insert(itemRows(orderIdRaw)).select('id')
-    if (insertError) return { error: insertError.message, nonce: 0 }
-
-    const { error: updateError } = await supabase.from('orders').update(fields).eq('id', orderIdRaw).eq('business_id', businessId)
-    if (updateError) {
-      await supabase.from('order_items').delete().in('id', (inserted ?? []).map((i: { id: string }) => i.id))
-      return { error: updateError.message, nonce: 0 }
-    }
-
-    const oldIds = (oldItems ?? []).map((i: { id: string }) => i.id)
-    if (oldIds.length > 0) {
-      const { error: deleteError } = await supabase.from('order_items').delete().in('id', oldIds)
-      if (deleteError) return { error: deleteError.message, nonce: 0 }
+    // Details and items are swapped in ONE database transaction: a failure
+    // part-way changes nothing (it can never leave old and new items both).
+    const { error: saveError } = await supabase.rpc('update_order_with_items', {
+      p_order_id: orderIdRaw,
+      p_business_id: businessId,
+      p_fields: fields,
+      p_items: itemRows(orderIdRaw),
+    })
+    if (saveError && !isMissingFunction(saveError)) return { error: saveError.message, nonce: 0 }
+    if (saveError) {
+      // Database not updated yet (2026-10-30_atomic_saves.sql): the step-by-step
+      // way, stopping at the first problem so items are never doubled.
+      const { data: oldItems, error: oldError } = await supabase.from('order_items').select('id').eq('order_id', orderIdRaw)
+      if (oldError) return { error: oldError.message, nonce: 0 }
+      const { data: inserted, error: insertError } = await supabase.from('order_items').insert(itemRows(orderIdRaw)).select('id')
+      if (insertError) return { error: insertError.message, nonce: 0 }
+      const newIds = (inserted ?? []).map((i: { id: string }) => i.id)
+      const { error: updateError } = await supabase.from('orders').update(fields).eq('id', orderIdRaw).eq('business_id', businessId)
+      if (updateError) {
+        await supabase.from('order_items').delete().in('id', newIds)
+        return { error: updateError.message, nonce: 0 }
+      }
+      const oldIds = (oldItems ?? []).map((i: { id: string }) => i.id)
+      if (oldIds.length > 0) {
+        const { error: deleteError } = await supabase.from('order_items').delete().in('id', oldIds)
+        if (deleteError) {
+          // Put it back as it was rather than leave both sets of items.
+          await supabase.from('order_items').delete().in('id', newIds)
+          return { error: `Couldn’t save the changes (${deleteError.message}). The order is unchanged.`, nonce: 0 }
+        }
+      }
     }
 
     await supabase.from('business_activity_logs').insert({
@@ -106,20 +121,26 @@ export async function saveOrder(_prev: SaveOrderState, formData: FormData): Prom
   }
 
   const newId = crypto.randomUUID()
-  const { error: orderError } = await supabase.from('orders').insert({
+  const orderRow = {
     id: newId,
     business_id: businessId,
     order_date: pastSaleDate || today,
     status: pastSaleDate ? 'completed' : 'confirmed',
     ...(pastSaleDate ? { completed_on: pastSaleDate } : {}),
     ...fields,
-  })
-  if (orderError) return { error: orderError.message, nonce: 0 }
-
-  const { error: itemsError } = await supabase.from('order_items').insert(itemRows(newId))
-  if (itemsError) {
-    await supabase.from('orders').delete().eq('id', newId).eq('business_id', businessId) // no half-created orders
-    return { error: itemsError.message, nonce: 0 }
+  } as const
+  // The order and its items in ONE transaction: never an order without its items.
+  const { error: createError } = await supabase.rpc('create_order_with_items', { p_order: orderRow, p_items: itemRows(newId) })
+  if (createError && !isMissingFunction(createError)) return { error: createError.message, nonce: 0 }
+  if (createError) {
+    // Database not updated yet (2026-10-30_atomic_saves.sql): step by step.
+    const { error: orderError } = await supabase.from('orders').insert(orderRow)
+    if (orderError) return { error: orderError.message, nonce: 0 }
+    const { error: itemsError } = await supabase.from('order_items').insert(itemRows(newId))
+    if (itemsError) {
+      await supabase.from('orders').delete().eq('id', newId).eq('business_id', businessId) // no half-created orders
+      return { error: itemsError.message, nonce: 0 }
+    }
   }
 
   await supabase.from('business_activity_logs').insert({

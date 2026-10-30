@@ -14,6 +14,7 @@ import {
   type SalesTotals,
 } from '@/lib/calc/sales'
 import { getCompletedOrdersInRange } from './orders'
+import { fetchAllPages } from './db-helpers'
 import { getExpenseEntries } from './expenses'
 import { summarizeExpenses } from '@/lib/expenses'
 import type { ExpenseCategory } from '@/lib/supabase/database.types'
@@ -130,12 +131,23 @@ async function loadCostHistory(supabase: Client, productIds: (string | null)[]):
   const ids = Array.from(new Set(productIds.filter((id): id is string => Boolean(id))))
   const costs = new Map<string, CostPeriod[]>()
   if (ids.length === 0) return costs
-  const { data, error } = await supabase
-    .from('product_costs')
-    .select('product_id, ingredient_cost, packaging_cost, other_cost, effective_from')
-    .in('product_id', ids)
-  if (error) throw new Error(`Could not load product costs: ${error.message}`)
-  for (const c of data ?? []) {
+  // In groups of 100 products (keeps each request short), every cost row of each.
+  const rows: { product_id: string; ingredient_cost: number; packaging_cost: number; other_cost: number; effective_from: string }[] = []
+  for (let i = 0; i < ids.length; i += 100) {
+    const group = ids.slice(i, i + 100)
+    const batch = await fetchAllPages<(typeof rows)[number]>((from, to) =>
+      supabase
+        .from('product_costs')
+        .select('product_id, ingredient_cost, packaging_cost, other_cost, effective_from')
+        .in('product_id', group)
+        .order('id')
+        .range(from, to)
+    ).catch((e: Error) => {
+      throw new Error(`Could not load product costs: ${e.message}`)
+    })
+    rows.push(...batch)
+  }
+  for (const c of rows) {
     const list = costs.get(c.product_id) ?? []
     list.push({ effectiveFrom: c.effective_from, unitCost: Number(c.ingredient_cost) + Number(c.packaging_cost) + Number(c.other_cost) })
     costs.set(c.product_id, list)
@@ -179,6 +191,7 @@ export async function getSalesDetail(supabase: Client, businessId: string, from:
       .lte('completed_on', to)
       .order('completed_on', { ascending: true })
       .order('created_at', { ascending: true })
+      .order('id') // fully fixed order, so pages never skip or repeat a row
       .range(start, start + 999)
     if (error) throw new Error(`Could not load sales: ${error.message}`)
     const batch = (data ?? []) as unknown as SaleRow[]

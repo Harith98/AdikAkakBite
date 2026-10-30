@@ -779,6 +779,18 @@ export interface Database {
         Args: Record<string, never>
         Returns: undefined
       }
+      create_order_with_items: {
+        Args: { p_order: Record<string, unknown>; p_items: Record<string, unknown>[] }
+        Returns: string
+      }
+      update_order_with_items: {
+        Args: { p_order_id: string; p_business_id: string; p_fields: Record<string, unknown>; p_items: Record<string, unknown>[] }
+        Returns: undefined
+      }
+      save_recipe: {
+        Args: { p_product_id: string; p_business_id: string; p_yield: number; p_items: Record<string, unknown>[] }
+        Returns: undefined
+      }
       app_system_status: {
         Args: Record<string, never>
         Returns: unknown

@@ -8,6 +8,7 @@ import { canManageBusiness } from '@/lib/team'
 import { formatReceiptNumber } from '@/lib/receipts'
 import { getBusinessNow } from '@/lib/time'
 import { toCsv, type CsvColumn } from '@/lib/csv'
+import { fetchAllPages } from '@/lib/services/db-helpers'
 import { getSalesDetail, type SaleDetail } from '@/lib/services/sales'
 import { financeByMonth, type FinanceRow } from '@/lib/calc/sales'
 import { getExpenseEntries } from '@/lib/services/expenses'
@@ -15,19 +16,8 @@ import { expenseCategory, type ExpenseEntry } from '@/lib/expenses'
 
 export const dynamic = 'force-dynamic'
 
-const PAGE = 1000 // Supabase returns at most 1000 rows per request
-
-/** Every row of a query, fetched 1000 at a time. */
-async function fetchAll<T>(page: (from: number, to: number) => PromiseLike<{ data: unknown; error: { message: string } | null }>): Promise<T[]> {
-  const rows: T[] = []
-  for (let from = 0; ; from += PAGE) {
-    const { data, error } = await page(from, from + PAGE - 1)
-    if (error) throw new Error(error.message)
-    const batch = (data ?? []) as T[]
-    rows.push(...batch)
-    if (batch.length < PAGE) return rows
-  }
-}
+/** Every row, page by page (see fetchAllPages). */
+const fetchAll = fetchAllPages
 
 type OrderLine = { order: OrderView; item: OrderView['items'][number] | null; first: boolean }
 
@@ -257,7 +247,7 @@ export async function GET(request: NextRequest, { params }: { params: { kind: st
       filename = `adikakak-${kind}-${range.from}-to-${range.to}.csv`
     } else if (kind === 'orders') {
       const rows = await fetchAll<OrderRowWithRelations>((from, to) =>
-        supabase.from('orders').select(ORDER_SELECT).eq('business_id', businessId).order('order_date', { ascending: false }).order('created_at', { ascending: false }).range(from, to)
+        supabase.from('orders').select(ORDER_SELECT).eq('business_id', businessId).order('order_date', { ascending: false }).order('created_at', { ascending: false }).order('id').range(from, to)
       )
       const lines = toOrderViews(rows).flatMap((order): OrderLine[] =>
         order.items.length > 0 ? order.items.map((item, i) => ({ order, item, first: i === 0 })) : [{ order, item: null, first: true }]
@@ -269,7 +259,7 @@ export async function GET(request: NextRequest, { params }: { params: { kind: st
       csv = toCsv(PRODUCT_COLUMNS, await getProducts(supabase, businessId))
     } else if (kind === 'inventory') {
       const rows = await fetchAll<ItemRow>((from, to) =>
-        supabase.from('inventory_items').select('*').eq('business_id', businessId).order('name').range(from, to)
+        supabase.from('inventory_items').select('*').eq('business_id', businessId).order('name').order('id').range(from, to)
       )
       csv = toCsv(INVENTORY_COLUMNS, rows)
     } else {
@@ -280,6 +270,7 @@ export async function GET(request: NextRequest, { params }: { params: { kind: st
           .eq('business_id', businessId)
           .order('transaction_date', { ascending: false })
           .order('created_at', { ascending: false })
+          .order('id')
           .range(from, to)
       )
       csv = toCsv(HISTORY_COLUMNS, rows)

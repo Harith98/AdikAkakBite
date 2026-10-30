@@ -56,8 +56,9 @@ export default async function OrdersPage({ searchParams }: { searchParams: { sta
   const range = month ? monthRange(month) : undefined
 
   const supabase = createClient()
+  const listLimit = month ? 500 : 100
   const [orders, counts] = await Promise.all([
-    getOrders(supabase, business.id, filter, month ? 500 : 100, range),
+    getOrders(supabase, business.id, filter, listLimit, range),
     getOrderTabCounts(supabase, business.id, range).catch(() => null),
   ])
   // Active orders are grouped by when they're due; the other tabs stay a plain list (newest first).
@@ -123,6 +124,12 @@ export default async function OrdersPage({ searchParams }: { searchParams: { sta
           {month ? 'All time' : 'This month'}
         </Link>
       </div>
+
+      {orders.length === listLimit && (
+        <p className="-mt-2 rounded-card bg-amber-soft px-3 py-2 text-sm text-amber-dark">
+          Showing the {listLimit} most recent. Pick a month above to see all of that month&apos;s orders{month ? ' (or use Settings → Export for the full list)' : ''}.
+        </p>
+      )}
 
       {orders.length === 0 ? (
         <Card>

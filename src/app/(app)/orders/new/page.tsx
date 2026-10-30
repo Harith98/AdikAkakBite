@@ -6,6 +6,7 @@ import { getProducts, type ProductView } from '@/lib/services/products'
 import { Card } from '@/components/ui/Card'
 import { NewOrderPanel } from '@/components/orders/NewOrderPanel'
 import { getBusinessNow } from '@/lib/time'
+import { fetchAllPages } from '@/lib/services/db-helpers'
 
 export default async function NewOrderPage() {
   const { business, settings } = await getCurrentBusinessContext()
@@ -13,7 +14,11 @@ export default async function NewOrderPage() {
 
   const [products, customersRes] = await Promise.all([
     getProducts(supabase, business.id),
-    supabase.from('customers').select('id, name, phone').eq('business_id', business.id).order('name').limit(500),
+    fetchAllPages<{ id: string; name: string; phone: string | null }>((from, to) =>
+      supabase.from('customers').select('id, name, phone').eq('business_id', business.id).order('name').order('id').range(from, to)
+    )
+      .then((data) => ({ data, error: null }))
+      .catch((e: Error) => ({ data: null, error: e })),
   ])
   if (customersRes.error) throw new Error(`Could not load customers: ${customersRes.error.message}`)
 

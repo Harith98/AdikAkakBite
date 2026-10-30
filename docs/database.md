@@ -38,6 +38,7 @@ The file `2026-10-20_single_schema_file.sql` is the one that moved the live data
 | Threads on the checklist (version 5) | `content_platform` gains `'threads'`. Days before 2026-10-26 only needed Instagram, Facebook and WhatsApp to count as fully posted (`PLATFORM_SINCE` in `src/lib/content.ts`), so earlier streaks stay. |
 | Admin system status (version 6) | `app_system_status()` now allows the owner **or an admin** (was owner only); Settings → System is shown to both. |
 | Device names (version 7) | `push_subscriptions.device_name` (1–40 characters): the name a person gives a device when turning notifications on (or later, when prompted), shown in Settings → System status, since websites can't read a phone's model. |
+| All-or-nothing saves (version 8) | `create_order_with_items()`, `update_order_with_items()` and `save_recipe()` (SECURITY INVOKER) save an order with its items, an order edit, and a recipe in one transaction, so a failure part-way changes nothing. The app falls back to step-by-step saves (stopping at the first error) on a database without them. |
 | Customer menu | `businesses.menu_pdf_url` and the social links; `get_public_menu()` is the only thing `/menu` reads (anon-callable, public info only). |
 | Other | `content_items`, `goals`, `business_activity_logs` (append-only; the daily jobs log here too), `app_system_status()` and `schema_version()` for Settings → System. |
 

@@ -1,7 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database, OrderStatus, PaymentMethod, PaymentStatus } from '@/lib/supabase/database.types'
 import { calculateOrderTotals, type OrderTotals } from '@/lib/calc/orders'
-import { one } from './db-helpers'
+import { one, fetchAllPages } from './db-helpers'
 
 type Client = SupabaseClient<Database>
 type OrderRow = Database['public']['Tables']['orders']['Row']
@@ -152,15 +152,20 @@ export async function getCompletedOrdersInRange(
   startDate: string,
   endDate: string
 ): Promise<CompletedOrderForSales[]> {
-  const { data, error } = await supabase
-    .from('orders')
-    .select('id, completed_on, discount, delivery_fee, order_items(product_id, product_name, quantity, unit_price)')
-    .eq('business_id', businessId)
-    .eq('status', 'completed')
-    .gte('completed_on', startDate)
-    .lte('completed_on', endDate)
-  if (error) throw new Error(`Could not load orders: ${error.message}`)
-  return (data ?? []) as unknown as CompletedOrderForSales[]
+  // Page by page, so a busy month is never silently cut off at 1000 orders.
+  return fetchAllPages<CompletedOrderForSales>((from, to) =>
+    supabase
+      .from('orders')
+      .select('id, completed_on, discount, delivery_fee, order_items(product_id, product_name, quantity, unit_price)')
+      .eq('business_id', businessId)
+      .eq('status', 'completed')
+      .gte('completed_on', startDate)
+      .lte('completed_on', endDate)
+      .order('id')
+      .range(from, to)
+  ).catch((e: Error) => {
+    throw new Error(`Could not load orders: ${e.message}`)
+  })
 }
 
 /** Active orders due after today, up to `days` days ahead (for Today's "Coming up" card). */

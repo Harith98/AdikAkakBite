@@ -16,6 +16,7 @@ import { GenerateReceiptForm } from '@/components/orders/GenerateReceiptForm'
 import { SaleDateEditor } from '@/components/orders/SaleDateEditor'
 import { LinkButton } from '@/components/ui/LinkButton'
 import { formatReceiptNumber } from '@/lib/receipts'
+import { fetchAllPages } from '@/lib/services/db-helpers'
 
 export default async function OrderPage({ params }: { params: { id: string } }) {
   if (!UUID_PATTERN.test(params.id)) notFound()
@@ -25,7 +26,11 @@ export default async function OrderPage({ params }: { params: { id: string } }) 
   const [order, products, customersRes] = await Promise.all([
     getOrder(supabase, business.id, params.id),
     getProducts(supabase, business.id),
-    supabase.from('customers').select('id, name, phone').eq('business_id', business.id).order('name').limit(500),
+    fetchAllPages<{ id: string; name: string; phone: string | null }>((from, to) =>
+      supabase.from('customers').select('id, name, phone').eq('business_id', business.id).order('name').order('id').range(from, to)
+    )
+      .then((data) => ({ data, error: null }))
+      .catch((e: Error) => ({ data: null, error: e })),
   ])
   if (!order) notFound()
   const orderData: OrderView = order
