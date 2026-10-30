@@ -10,7 +10,7 @@ import { SignOutButton } from '@/components/settings/SignOutButton'
 /** How Settings is grouped: the business (shop and team), and the app (alerts, data, health). */
 const GROUPS: { title: string; hrefs: string[] }[] = [
   { title: 'Business', hrefs: ['/settings/business', '/settings/menu', '/settings/team', '/settings/schedule'] },
-  { title: 'App', hrefs: ['/settings/notifications', '/settings/export', '/settings/system'] },
+  { title: 'App', hrefs: ['/settings/how-it-works', '/settings/notifications', '/settings/export', '/settings/system'] },
 ]
 
 interface SettingsRow {
@@ -96,6 +96,19 @@ export default async function SettingsPage() {
   ]
 
   const appRows: SettingsRow[] = [
+    {
+      href: '/settings/how-it-works',
+      title: 'How it works',
+      text: 'What happens when you change prices, costs and orders',
+      tone: 'bg-sage-soft text-sage-dark',
+      icon: (
+        <>
+          <circle cx="12" cy="12" r="9" />
+          <path d="M9.5 9.5a2.5 2.5 0 1 1 3.4 2.3c-.6.3-.9.8-.9 1.5v.7" />
+          <path d="M12 17h.01" />
+        </>
+      ),
+    },
     {
       href: '/settings/notifications',
       title: 'Notifications',

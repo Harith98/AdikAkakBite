@@ -45,6 +45,9 @@ export default async function ExpensesPage({ searchParams }: { searchParams: { m
         title="Expenses"
         subtitle="Overheads like rent, bills and petrol. Not ingredients or packaging: those are already in each product's cost."
       />
+      <a href="/settings/how-it-works#expenses" className="-mt-3 w-fit text-sm font-medium text-raspberry-dark underline-offset-2 hover:underline">
+        ⓘ What goes here (and what doesn’t)
+      </a>
 
       <div className="grid gap-6 lg:grid-cols-2 lg:items-start">
         <Card>

@@ -28,6 +28,9 @@ export default async function SalesPage({ searchParams }: { searchParams: { mont
   return (
     <div className="mx-auto flex w-full max-w-5xl flex-col gap-6">
       <PageHeader back={{ href: '/business', label: 'Business' }} title="Sales" subtitle="Revenue is calculated live from completed orders." />
+      <a href="/settings/how-it-works#profit" className="-mt-3 w-fit text-sm font-medium text-raspberry-dark underline-offset-2 hover:underline">
+        ⓘ How sales and profit are worked out
+      </a>
 
       <div className="flex flex-col gap-6 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,2fr)] lg:items-start">
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-1">

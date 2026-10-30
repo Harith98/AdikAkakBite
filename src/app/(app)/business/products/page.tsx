@@ -54,6 +54,9 @@ export default async function ProductsPage({ searchParams }: { searchParams: { c
   return (
     <div className="mx-auto flex w-full max-w-5xl flex-col gap-6">
       <PageHeader back={{ href: '/business', label: 'Business' }} title="Products" action={<LinkButton href="/business/products/new">Add product</LinkButton>} />
+      <a href="/settings/how-it-works#costs" className="-mt-3 w-fit text-sm font-medium text-raspberry-dark underline-offset-2 hover:underline">
+        ⓘ How prices and costs affect your numbers
+      </a>
 
       {products.length === 0 ? (
         <Card>

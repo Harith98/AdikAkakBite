@@ -70,6 +70,9 @@ export default async function InventoryPage({ searchParams }: { searchParams: { 
         subtitle="Ingredients and packaging"
         action={<LinkButton href="/business/inventory/new">Add item</LinkButton>}
       />
+      <a href="/settings/how-it-works#ingredients" className="-mt-3 w-fit text-sm font-medium text-raspberry-dark underline-offset-2 hover:underline">
+        ⓘ How ingredient prices reach your profit
+      </a>
 
       {items.length === 0 ? (
         <Card>
