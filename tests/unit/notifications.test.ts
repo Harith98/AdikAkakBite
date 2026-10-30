@@ -104,3 +104,24 @@ describe('postingReminderMessage', () => {
     expect(postingReminderMessage([], 3)).toBeNull()
   })
 })
+
+describe('catalogueLimitMessage', () => {
+  it('says what customers get now and what to do', async () => {
+    const { catalogueLimitMessage } = await import('@/lib/notifications/messages')
+    expect(catalogueLimitMessage({ mode: 'auto', hasLink: true }).body).toMatch(/now get your Canva \/ Drive link/)
+    expect(catalogueLimitMessage({ mode: 'upload', hasLink: true }).body).toMatch(/Switch to Automatic or Link/)
+    expect(catalogueLimitMessage({ mode: 'auto', hasLink: false }).body).toMatch(/Add a Canva or Google Drive link/)
+    expect(catalogueLimitMessage({ mode: 'auto', hasLink: true }).url).toBe('/settings/menu')
+  })
+})
+
+describe('cleanCatalogueLink', () => {
+  it('accepts https links (adding https:// if missing) and refuses others', async () => {
+    const { cleanCatalogueLink } = await import('@/lib/catalogue')
+    expect(cleanCatalogueLink('https://www.canva.com/design/abc/view')).toEqual({ ok: true, url: 'https://www.canva.com/design/abc/view' })
+    expect(cleanCatalogueLink('drive.google.com/file/d/xyz/view')).toEqual({ ok: true, url: 'https://drive.google.com/file/d/xyz/view' })
+    expect(cleanCatalogueLink('')).toEqual({ ok: true, url: null })
+    expect(cleanCatalogueLink('http://example.com/a').ok).toBe(false)
+    expect(cleanCatalogueLink('not a link at all').ok).toBe(false)
+  })
+})

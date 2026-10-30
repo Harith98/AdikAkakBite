@@ -182,7 +182,7 @@ More in [`docs/deployment.md`](docs/deployment.md), and how the database is set 
 
 ### Staying on the free plans
 
-Everything fits the free tiers for years at a small shop's size. The one thing to watch is **the catalogue PDF**: every customer who opens it uses some of Supabase's 5 GB of monthly data transfer, so export it compressed (under ~3 MB). System status shows a running estimate. The free plan has no automatic backups, so download the exports once a month.
+Everything fits the free tiers for years at a small shop's size. The one thing to watch is **the catalogue PDF**: every customer who opens it uses some of Supabase's 5 GB of monthly data transfer, so keep it under 10 MB. Add a Canva or Google Drive link in Settings → Customer menu as a safety net: on "Automatic", the catalogue switches to that link at 80% of the month's free data, and the owner and admins get a notification. System status shows a running estimate. The free plan has no automatic backups, so download the exports once a month.
 
 ## 🔐 Security in one breath
 

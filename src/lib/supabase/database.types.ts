@@ -72,6 +72,10 @@ export interface Database {
           facebook_url: string | null
           tiktok_url: string | null
           threads_url: string | null
+          catalogue_link_url: string | null
+          catalogue_mode: 'auto' | 'upload' | 'link'
+          menu_pdf_bytes: number | null
+          catalogue_alerted_month: string | null
           created_at: string
           updated_at: string
         }
@@ -90,6 +94,10 @@ export interface Database {
           facebook_url?: string | null
           tiktok_url?: string | null
           threads_url?: string | null
+          catalogue_link_url?: string | null
+          catalogue_mode?: 'auto' | 'upload' | 'link'
+          menu_pdf_bytes?: number | null
+          catalogue_alerted_month?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -605,11 +613,13 @@ export interface Database {
           business_id: string
           day: string
           opens: number
+          link_opens: number
         }
         Insert: {
           business_id: string
           day: string
           opens?: number
+          link_opens?: number
         }
         Update: Partial<Database['public']['Tables']['catalogue_opens']['Insert']>
         Relationships: []
@@ -778,6 +788,10 @@ export interface Database {
       count_catalogue_open: {
         Args: Record<string, never>
         Returns: undefined
+      }
+      open_catalogue: {
+        Args: { p_limit_bytes: number }
+        Returns: unknown
       }
       create_order_with_items: {
         Args: { p_order: Record<string, unknown>; p_items: Record<string, unknown>[] }

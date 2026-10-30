@@ -44,7 +44,7 @@ export function CatalogueManager({ businessId, currentUrl, updatedLabel }: Props
         .upload(path, file, { contentType: 'application/pdf', cacheControl: '31536000', upsert: false })
       if (error) throw error
       const url = supabase.storage.from(CATALOGUE_BUCKET).getPublicUrl(path).data.publicUrl
-      const result = await saveCatalogue(url)
+      const result = await saveCatalogue(url, file.size)
       if (result.error) {
         await supabase.storage.from(CATALOGUE_BUCKET).remove([path]) // don't leave an unused file behind
         throw new Error(result.error)

@@ -17,6 +17,8 @@ interface PublicMenu {
   phone: string | null
   menu_pdf_url: string | null
   menu_pdf_updated_at: string | null
+  /** A Canva / Drive link (safety net, or the only catalogue); absent before its database update. */
+  catalogue_link_url?: string | null
   /** Social links; absent on a database that doesn't have them yet. */
   instagram_url?: string | null
   facebook_url?: string | null
@@ -115,7 +117,7 @@ export default async function MenuPage() {
 
         <section>
           <Step number={1} title="See the menu" />
-          {menu?.menu_pdf_url ? (
+          {menu?.menu_pdf_url || menu?.catalogue_link_url ? (
             <a
               href={CATALOGUE_PATH}
               target="_blank"

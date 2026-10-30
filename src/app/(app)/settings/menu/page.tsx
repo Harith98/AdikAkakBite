@@ -8,6 +8,7 @@ import { menuHostname, menuUrl } from '@/lib/site-url'
 import { toWhatsAppNumber } from '@/lib/receipts'
 import { Card } from '@/components/ui/Card'
 import { CatalogueManager } from '@/components/settings/CatalogueManager'
+import { CatalogueSourceForm } from '@/components/settings/CatalogueSourceForm'
 import { MenuLinkShare } from '@/components/settings/MenuLinkShare'
 
 export default async function MenuSettingsPage() {
@@ -42,6 +43,15 @@ export default async function MenuSettingsPage() {
       <Card>
         <SectionLabel icon="📖" className="mb-3">Catalogue (PDF)</SectionLabel>
         <CatalogueManager businessId={business.id} currentUrl={business.menu_pdf_url} updatedLabel={updated} />
+      </Card>
+
+      <Card>
+        <SectionLabel icon="🛟" className="mb-1">Catalogue link &amp; safety net</SectionLabel>
+        <p className="mb-3 text-xs text-ink-muted">
+          In case the menu goes viral: every PDF download uses some of the free plan&apos;s 5 GB a month. With a link added, the app can switch to
+          it before the limit, and the owner and admins get a notification at 80%.
+        </p>
+        <CatalogueSourceForm link={business.catalogue_link_url ?? null} mode={business.catalogue_mode ?? 'auto'} hasPdf={Boolean(business.menu_pdf_url)} />
       </Card>
 
       <Card>

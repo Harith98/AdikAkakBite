@@ -15,6 +15,7 @@ import {
 } from '@/lib/system-status'
 import clsx from '@/lib/clsx'
 import { canManageBusiness } from '@/lib/team'
+import { CATALOGUE_SWITCH_SHARE } from '@/lib/catalogue'
 import { describeDevice } from '@/lib/device-label'
 import { Avatar } from '@/components/ui/Avatar'
 import { getBusinessNow } from '@/lib/time'
@@ -80,16 +81,27 @@ export default async function SystemStatusPage() {
 
   // ---- Catalogue PDF: opens this month × its size, against the free data transfer ----
   const monthStart = `${getBusinessNow(settings.timezone).isoDate.slice(0, 7)}-01`
+  const opensQuery = (columns: string) => supabase.from('catalogue_opens').select(columns).eq('business_id', business.id).gte('day', monthStart)
   const [opensRes, pdfBytes] = await Promise.all([
-    supabase.from('catalogue_opens').select('opens').eq('business_id', business.id).gte('day', monthStart),
+    opensQuery('opens, link_opens').then((r) => (r.error ? opensQuery('opens') : r)),
     business.menu_pdf_url
-      ? fetch(business.menu_pdf_url, { method: 'HEAD', cache: 'no-store' })
+      ? business.menu_pdf_bytes ??
+        fetch(business.menu_pdf_url, { method: 'HEAD', cache: 'no-store' })
           .then((r) => Number(r.headers.get('content-length')) || 0)
           .catch(() => 0)
       : Promise.resolve(0),
   ])
-  const catalogue =
-    pdfBytes > 0 && !opensRes.error ? { bytes: pdfBytes, opens: (opensRes.data ?? []).reduce((sum, r) => sum + r.opens, 0) } : null
+  const opensRows = (opensRes.error ? [] : opensRes.data ?? []) as unknown as { opens: number; link_opens?: number }[]
+  const pdfOpens = opensRows.reduce((sum, r) => sum + r.opens, 0)
+  const linkOpens = opensRows.reduce((sum, r) => sum + (r.link_opens ?? 0), 0)
+  const catalogueMode = business.catalogue_mode ?? 'auto'
+  const catalogueLink = business.catalogue_link_url ?? null
+  const catalogueUsed = pdfOpens * pdfBytes
+  // What "View catalogue" opens right now (the same rule as open_catalogue() in the database).
+  const servingLink =
+    Boolean(catalogueLink) &&
+    (catalogueMode === 'link' || !business.menu_pdf_url || (catalogueMode === 'auto' && catalogueUsed >= PLAN_LIMITS.supabase.egressBytes * CATALOGUE_SWITCH_SHARE))
+  const catalogue = pdfBytes > 0 && !opensRes.error ? { bytes: pdfBytes, opens: pdfOpens } : null
 
   // ---- Health checks: everything here is yes/no; secret values are never shown ----
   const schema = schemaCheck(versionRes.error ? null : Number(versionRes.data))
@@ -193,6 +205,14 @@ export default async function SystemStatusPage() {
                   more opens fit this month. It&apos;s an upper estimate: a customer opening it again is usually served from their phone.
                 </p>
               </div>
+            )}
+            {(business.menu_pdf_url || catalogueLink) && (
+              <p className={clsx('rounded-card px-3 py-2 text-xs', servingLink || catalogueLink ? 'bg-sage-soft text-sage-dark' : 'bg-amber-soft text-amber-dark')}>
+                📖 “View catalogue” opens <b>{servingLink ? 'your Canva / Drive link' : 'the uploaded PDF'}</b>
+                {servingLink && catalogueMode === 'auto' && business.menu_pdf_url ? ' (switched automatically at 80%; back to the PDF on the 1st)' : ''}.
+                {linkOpens > 0 && ` ${linkOpens.toLocaleString('en-GB')} open${linkOpens === 1 ? '' : 's'} through the link this month (no free data used).`}
+                {!catalogueLink && ' No link added as a safety net yet: add one in Settings → Customer menu.'}
+              </p>
             )}
             <p className="text-xs text-ink-muted">
               Data transfer ({PLAN_LIMITS.supabase.egressPerMonth}/month on the free plan) is only estimated above for the catalogue; the

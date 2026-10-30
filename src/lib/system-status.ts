@@ -67,7 +67,7 @@ export function cronLevel(lastRunIso: string | null, now: Date = new Date()): Le
  * version; each file in supabase/updates/ raises it by one (schema_version()).
  * Bump it together with the update file that needs it.
  */
-export const SCHEMA_VERSION = 8
+export const SCHEMA_VERSION = 9
 
 /** What Settings → System says about the database version (null = schema_version() isn't there yet). */
 export function schemaCheck(version: number | null): { level: Level; detail: string } {

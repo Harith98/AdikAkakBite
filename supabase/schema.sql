@@ -93,8 +93,18 @@ create table businesses (
   facebook_url text,
   tiktok_url text,
   threads_url text,
+  -- Catalogue safety net: a Canva / Google Drive link, and what "View catalogue"
+  -- opens: 'auto' (the PDF, switching to the link at 80% of the month's free
+  -- data transfer), 'upload' (always the PDF) or 'link' (always the link).
+  catalogue_link_url text,
+  catalogue_mode text not null default 'auto',
+  menu_pdf_bytes bigint, -- the PDF's size, for the estimate
+  catalogue_alerted_month date, -- the month the 80% alert was sent
   created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
+  updated_at timestamptz not null default now(),
+  constraint businesses_catalogue_mode_valid check (catalogue_mode in ('auto', 'upload', 'link')),
+  constraint businesses_catalogue_link_valid
+    check (catalogue_link_url is null or (catalogue_link_url like 'https://%' and length(catalogue_link_url) <= 500))
 );
 comment on table businesses is 'The shop. This deployment runs exactly one business (see businesses_single_row).';
 comment on column businesses.registration_number is 'Company/SSM registration number, printed on receipts if set.';
@@ -438,7 +448,8 @@ comment on table expenses is 'Overheads (not product costs). A repeating row cou
 create table catalogue_opens (
   business_id uuid not null references businesses(id) on delete cascade,
   day date not null,
-  opens integer not null default 0,
+  opens integer not null default 0, -- served the uploaded PDF (uses Supabase data)
+  link_opens integer not null default 0, -- sent to the Canva / Drive link (doesn't)
   primary key (business_id, day)
 );
 comment on table catalogue_opens is 'Catalogue PDF opens per business-local day, for the data-transfer estimate in Settings → System.';
@@ -1228,6 +1239,7 @@ as $$
     'phone', b.phone,
     'menu_pdf_url', b.menu_pdf_url,
     'menu_pdf_updated_at', b.menu_pdf_updated_at,
+    'catalogue_link_url', b.catalogue_link_url,
     'instagram_url', b.instagram_url,
     'facebook_url', b.facebook_url,
     'tiktok_url', b.tiktok_url,
@@ -1263,6 +1275,70 @@ $$;
 revoke all on function count_catalogue_open() from public, anon, authenticated;
 grant execute on function count_catalogue_open() to service_role;
 
+-- One tap on "View catalogue": where to send the customer, counted, and
+-- whether this is the moment to alert the owner/admins (once a month, at 80%
+-- of p_limit_bytes of PDF downloads). Server only (service-role key).
+create or replace function open_catalogue(p_limit_bytes bigint)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  b businesses;
+  v_today date;
+  v_month date;
+  v_pdf_opens bigint;
+  v_used bigint;
+  v_threshold bigint := floor(p_limit_bytes * 0.8);
+  v_use_link boolean;
+  v_alert boolean := false;
+begin
+  select * into b from businesses order by created_at limit 1;
+  if not found then
+    return null;
+  end if;
+
+  v_today := (now() at time zone coalesce((select s.timezone from business_settings s where s.business_id = b.id), 'Asia/Kuala_Lumpur'))::date;
+  v_month := date_trunc('month', v_today)::date;
+  select coalesce(sum(opens), 0) into v_pdf_opens from catalogue_opens where business_id = b.id and day >= v_month;
+  v_used := v_pdf_opens * coalesce(b.menu_pdf_bytes, 0);
+
+  v_use_link := b.catalogue_link_url is not null
+    and (b.catalogue_mode = 'link' or b.menu_pdf_url is null or (b.catalogue_mode = 'auto' and v_used >= v_threshold));
+  if not v_use_link and b.menu_pdf_url is null then
+    return null; -- no catalogue at all
+  end if;
+
+  -- First open at/after 80% this month: alert once (the update wins only once).
+  if b.menu_pdf_bytes is not null and v_used >= v_threshold and b.catalogue_alerted_month is distinct from v_month then
+    update businesses set catalogue_alerted_month = v_month where id = b.id and catalogue_alerted_month is distinct from v_month;
+    v_alert := found;
+  end if;
+
+  insert into catalogue_opens (business_id, day, opens, link_opens)
+  values (b.id, v_today, case when v_use_link then 0 else 1 end, case when v_use_link then 1 else 0 end)
+  on conflict (business_id, day) do update
+    set opens = catalogue_opens.opens + excluded.opens,
+        link_opens = catalogue_opens.link_opens + excluded.link_opens;
+
+  return jsonb_build_object(
+    'url', case when v_use_link then b.catalogue_link_url else b.menu_pdf_url end,
+    'via', case when v_use_link then 'link' else 'pdf' end,
+    'pdf_url', b.menu_pdf_url,
+    'pdf_bytes_known', b.menu_pdf_bytes is not null,
+    'used_bytes', v_used,
+    'alert', v_alert,
+    'has_link', b.catalogue_link_url is not null,
+    'mode', b.catalogue_mode,
+    'business_id', b.id
+  );
+end;
+$$;
+
+revoke all on function open_catalogue(bigint) from public, anon, authenticated;
+grant execute on function open_catalogue(bigint) to service_role;
+
 -- ---- system status ---------------------------------------------------------
 
 -- The database's version. Settings → System compares it with the version the
@@ -1273,7 +1349,7 @@ returns integer
 language sql
 immutable
 as $$
-  select 8;
+  select 9;
 $$;
 
 revoke all on function schema_version() from public;

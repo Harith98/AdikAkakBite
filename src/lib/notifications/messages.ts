@@ -158,3 +158,17 @@ export function postingReminderMessage(missing: string[], streak: number): PushM
     tag: 'posting-reminder',
   }
 }
+
+/**
+ * Sent once a month to the owner and admins when catalogue PDF downloads reach
+ * 80% of the free data transfer. Says what customers get now and what to do.
+ */
+export function catalogueLimitMessage(input: { mode: 'auto' | 'upload' | 'link'; hasLink: boolean }): PushMessage {
+  const body =
+    input.mode === 'auto' && input.hasLink
+      ? 'Customers now get your Canva / Drive link instead of the PDF, so the menu keeps working. It goes back to the PDF on the 1st.'
+      : input.hasLink
+        ? 'It’s set to always show the PDF. Switch to Automatic or Link in Settings → Customer menu so the free plan isn’t used up.'
+        : 'Add a Canva or Google Drive link in Settings → Customer menu so customers can still see it if the limit is reached.'
+  return { title: '📖 Catalogue at 80% of this month’s free data', body, url: '/settings/menu', tag: 'catalogue-limit' }
+}
