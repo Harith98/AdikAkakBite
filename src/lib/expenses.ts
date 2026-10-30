@@ -74,6 +74,26 @@ export function expandExpenses(records: ExpenseRecord[], from: string, to: strin
   return entries.sort((a, b) => a.date.localeCompare(b.date) || b.amount - a.amount)
 }
 
+/**
+ * Changing a monthly cost's amount (rent went up) "from this month":
+ *   - it started this month: just change the amount (nothing to keep);
+ *   - it started earlier: the old amount ends on the last day of last month,
+ *     and the new amount starts this month on the same day of the month.
+ * So every month counts exactly one amount: no month has both, none has neither.
+ */
+export function planAmountChange(
+  startDate: string,
+  today: string
+): { mode: 'in-place' } | { mode: 'split'; oldEndsOn: string; newStart: string } {
+  const month = today.slice(0, 7)
+  const monthStart = `${month}-01`
+  if (startDate >= monthStart) return { mode: 'in-place' }
+  const [y, m] = month.split('-').map(Number)
+  const lastOfPrevious = new Date(Date.UTC(y ?? 0, (m ?? 1) - 1, 0)).toISOString().slice(0, 10)
+  const day = Math.min(Number(startDate.slice(8, 10)), daysInMonth(month))
+  return { mode: 'split', oldEndsOn: lastOfPrevious, newStart: `${month}-${String(day).padStart(2, '0')}` }
+}
+
 const round2 = (n: number) => Math.round((n + Number.EPSILON) * 100) / 100
 
 /** Total spent, and per category (biggest first, only categories with spending). */

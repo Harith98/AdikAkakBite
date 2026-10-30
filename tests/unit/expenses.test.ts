@@ -64,3 +64,38 @@ describe('parseExpenseForm', () => {
     expect(parseExpenseForm(form({ expenseDate: '2026-10-20', amount: '10', category: 'flour' }), today).ok).toBe(false)
   })
 })
+
+describe('planAmountChange', () => {
+  it('changes in place when the monthly cost only started this month', async () => {
+    const { planAmountChange } = await import('@/lib/expenses')
+    expect(planAmountChange('2026-10-05', '2026-10-30')).toEqual({ mode: 'in-place' })
+  })
+
+  it('ends the old amount last month and starts the new one this month, on the same day', async () => {
+    const { planAmountChange, expandExpenses } = await import('@/lib/expenses')
+    const plan = planAmountChange('2026-08-10', '2026-10-30')
+    expect(plan).toEqual({ mode: 'split', oldEndsOn: '2026-09-30', newStart: '2026-10-10' })
+    if (plan.mode !== 'split') return
+    // Every month counts exactly one amount: never both, never neither.
+    const months = expandExpenses(
+      [
+        { id: 'old', expenseDate: '2026-08-10', amount: 400, category: 'rent', note: null, repeatsMonthly: true, endsOn: plan.oldEndsOn },
+        { id: 'new', expenseDate: plan.newStart, amount: 450, category: 'rent', note: null, repeatsMonthly: true, endsOn: null },
+      ],
+      '2026-08-01',
+      '2026-12-31'
+    ).map((e) => [e.date, e.amount])
+    expect(months).toEqual([
+      ['2026-08-10', 400],
+      ['2026-09-10', 400],
+      ['2026-10-10', 450],
+      ['2026-11-10', 450],
+      ['2026-12-10', 450],
+    ])
+  })
+
+  it('keeps the day in shorter months', async () => {
+    const { planAmountChange } = await import('@/lib/expenses')
+    expect(planAmountChange('2026-01-31', '2026-02-15')).toEqual({ mode: 'split', oldEndsOn: '2026-01-31', newStart: '2026-02-28' })
+  })
+})

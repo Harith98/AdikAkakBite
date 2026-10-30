@@ -355,3 +355,21 @@ export async function applyRecipeCost(productId: string): Promise<{ error: strin
   revalidatePath('/business', 'layout')
   return { error: null, ingredientCost }
 }
+
+/**
+ * "Update all" after an ingredient's price changed: each product's ingredient
+ * cost becomes what its recipe costs now, as a NEW dated cost (the old one is
+ * kept, so earlier sales keep the cost they had).
+ */
+export async function updateCostsFromRecipes(productIds: string[]): Promise<{ updated: number; error: string | null }> {
+  if (!Array.isArray(productIds) || productIds.length === 0 || productIds.length > 500 || !productIds.every((id) => UUID.test(id))) {
+    return { updated: 0, error: 'Invalid products.' }
+  }
+  let updated = 0
+  for (const id of productIds) {
+    const result = await applyRecipeCost(id)
+    if (result.error) return { updated, error: `Updated ${updated}, then stopped: ${result.error}` }
+    updated++
+  }
+  return { updated, error: null }
+}

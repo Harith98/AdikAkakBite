@@ -4,6 +4,8 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { getCurrentBusinessContext } from '@/lib/services/current-business'
 import { getProducts, sortReadyStock, type ProductView } from '@/lib/services/products'
+import { getRecipeCostChecks } from '@/lib/services/cost-checks'
+import { RecipeCostAlert } from '@/components/business/RecipeCostAlert'
 import { ProductSearchBox } from '@/components/business/ProductSearchBox'
 import { ReadyStockList } from '@/components/business/ReadyStockList'
 import { formatMoney, formatPercent } from '@/lib/constants'
@@ -16,7 +18,14 @@ import { LinkButton } from '@/components/ui/LinkButton'
 
 export default async function ProductsPage({ searchParams }: { searchParams: { category?: string; q?: string } }) {
   const { business, settings } = await getCurrentBusinessContext()
-  const products = await getProducts(createClient(), business.id)
+  const supabase = createClient()
+  const [products, costChecks] = await Promise.all([
+    getProducts(supabase, business.id),
+    // Products whose saved cost no longer matches their recipe (an ingredient price changed).
+    getRecipeCostChecks(supabase, business.id),
+  ])
+  const outdated = costChecks.filter((c) => c.outdated)
+  const outdatedIds = new Set(outdated.map((c) => c.productId))
   const money = (n: number) => formatMoney(n, settings.currency)
 
   const chips = categoryChips(products)
@@ -57,6 +66,8 @@ export default async function ProductsPage({ searchParams }: { searchParams: { c
         </Card>
       ) : (
         <>
+        <RecipeCostAlert checks={outdated} currency={settings.currency} />
+
         {/* Search + categories stay pinned at the top while scrolling a long list. */}
         <div className="sticky top-0 z-20 -mx-4 flex flex-col gap-2 bg-base/95 px-4 pb-2 pt-1 backdrop-blur md:-mx-8 md:px-8">
           <ProductSearchBox initial={query} />
@@ -107,7 +118,7 @@ export default async function ProductsPage({ searchParams }: { searchParams: { c
         ) : isFiltered || chips.length < 2 ? (
           <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
             {shown.map((p) => (
-              <ProductTile key={p.id} product={p} money={money} />
+              <ProductTile key={p.id} product={p} money={money} costOutdated={outdatedIds.has(p.id)} />
             ))}
           </ul>
         ) : (
@@ -126,7 +137,7 @@ export default async function ProductsPage({ searchParams }: { searchParams: { c
                   </div>
                   <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
                     {inCategory.map((p) => (
-                      <ProductTile key={p.id} product={p} money={money} />
+                      <ProductTile key={p.id} product={p} money={money} costOutdated={outdatedIds.has(p.id)} />
                     ))}
                   </ul>
                 </section>
@@ -145,7 +156,7 @@ const chipOn = 'bg-raspberry-soft text-raspberry-dark'
 const chipOff = 'bg-base-card text-ink-muted shadow-card hover:text-ink'
 
 /** One product in the grid: big photo, ready-stock tag, name, category, price and margin. */
-function ProductTile({ product: p, money }: { product: ProductView; money: (n: number) => string }) {
+function ProductTile({ product: p, money, costOutdated }: { product: ProductView; money: (n: number) => string; costOutdated: boolean }) {
   const stock = p.readyStock === null ? null : readyStockState(p.readyStock)
   return (
     <li>
@@ -175,6 +186,9 @@ function ProductTile({ product: p, money }: { product: ProductView; money: (n: n
             >
               {readyStockLabel(p.readyStock)}
             </span>
+          )}
+          {costOutdated && (
+            <span className="absolute bottom-2 left-2 rounded-pill bg-amber px-2 py-0.5 text-[11px] font-medium text-ink shadow-card">Cost out of date</span>
           )}
           {!p.isActive && (
             <span className="absolute right-2 top-2 rounded-pill bg-ink/70 px-2 py-0.5 text-[11px] font-medium text-white">Inactive</span>

@@ -10,6 +10,10 @@ import { Card } from '@/components/ui/Card'
 import { InventoryItemForm } from '@/components/business/InventoryItemForm'
 import { InventoryStatusBadge } from '@/components/business/InventoryStatusBadge'
 import { TransactionForm } from '@/components/business/TransactionForm'
+import Link from 'next/link'
+import { getRecipeCostChecks } from '@/lib/services/cost-checks'
+import { formatMoney } from '@/lib/constants'
+import { RecipeCostAlert } from '@/components/business/RecipeCostAlert'
 
 const TYPE_LABEL: Record<string, string> = {
   purchase: 'Purchase', usage: 'Usage', waste: 'Waste', adjustment: 'Adjustment',
@@ -18,15 +22,19 @@ const TYPE_SIGN: Record<string, string> = { purchase: '+', usage: '−', waste: 
 
 export default async function InventoryItemPage({ params }: { params: { id: string } }) {
   if (!UUID_PATTERN.test(params.id)) notFound()
-  const { business } = await getCurrentBusinessContext()
+  const { business, settings } = await getCurrentBusinessContext()
   const supabase = createClient()
 
   // Independent reads — fetch together. RLS scopes transactions to this business.
-  const [item, transactions] = await Promise.all([
+  const [item, transactions, costChecks] = await Promise.all([
     getInventoryItem(supabase, business.id, params.id),
     getRecentTransactions(supabase, params.id),
+    getRecipeCostChecks(supabase, business.id),
   ])
   if (!item) notFound()
+  // Products whose recipe uses this ingredient (their cost depends on its price).
+  const usedIn = costChecks.filter((c) => c.itemIds.includes(item.id))
+  const money = (n: number) => formatMoney(n, settings.currency)
 
   return (
     <div className="mx-auto flex w-full max-w-2xl flex-col gap-6">
@@ -60,10 +68,32 @@ export default async function InventoryItemPage({ params }: { params: { id: stri
         )}
       </Card>
 
+      <RecipeCostAlert checks={usedIn.filter((c) => c.outdated)} currency={settings.currency} heading={`${item.name}'s price changed`} />
+
       <Card>
         <SectionLabel icon="✏️" className="mb-4">Edit item</SectionLabel>
         <InventoryItemForm item={item} />
       </Card>
+
+      {usedIn.length > 0 && (
+        <Card>
+          <SectionLabel icon="🥣" className="mb-1">Used in {usedIn.length} product{usedIn.length === 1 ? '' : 's'}</SectionLabel>
+          <p className="mb-3 text-xs text-ink-muted">Ingredient cost per piece, at today&apos;s price. Change the price above and these update.</p>
+          <ul className="flex flex-col gap-1.5 text-sm">
+            {usedIn.map((c) => (
+              <li key={c.productId} className="flex items-center justify-between gap-3">
+                <Link href={`/business/products/${c.productId}?tab=recipe`} className="min-w-0 truncate text-ink hover:underline">
+                  {c.name}
+                  {c.category && <span className="text-ink-muted"> · {c.category}</span>}
+                </Link>
+                <span className="shrink-0 tabular-nums text-ink-muted">
+                  {money(c.recipeCost)} {c.outdated ? <span className="text-amber-dark">· saved {money(c.savedCost)}</span> : <span className="text-sage-dark">✓</span>}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </Card>
+      )}
     </div>
   )
 }

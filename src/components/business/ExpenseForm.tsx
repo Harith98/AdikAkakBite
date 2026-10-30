@@ -1,12 +1,19 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useFormState, useFormStatus } from 'react-dom'
 import clsx from '@/lib/clsx'
 import { EXPENSE_CATEGORIES } from '@/lib/expenses'
 import type { ExpenseCategory } from '@/lib/supabase/database.types'
 import { Button } from '@/components/ui/Button'
-import { addExpense, deleteExpense, stopRepeatingExpense, type AddExpenseState } from '@/app/(app)/business/expenses/actions'
+import {
+  addExpense,
+  changeMonthlyAmount,
+  deleteExpense,
+  stopRepeatingExpense,
+  type AddExpenseState,
+  type ChangeAmountState,
+} from '@/app/(app)/business/expenses/actions'
 import { ConfirmForm, useSuccessToast } from '@/components/ui/Feedback'
 
 const initialState: AddExpenseState = { error: null, nonce: 0 }
@@ -128,5 +135,55 @@ export function StopRepeatingButton({ id }: { id: string }) {
         Stop
       </button>
     </ConfirmForm>
+  )
+}
+
+const changeInitial: ChangeAmountState = { error: null, nonce: 0 }
+
+/** "Change" on a monthly cost: the new amount applies from this month; earlier months keep the old one. */
+export function ChangeAmountButton({ id, label, amount }: { id: string; label: string; amount: number }) {
+  const [open, setOpen] = useState(false)
+  const [state, formAction] = useFormState(changeMonthlyAmount, changeInitial)
+  useSuccessToast(state, `${label}: new amount from this month`)
+  useEffect(() => {
+    if (state.nonce !== 0 && !state.error) setOpen(false)
+  }, [state.nonce, state.error])
+
+  if (!open) {
+    return (
+      <button type="button" onClick={() => setOpen(true)} className="rounded-pill bg-base-soft px-2.5 py-1 text-xs font-medium text-ink hover:bg-raspberry-soft">
+        Change
+      </button>
+    )
+  }
+  return (
+    <form action={formAction} className="mt-2 flex w-full flex-col gap-2 rounded-card bg-base-soft p-3">
+      <input type="hidden" name="expenseId" value={id} />
+      <label className="flex flex-col gap-1 text-sm">
+        <span className="font-medium text-ink">New monthly amount (RM)</span>
+        <input name="amount" inputMode="decimal" required autoFocus defaultValue={String(amount)} className={input} />
+      </label>
+      <p className="text-xs text-ink-muted">From this month. Earlier months keep the old amount, and no month counts both.</p>
+      {state.error && (
+        <p role="alert" className="text-sm text-clay-dark">
+          {state.error}
+        </p>
+      )}
+      <div className="flex gap-2">
+        <ChangeSubmit />
+        <Button type="button" variant="ghost" onClick={() => setOpen(false)}>
+          Cancel
+        </Button>
+      </div>
+    </form>
+  )
+}
+
+function ChangeSubmit() {
+  const { pending } = useFormStatus()
+  return (
+    <Button type="submit" loading={pending}>
+      Save new amount
+    </Button>
   )
 }

@@ -2,7 +2,7 @@ import Link from 'next/link'
 import clsx from '@/lib/clsx'
 import { createClient } from '@/lib/supabase/server'
 import { getCurrentBusinessContext } from '@/lib/services/current-business'
-import { getExpenseRecords } from '@/lib/services/expenses'
+import { getExpenseRecords, getRunningMonthlyCosts } from '@/lib/services/expenses'
 import { expandExpenses, expenseCategory, summarizeExpenses } from '@/lib/expenses'
 import { isMonthKey, monthRange, shiftMonth } from '@/lib/calc/sales'
 import { formatMoney } from '@/lib/constants'
@@ -11,7 +11,7 @@ import { Card } from '@/components/ui/Card'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { SectionLabel } from '@/components/ui/SectionLabel'
-import { DeleteExpenseButton, ExpenseForm, StopRepeatingButton } from '@/components/business/ExpenseForm'
+import { ChangeAmountButton, DeleteExpenseButton, ExpenseForm, StopRepeatingButton } from '@/components/business/ExpenseForm'
 
 export const metadata = { title: 'Expenses' }
 
@@ -27,11 +27,15 @@ export default async function ExpensesPage({ searchParams }: { searchParams: { m
   const to = range.end < today ? range.end : today
   const money = (n: number) => formatMoney(n, settings.currency)
 
-  const records = await getExpenseRecords(createClient(), business.id, range.start, to)
+  const supabase = createClient()
+  const [records, monthly] = await Promise.all([
+    getExpenseRecords(supabase, business.id, range.start, to),
+    // Monthly costs still running, including a new amount that starts later this month.
+    getRunningMonthlyCosts(supabase, business.id, today),
+  ])
   const entries = expandExpenses(records, range.start, to).reverse() // newest first
   const summary = summarizeExpenses(entries)
   // Monthly costs still running (rent, bills): managed here, not per month.
-  const monthly = records.filter((r) => r.repeatsMonthly && (!r.endsOn || r.endsOn >= today))
   const nav = 'flex h-9 w-9 items-center justify-center rounded-pill text-lg text-ink hover:bg-ink/5'
 
   return (
@@ -54,23 +58,33 @@ export default async function ExpensesPage({ searchParams }: { searchParams: { m
           {monthly.length > 0 && (
             <Card>
               <SectionLabel icon="🔁">Monthly costs</SectionLabel>
-              <p className="mt-1 text-xs text-ink-muted">Counted every month on the same day. Amount changed (rent went up)? Stop this one and add the new amount.</p>
+              <p className="mt-1 text-xs text-ink-muted">Counted every month on the same day. Amount changed (rent went up)? Tap Change: the new amount applies from this month, and earlier months keep the old one.</p>
               <ul className="mt-3 flex flex-col divide-y divide-ink/5">
                 {monthly.map((r) => {
                   const c = expenseCategory(r.category)
                   return (
-                    <li key={r.id} className="flex items-center gap-3 py-2.5">
+                    <li key={r.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 py-2.5">
                       <span aria-hidden="true" className="flex h-10 w-10 shrink-0 items-center justify-center rounded-card bg-base-soft text-xl">
                         {c.emoji}
                       </span>
                       <span className="min-w-0 flex-1">
                         <span className="block truncate text-sm font-medium text-ink">{r.note || c.label}</span>
                         <span className="block text-xs text-ink-muted">
-                          {money(r.amount)}/month · day {Number(r.expenseDate.slice(8))} · since {formatDateShort(r.expenseDate)}
+                          {money(r.amount)}/month · day {Number(r.expenseDate.slice(8))} ·{' '}
+                          {r.expenseDate > today ? `starts ${formatDateShort(r.expenseDate)}` : `since ${formatDateShort(r.expenseDate)}`}
                           {r.endsOn && ` · ends ${formatDateShort(r.endsOn)}`}
                         </span>
                       </span>
-                      {!r.endsOn && <StopRepeatingButton id={r.id} />}
+                      {!r.endsOn && (
+                        <span className="flex gap-1.5">
+                          <StopRepeatingButton id={r.id} />
+                        </span>
+                      )}
+                      {!r.endsOn && (
+                        <span className="basis-full pl-[3.25rem]">
+                          <ChangeAmountButton id={r.id} label={r.note || c.label} amount={r.amount} />
+                        </span>
+                      )}
                     </li>
                   )
                 })}
