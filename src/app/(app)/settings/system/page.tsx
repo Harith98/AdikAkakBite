@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { SectionLabel } from '@/components/ui/SectionLabel'
 import { redirect } from 'next/navigation'
@@ -191,39 +192,64 @@ export default async function SystemStatusPage() {
                 </div>
               ))}
             </dl>
-            {catalogue && (
+            <p className="text-xs text-ink-muted">
+              Data transfer ({PLAN_LIMITS.supabase.egressPerMonth}/month on the free plan): the catalogue&apos;s share is estimated in the card
+              below; the exact total, including the app itself and product photos, is on the Supabase usage page. Free projects pause after{' '}
+              {PLAN_LIMITS.supabase.pausesAfterInactiveDays} days without use; the daily reminders keep yours active.
+            </p>
+          </div>
+        ) : (
+          <div className="mt-3 rounded-card bg-clay-soft px-3 py-2.5 text-sm text-clay-dark">
+            <p className="font-medium">Couldn&apos;t load usage from the database.</p>
+            <p className="mt-1 break-words text-xs">{statusRes.error?.message ?? 'No answer.'}</p>
+            <p className="mt-1 text-xs">
+              If it mentions the owner or an admin, check your role in Settings → Team. Otherwise, make sure every file in supabase/updates/
+              has been run, oldest first.
+            </p>
+          </div>
+        )}
+      </Card>
+
+      {/* The catalogue's share of the free data transfer: its own card, so it shows even if the usage above can't load. */}
+      {(business.menu_pdf_url || catalogueLink) && (
+        <Card>
+          <div className="flex items-baseline justify-between gap-3">
+            <SectionLabel icon="📖">Catalogue · free data this month</SectionLabel>
+            <Link href="/settings/menu" className="text-sm font-medium text-raspberry-dark">
+              Settings →
+            </Link>
+          </div>
+          <div className="mt-3 flex flex-col gap-3">
+            {catalogue ? (
               <div>
                 <UsageBar
-                  label="Catalogue PDF downloads this month (estimate)"
+                  label="Catalogue PDF downloads (estimate)"
                   used={catalogue.opens * catalogue.bytes}
                   limit={PLAN_LIMITS.supabase.egressBytes}
                   format={formatBytes}
                 />
                 <p className="mt-1 text-xs text-ink-muted">
-                  {catalogue.opens.toLocaleString('en-GB')} open{catalogue.opens === 1 ? '' : 's'} × {formatBytes(catalogue.bytes)} PDF. About{' '}
+                  {catalogue.opens.toLocaleString('en-GB')} PDF open{catalogue.opens === 1 ? '' : 's'} × {formatBytes(catalogue.bytes)}. About{' '}
                   {Math.max(0, Math.floor((PLAN_LIMITS.supabase.egressBytes - catalogue.opens * catalogue.bytes) / catalogue.bytes)).toLocaleString('en-GB')}{' '}
-                  more opens fit this month. It&apos;s an upper estimate: a customer opening it again is usually served from their phone.
+                  more fit this month; {CATALOGUE_SWITCH_SHARE * 100}% is reached at about{' '}
+                  {Math.floor((PLAN_LIMITS.supabase.egressBytes * CATALOGUE_SWITCH_SHARE) / catalogue.bytes).toLocaleString('en-GB')} opens. It&apos;s an
+                  upper estimate: a customer opening it again is usually served from their phone.
                 </p>
               </div>
-            )}
-            {(business.menu_pdf_url || catalogueLink) && (
-              <p className={clsx('rounded-card px-3 py-2 text-xs', servingLink || catalogueLink ? 'bg-sage-soft text-sage-dark' : 'bg-amber-soft text-amber-dark')}>
-                📖 “View catalogue” opens <b>{servingLink ? 'your Canva / Drive link' : 'the uploaded PDF'}</b>
-                {servingLink && catalogueMode === 'auto' && business.menu_pdf_url ? ' (switched automatically at 80%; back to the PDF on the 1st)' : ''}.
-                {linkOpens > 0 && ` ${linkOpens.toLocaleString('en-GB')} open${linkOpens === 1 ? '' : 's'} through the link this month (no free data used).`}
-                {!catalogueLink && ' No link added as a safety net yet: add one in Settings → Customer menu.'}
+            ) : business.menu_pdf_url ? (
+              <p className="text-xs text-ink-muted">
+                The PDF&apos;s size couldn&apos;t be read just now, so there&apos;s no estimate. Uploading it again in Settings → Customer menu records it.
               </p>
-            )}
-            <p className="text-xs text-ink-muted">
-              Data transfer ({PLAN_LIMITS.supabase.egressPerMonth}/month on the free plan) is only estimated above for the catalogue; the
-              exact total, including the app itself and product photos, is on the Supabase usage page. Free projects pause after{' '}
-              {PLAN_LIMITS.supabase.pausesAfterInactiveDays} days without use; the daily reminders keep yours active.
+            ) : null}
+            <p className={clsx('rounded-card px-3 py-2 text-xs', catalogueLink ? 'bg-sage-soft text-sage-dark' : 'bg-amber-soft text-amber-dark')}>
+              “View catalogue” opens <b>{servingLink ? 'your Canva / Drive link' : 'the uploaded PDF'}</b>
+              {servingLink && catalogueMode === 'auto' && business.menu_pdf_url ? ' (switched automatically at 80%; back to the PDF on the 1st)' : ''}.
+              {linkOpens > 0 && ` ${linkOpens.toLocaleString('en-GB')} open${linkOpens === 1 ? '' : 's'} through the link this month (no free data used).`}
+              {!catalogueLink && ' No link added as a safety net yet: add one in Settings → Customer menu.'}
             </p>
           </div>
-        ) : (
-          <p className="mt-3 text-sm text-ink-muted">Usage shows here once the database is up to date (see the check above).</p>
-        )}
-      </Card>
+        </Card>
+      )}
 
       <Card>
         <SectionLabel icon="📱">Notifications on</SectionLabel>
